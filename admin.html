@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyber Escape Room - Admin Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/admin.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+</head>
+
+<body>
+    <main class="admin-wrapper">
+        <h1 class="glow">Admin Dashboard</h1>
+        <p id="adminWelcome">Welcome, Admin!</p>
+
+        <section class="leaderboard">
+            <h2>Team Progress</h2>
+            <ul id="teamProgressList">
+                <!-- Team progress will be injected here -->
+            </ul>
+        </section>
+
+        <section class="charts">
+            <h2>Puzzle Completion Overview</h2>
+
+            <!--
+      <canvas id="progresschart" width="400" height="200"></canvas>
+      <canvas id="timechart" width="409" height="200" style="margin-top: 2rem;"></canvas>
+      -->
+
+            <canvas id="progressChart" width="400" height="200"></canvas>
+
+            <script>
+                new Chart(document.getElementById("progressChart"), {
+                    type: "bar",
+                    data: {
+                        labels: ["TEAM1", "TEAM2", "TEAM3", "TEAM4", "TEAM5"],
+                        datasets: [{
+                            label: "Puzzles Completed",
+                            data: [4, 3, 2, 4, 1],
+                            backgroundColor: "#58a6ff"
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: { display: false }
+                    }
+                });
+            </script>
+        </section>
+
+        <section class="metrics">
+            <h2>Stats &amp; Metrics</h2>
+            <p id="averageTimeStats"></p>
+            <canvas id="timeChart" width="400" height="200" style="margin-top: 2rem;"></canvas>
+
+            <script>
+                new Chart(document.getElementById("timeChart"), {
+                    type: "bar",
+                    data: {
+                        labels: ["TEAM1", "TEAM2", "TEAM3", "TEAM4", "TEAM5"],
+                        datasets: [{
+                            label: "Avg Completion Time (s)",
+                            data: [56.2, 66.7, 65.0, 63.8, 100.0],
+                            backgroundColor: "#ffa65c"
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        legend: { display: false }
+                    }
+                });
+            </script>
+        </section>
+
+        <footer></footer>
+    </main>
+
+    <button onclick="logout()">Logout</button>
+</body>
+
+</html>
