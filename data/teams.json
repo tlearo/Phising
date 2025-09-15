@@ -1,0 +1,46 @@
+{
+    "users": [
+        {
+            "username": "admin",
+            "role": "admin",
+            "iterations": 200000,
+            "salt_b64": "UuZKHcI4TqrDqStZvEkjdA==",
+            "hash_b64": "U1QaarmfJfqHfk/kvmhLLxZJvlbscctGyM9QLgFA12o="
+        },
+        {
+            "username": "team1",
+            "role": "team",
+            "iterations": 200000,
+            "salt_b64": "UWIlOXsObRzvhkTrvj2Nqw==",
+            "hash_b64": "CT13ifLJbV1Sf9ctryT5NUuJiVzM5S5WLPbq+z2Go8w="
+        },
+        {
+            "username": "team2",
+            "role": "team",
+            "iterations": 200000,
+            "salt_b64": "4/+zrwH8H52SynqMX41TPQ==",
+            "hash_b64": "0gH9FlCNmkcSDRdC9fUh4TGRdASH0Q8TwumqBm7pmAk="
+        },
+        {
+            "username": "team3",
+            "role": "team",
+            "iterations": 200000,
+            "salt_b64": "8nN2UppGeyz/vpyb/UbaRg==",
+            "hash_b64": "AQT1B+0zk9X+joOaw+d6eIAmZ46UFJP8wGx6GSA92oQ="
+        },
+        {
+            "username": "team4",
+            "role": "team",
+            "iterations": 200000,
+            "salt_b64": "kv9/9vWxAfHLkiL3qy2N7w==",
+            "hash_b64": "GL7j9QOqDsz7HXMg2j1t4ztw/lVjrfsc8ZPxQh2fP6I="
+        },
+        {
+            "username": "team5",
+            "role": "team",
+            "iterations": 200000,
+            "salt_b64": "e7DCP2u6dKHw2AH+o9TEFQ==",
+            "hash_b64": "eDWEv0yo7VLrO/BQdIwsaeFJ6h0wTsMEVC7wUPqiuJo="
+        }
+    ]
+}

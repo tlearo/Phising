@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+
+    <title>Cyber Escape Room — Game</title>
+
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <!-- helpers & page logic -->
+    <script src="js/accessibility.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/game.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="game-wrapper container">
+        <header class="game-header">
+            <h1 class="glow">Cyber Escape Rooms</h1>
+            <p id="teamWelcome" class="mt-1" style="color:var(--muted)">Welcome, TEAM</p>
+        </header>
+
+        <section class="main-layout mt-2">
+            <!-- LEFT: puzzles + progress -->
+            <div class="left-panel">
+                <section class="card puzzle-nav">
+                    <h2>Puzzles</h2>
+                    <div class="buttons mt-1">
+                        <a href="phishing.html"><button class="btn block">Phishing Spotter</button></a>
+                        <a href="password.html"><button class="btn block">Password Puzzle</button></a>
+                        <a href="encryption.html"><button class="btn block">Encryption</button></a>
+                        <a href="essential.html"><button class="btn block">Essential Eight</button></a>
+                    </div>
+                </section>
+
+                <section class="card mt-2">
+                    <h2>Progress</h2>
+                    <p class="mt-1"><span id="progressStatus">0/4 puzzles completed</span></p>
+
+                    <!-- Visual journey -->
+                    <div class="journey-map mt-2">
+                        <h3>Your Journey</h3>
+                        <div class="journey-steps" aria-label="Journey Progress">
+                            <div class="step" id="step-phishing">1. Phishing</div>
+                            <div class="arrow">➜</div>
+                            <div class="step" id="step-password">2. Password</div>
+                            <div class="arrow">➜</div>
+                            <div class="step" id="step-encryption">3. Encryption</div>
+                            <div class="arrow">➜</div>
+                            <div class="step final" id="step-essential">4. Essential 8</div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="flex mt-2">
+                    <button class="btn ghost" onclick="goBack()">Back</button>
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: vault / lock -->
+            <div class="right-panel">
+                <section class="card chest-section">
+                    <h2>Vault Lock</h2>
+                    <p class="mt-1">Gather each digit from the puzzles and unlock the vault.</p>
+
+                    <div class="vault-box mt-2" aria-live="polite">
+                        <div class="chest" id="vaultChest">
+                            <div class="chest-lid"></div>
+                            <div class="chest-body">
+                                <button class="lock-button" id="openLockPanel" aria-controls="lockPanel"
+                                    aria-expanded="false" title="Open lock panel">
+                                    🔒
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="lock-panel hidden mt-2" id="lockPanel">
+                            <div class="lock-box">
+                                <input type="text" maxlength="1" class="lock-digit" aria-label="Digit 1" />
+                                <input type="text" maxlength="1" class="lock-digit" aria-label="Digit 2" />
+                                <input type="text" maxlength="1" class="lock-digit" aria-label="Digit 3" />
+                                <input type="text" maxlength="1" class="lock-digit" aria-label="Digit 4" />
+                                <button class="btn sm" onclick="checkCode()">Unlock</button>
+                            </div>
+                            <p id="lockFeedback" class="mt-1"></p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+</body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
+
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+    <title>Phishing Spotter</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/accessibility.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/phishing.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="container">
+        <header class="game-header">
+            <h1 class="glow">Phishing Spotter</h1>
+            <p class="mt-1" style="color:var(--muted)">
+                Highlight suspicious parts of the email. Find at least <strong>3</strong> vulnerabilities to pass.
+            </p>
+        </header>
+
+        <section class="main-layout mt-2">
+            <!-- LEFT: toolbox -->
+            <aside class="toolbox card">
+                <h2>Tools</h2>
+                <div class="tool-row mt-1">
+                    <button class="btn block tool-btn" data-tool="brush" onclick="setTool('brush')">Brush</button>
+                    <button class="btn block tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
+                </div>
+                <div class="tool-row mt-1">
+                    <button class="btn block" onclick="eraseAll()">Erase All</button>
+                    <button class="btn block" onclick="selectAll()">Auto-Highlight</button>
+                </div>
+                <div class="tool-row mt-1">
+                    <label for="brushSize" class="team-stat-label">Brush size</label>
+                    <input id="brushSize" type="range" min="4" max="30" value="10" />
+                </div>
+                <div class="tool-row mt-1">
+                    <button class="btn block" onclick="saveHighlights()">💾 Save</button>
+                    <button class="btn block" onclick="loadHighlights()">📂 Load</button>
+                </div>
+            </aside>
+
+
+            <!-- RIGHT: phishing image + canvas -->
+            <section class="card image-container">
+                <div class="image-stage" id="imageStage">
+                    <img src="assets/Picture1.png" alt="Phishing Email Example" id="phishingImage" />
+                    <canvas id="drawCanvas"></canvas>
+                </div>
+
+                <div id="feedbackPanel" class="mt-2">
+                    <button id="submitButton" class="btn" onclick="submitHighlights()">Submit</button>
+                    <p id="phishingFeedback" class="mt-1"></p>
+                    <p id="vulnerabilityCount" class="mt-1"></p>
+                </div>
+            </section>
+        </section>
+    </main>
+</body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
+
+</html>

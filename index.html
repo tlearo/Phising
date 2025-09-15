@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+    <title>Cyber Escape Room Login</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/accessibility.js" defer></script>
+    <script src="js/auth.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="container">
+        <header class="game-header">
+            <h1 class="glow">Cyber Escape Rooms</h1>
+            <p class="mt-1" style="color:var(--muted)">Enter your team credentials to begin.</p>
+        </header>
+
+        <section class="card mt-2" role="form" aria-labelledby="login-title" style="max-width:780px;margin-inline:auto">
+            <h2 id="login-title">Login</h2>
+            <form id="loginForm" autocomplete="off" class="mt-1">
+                <div class="row">
+                    <div class="field">
+                        <label for="username">Username</label>
+                        <input id="username" name="username" type="text" required aria-required="true"
+                            placeholder="team1 / admin" />
+                    </div>
+                    <div class="field">
+                        <label for="password">Password</label>
+                        <input id="password" name="password" type="password" required aria-required="true"
+                            placeholder="••••••••" />
+                    </div>
+                </div>
+
+                <div class="flex mt-2">
+                    <button type="submit" class="btn">Login</button>
+                    <button type="button" class="btn ghost"
+                        onclick="document.getElementById('loginForm').reset()">Clear</button>
+                </div>
+
+                <p id="errorMsg" class="mt-1" aria-live="assertive" style="color:var(--danger)"></p>
+            </form>
+        </section>
+
+        <footer class="mt-3">
+            <p>Tip: demo accounts — <strong>admin/admin123</strong>, <strong>team1/pass1</strong> …
+                <strong>team5/pass5</strong>
+            </p>
+        </footer>
+    </main>
+</body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
+
+
+</html>

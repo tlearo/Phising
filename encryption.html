@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+    <title>Encryption — Caesar Wheel</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/accessibility.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/encryption.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="container">
+        <header class="game-header">
+            <h1 class="glow">Encryption Puzzle</h1>
+            <p class="mt-1" style="color:var(--muted)">
+                Spin the inner ring to set the shift. The text decrypts live. Submit the plaintext to complete the
+                puzzle.
+            </p>
+        </header>
+
+        <section class="enc-layout mt-2">
+            <!-- LEFT: Caesar wheel + controls + instructions -->
+            <aside class="card enc-wheel-panel">
+                <h2>Caesar Wheel</h2>
+                <div class="wheel-wrap" id="wheelWrap" aria-label="Caesar Wheel">
+                    <div class="wheel outer" id="outerRing"></div>
+                    <div class="wheel inner" id="innerRing"></div>
+                </div>
+
+                <div class="enc-controls mt-2">
+                    <div class="flex">
+                        <button class="btn sm" id="shiftDown">−</button>
+                        <input type="range" id="shiftSlider" min="0" max="25" value="0" />
+                        <button class="btn sm" id="shiftUp">+</button>
+                    </div>
+                    <p class="mt-1"><strong>Shift:</strong> <span id="shiftValue">0</span></p>
+                    <p class="mt-1" style="color:var(--muted)">Tip: Shift of 3 is the classic Caesar.</p>
+                </div>
+
+                <div class="enc-instructions mt-2">
+                    <p><strong>How to use</strong></p>
+                    <ul>
+                        <li>Drag the <em>inner</em> ring or use slider / ± to set the shift.</li>
+                        <li>Outer ring = plaintext A–Z (fixed). Inner ring = cipher a–z (rotates).</li>
+                        <li>Use the live decrypted output on the right to solve.</li>
+                    </ul>
+                </div>
+            </aside>
+
+
+
+
+            <!-- RIGHT: Challenge -->
+            <section class="card enc-panel">
+                <h2>Decrypt This</h2>
+
+                <p class="mt-1"><strong>Encrypted:</strong> <span id="cipherText">Wklv lv d whvw phvvdjh</span></p>
+                <p class="mt-1"><strong>Decrypted (live):</strong> <span id="liveOutput"
+                        style="color:var(--brand)"></span></p>
+
+                <div class="field mt-2">
+                    <label for="finalAnswer">Submit plaintext</label>
+                    <input id="finalAnswer" type="text" placeholder="type the full decrypted sentence…" />
+                </div>
+
+                <div class="flex mt-2">
+                    <button class="btn" id="submitBtn">Submit</button>
+                    <a href="game.html"><button class="btn ghost">Back to Vault</button></a>
+                </div>
+
+                <p id="encFeedback" class="mt-1" aria-live="polite"></p>
+            </section>
+        </section>
+    </main>
+</body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
+
+
+</html>

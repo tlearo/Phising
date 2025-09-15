@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+
+    <title>Essential Eight Puzzle</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/accessibility.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/dragdrop.js" defer></script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="container">
+        <header class="game-header">
+            <h1 class="glow">Essential Eight Puzzle</h1>
+            <p class="mt-1" style="color:var(--muted)">
+                Drag each <strong>vulnerability</strong> to the <strong>mitigation</strong> that best reduces the risk.
+                Use mouse or keyboard (Enter/Space to pick/place). Click <em>Submit</em> to check your answers.
+            </p>
+        </header>
+
+        <section class="ess-layout mt-2" id="essArena">
+            <!-- LEFT: draggable vulnerabilities -->
+            <aside class="card ess-column">
+                <h2>Vulnerabilities</h2>
+                <ul id="vulnList" class="drag-list" aria-label="Vulnerabilities to match">
+                    <!-- Cards are injected & shuffled by JS for consistency -->
+                </ul>
+            </aside>
+
+            <!-- RIGHT: target Essential 8 mitigations -->
+            <aside class="card ess-column">
+                <h2>Mitigations (Essential Eight)</h2>
+                <ul id="mitigationList" class="drop-list" aria-label="Essential Eight mitigations">
+                    <!-- Slots with plain-English definitions are injected & shuffled by JS -->
+                </ul>
+            </aside>
+
+            <!-- SVG overlay for color-coded connectors (optional visual) -->
+            <svg id="essWires" class="ess-wires" aria-hidden="true"></svg>
+        </section>
+
+        <!-- Controls + Progress -->
+        <section class="card ess-progress mt-2">
+            <div class="flex" style="gap:.5rem; flex-wrap:wrap;">
+                <button class="btn" id="submitBtn" aria-describedby="submitHelp">Submit</button>
+                <button class="btn ghost" id="clearBtn">Clear selections</button>
+                <button class="btn ghost" id="toggleWiresBtn" aria-pressed="true">Hide connections</button>
+                <button class="btn warn" id="autofillBtn" title="Testing helper — remove before real use">Auto-Fill
+                    (test)</button>
+            </div>
+            <p id="submitHelp" class="mt-1" style="color:var(--muted)">Submit grades your current matches without
+                revealing the answers.</p>
+
+            <div class="progress-bar mt-2">
+                <div id="progressFill"></div>
+            </div>
+            <p id="progressText" class="mt-1">0/8 placed</p>
+
+            <p id="essFeedback" class="mt-1" aria-live="polite"></p>
+        </section>
+    </main>
+</body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
+
+
+</html>

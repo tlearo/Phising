@@ -3,82 +3,79 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Cyber Escape Room - Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+
+    <title>Cyber Escape Rooms — Admin Dashboard</title>
+
     <link rel="stylesheet" href="css/styles.css" />
-    <script src="js/admin.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
+    <!-- Accessibility helpers & app logic -->
+    <script src="js/accessibility.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js" defer></script>
+    <script src="js/admin.js" defer></script>
 </head>
 
+
 <body>
-    <main class="admin-wrapper">
-        <h1 class="glow">Admin Dashboard</h1>
-        <p id="adminWelcome">Welcome, Admin!</p>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="container">
+        <header class="game-header">
+            <h1 class="glow">Admin Dashboard</h1>
+            <p id="adminWelcome" class="mt-1" style="color:var(--muted)">Welcome, Admin!</p>
+        </header>
+        <header class="site-header">
+            <div class="brand">
+                <img src="assets/logo.svg" alt="" class="logo" />
+                <h1 class="glow">Cyber Escape Rooms</h1>
+            </div>
+            <nav class="header-actions">
+                <button class="btn ghost" onclick="history.back()">Back</button>
+                <a class="btn" href="index.html">Home</a>
+            </nav>
+        </header>
 
-        <section class="leaderboard">
-            <h2>Team Progress</h2>
-            <ul id="teamProgressList">
-                <!-- Team progress will be injected here -->
-            </ul>
+        <!-- Two-column layout on laptop; stacks on mobile -->
+        <section class="main-layout mt-2">
+            <!-- LEFT: Leaderboard & summary stats -->
+            <div class="left-panel">
+                <section class="card">
+                    <h2>Team Progress</h2>
+                    <div id="teamProgressList" class="team-grid mt-1"></div>
+                </section>
+
+                <section class="card mt-2">
+                    <h2>Stats &amp; Metrics</h2>
+                    <p id="averageTimeStats" class="mt-1"></p>
+                </section>
+
+                <div class="flex mt-2">
+                    <a href="index.html"><button class="btn ghost">Back to Login</button></a>
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Charts -->
+            <div class="right-panel">
+                <section class="card">
+                    <h2>Puzzle Completion Overview</h2>
+                    <canvas id="progressChart" width="400" height="220" class="mt-1"></canvas>
+                </section>
+
+                <section class="card mt-2">
+                    <h2>Avg Completion Time (seconds)</h2>
+                    <canvas id="timeChart" width="400" height="220" class="mt-1"></canvas>
+                </section>
+            </div>
         </section>
 
-        <section class="charts">
-            <h2>Puzzle Completion Overview</h2>
-
-            <!--
-      <canvas id="progresschart" width="400" height="200"></canvas>
-      <canvas id="timechart" width="409" height="200" style="margin-top: 2rem;"></canvas>
-      -->
-
-            <canvas id="progressChart" width="400" height="200"></canvas>
-
-            <script>
-                new Chart(document.getElementById("progressChart"), {
-                    type: "bar",
-                    data: {
-                        labels: ["TEAM1", "TEAM2", "TEAM3", "TEAM4", "TEAM5"],
-                        datasets: [{
-                            label: "Puzzles Completed",
-                            data: [4, 3, 2, 4, 1],
-                            backgroundColor: "#58a6ff"
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        legend: { display: false }
-                    }
-                });
-            </script>
-        </section>
-
-        <section class="metrics">
-            <h2>Stats &amp; Metrics</h2>
-            <p id="averageTimeStats"></p>
-            <canvas id="timeChart" width="400" height="200" style="margin-top: 2rem;"></canvas>
-
-            <script>
-                new Chart(document.getElementById("timeChart"), {
-                    type: "bar",
-                    data: {
-                        labels: ["TEAM1", "TEAM2", "TEAM3", "TEAM4", "TEAM5"],
-                        datasets: [{
-                            label: "Avg Completion Time (s)",
-                            data: [56.2, 66.7, 65.0, 63.8, 100.0],
-                            backgroundColor: "#ffa65c"
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        legend: { display: false }
-                    }
-                });
-            </script>
-        </section>
-
-        <footer></footer>
+        <footer class="mt-3">
+            <p style="color:var(--muted)">Charts update based on each team’s local progress/timing data.</p>
+        </footer>
     </main>
-
-    <button onclick="logout()">Logout</button>
 </body>
+<footer class="site-footer">
+    <p>2025 Cyber Escape Rooms</p>
+</footer>
 
 </html>
