@@ -2,24 +2,43 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
 
+  <!-- Page-specific scripts inserted below -->
     <title>Cyber Escape Rooms — Admin Dashboard</title>
-
-    <link rel="stylesheet" href="css/styles.css" />
-
     <!-- Accessibility helpers & app logic -->
-    <script src="js/accessibility.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js" defer></script>
+    <script src="js/Chart.min.js" defer></script>
     <script src="js/admin.js" defer></script>
 </head>
 
 
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <main class="container">
+    <!-- Global Header: classic bar -->
+    <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+        <a class="brand" href="index.html">
+        <img src="assets/logo.svg" alt="" class="logo">
+        <span class="brand-name">Cyber Escape Rooms</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Primary">
+        <a class="nav-link" href="javascript:history.back()">Back</a>
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="game.html">Game</a>
+        <a class="nav-link" href="admin.html" aria-current="page">Admin</a>
+        <a class="nav-link" href="#" onclick="localStorage.clear(); location.href='index.html'">Logout</a>
+        </nav>
+    </div>
+    </header>
+    <main class="container container-xl admin-main" id="main">
         <header class="game-header">
             <h1 class="glow">Admin Dashboard</h1>
             <p id="adminWelcome" class="mt-1" style="color:var(--muted)">Welcome, Admin!</p>
@@ -73,9 +92,19 @@
             <p style="color:var(--muted)">Charts update based on each team’s local progress/timing data.</p>
         </footer>
     </main>
+      <!-- Global Footer -->
+  <footer class="site-footer header-bleed">
+    <nav class="footer-nav">
+      <a href="index.html">Home</a>
+      <span aria-hidden="true">•</span>
+      <a href="game.html">Game</a>
+      <span aria-hidden="true">•</span>
+      <a href="admin.html">Admin</a>
+    </nav>
+    <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
+  </footer>
+
 </body>
-<footer class="site-footer">
-    <p>2025 Cyber Escape Rooms</p>
-</footer>
+
 
 </html>
