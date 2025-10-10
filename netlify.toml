@@ -5,6 +5,5 @@
 [functions]
   node_bundler = "esbuild"
 
-# Optional: pin Node if you have code that needs it
 [build.environment]
   NODE_VERSION = "20"
