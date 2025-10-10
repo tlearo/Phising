@@ -1,5 +1,5 @@
 [build]
-  publish = "."
+  publish = "PHISING"         # folder that has index.html
   functions = "netlify/functions"
 
 [functions]
