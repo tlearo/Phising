@@ -1,104 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Decrypt the message using a Caesar wheel. Earn your digit for the final vault lock in Cyber Escape Rooms." />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
 
+  <!-- Tight CSP (local assets only) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self';
+                 frame-ancestors 'none'">
+
+  <title>Cyber Escape Rooms — Encryption</title>
+
+  <!-- External files only -->
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
-
-  <!-- Page-specific scripts inserted below -->
-    <title>Encryption — Caesar Wheel</title>
-    <script src="js/encryption.js" defer></script>
+  <script src="js/encryption.js" defer></script>
 </head>
 
 <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <!-- Global Header: classic bar -->
-    <header class="site-header site-header--bar" aria-label="Global">
-    <div class="site-header__inner">
-        <a class="brand" href="index.html">
-        <img src="assets/logo.svg" alt="" class="logo">
-        <span class="brand-name">Cyber Escape Rooms</span>
-        </a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-        <nav class="main-nav" aria-label="Primary">
+  <!-- Global Header: classic website bar -->
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.svg" alt="" class="logo" />
+        <span class="brand-name">Cyber Escape Rooms</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary">
         <a class="nav-link" href="javascript:history.back()">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
         <a class="nav-link" href="admin.html">Admin</a>
-        </nav>
+      </nav>
     </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Encryption</h1>
+      <p class="mt-1" style="color:var(--muted)">Use the Caesar wheel to decode the message. Submit the plaintext to earn your digit.</p>
     </header>
-    <main class="container">
-        <header class="game-header">
-            <h1 class="glow">Encryption Puzzle</h1>
-            <p class="mt-1" style="color:var(--muted)">
-                Spin the inner ring to set the shift. The text decrypts live. Submit the plaintext to complete the
-                puzzle.
-            </p>
-        </header>
 
-        <section class="enc-layout mt-2">
-            <!-- LEFT: Caesar wheel + controls + instructions -->
-            <aside class="card enc-wheel-panel">
-                <h2>Caesar Wheel</h2>
-                <div class="wheel-wrap" id="wheelWrap" aria-label="Caesar Wheel">
-                    <div class="wheel outer" id="outerRing"></div>
-                    <div class="wheel inner" id="innerRing"></div>
-                </div>
+    <!-- Two-column responsive layout -->
+    <section class="enc-layout mt-2">
+      <!-- LEFT: Wheel & controls -->
+      <aside class="enc-wheel-panel card" aria-label="Caesar wheel controls">
+        <!-- Fixed-size wheel viewport -->
+        <div id="wheelWrap" class="wheel-wrap">
+          <!-- OUTER: plaintext A–Z (upright) -->
+          <div id="outerRing" class="wheel outer" aria-hidden="true"></div>
+          <!-- INNER: cipher a–z (rotates) -->
+          <div id="innerRing" class="wheel inner"
+               role="slider" aria-label="Shift amount"
+               aria-valuemin="0" aria-valuemax="25" aria-valuenow="0"
+               tabindex="0"></div>
+        </div>
 
-                <div class="enc-controls mt-2">
-                    <div class="flex">
-                        <button class="btn sm" id="shiftDown">−</button>
-                        <input type="range" id="shiftSlider" min="0" max="25" value="0" />
-                        <button class="btn sm" id="shiftUp">+</button>
-                    </div>
-                    <p class="mt-1"><strong>Shift:</strong> <span id="shiftValue">0</span></p>
-                    <p class="mt-1" style="color:var(--muted)">Tip: Shift of 3 is the classic Caesar.</p>
-                </div>
+        <div class="flex" aria-label="Shift controls">
+          <button id="shiftDown" class="btn sm" type="button" aria-label="Decrease shift">−</button>
+          <input id="shiftSlider" type="range" min="0" max="25" value="0" aria-label="Shift slider" />
+          <button id="shiftUp" class="btn sm" type="button" aria-label="Increase shift">+</button>
+          <span class="mt-1" aria-live="polite">Shift: <strong id="shiftValue">0</strong></span>
+        </div>
+      </aside>
 
-                <div class="enc-instructions mt-2">
-                    <p><strong>How to use</strong></p>
-                    <ul>
-                        <li>Drag the <em>inner</em> ring or use slider / ± to set the shift.</li>
-                        <li>Outer ring = plaintext A–Z (fixed). Inner ring = cipher a–z (rotates).</li>
-                        <li>Use the live decrypted output on the right to solve.</li>
-                    </ul>
-                </div>
-            </aside>
+      <!-- RIGHT: Cipher, live output, submit -->
+      <section class="enc-panel card" aria-label="Decryption workspace">
+        <h2>Decrypt This</h2>
 
+        <div class="mt-1">
+          <p class="muted">Ciphertext:</p>
+          <div class="card sm mt-1" style="overflow:auto">
+            <code id="cipherText">—</code>
+          </div>
+        </div>
 
+        <div class="mt-2">
+          <p class="muted">Live output (based on current shift):</p>
+          <div class="card sm mt-1" style="overflow:auto">
+            <div id="liveOutput" aria-live="polite">Rotate the inner ring or use the slider.</div>
+          </div>
+        </div>
 
+        <div class="mt-2 field">
+          <label for="finalAnswer">Type the final plaintext (exact spelling):</label>
+          <input id="finalAnswer" type="text" autocomplete="off" />
+        </div>
 
-            <!-- RIGHT: Challenge -->
-            <section class="card enc-panel">
-                <h2>Decrypt This</h2>
+        <div class="flex mt-2">
+          <button id="submitBtn" class="btn" type="button">Submit</button>
+          <a href="game.html" class="btn ghost">Back to Vault</a>
+          <a href="index.html" class="btn">Home</a>
+        </div>
 
-                <p class="mt-1"><strong>Encrypted:</strong> <span id="cipherText">Wklv lv d whvw phvvdjh</span></p>
-                <p class="mt-1"><strong>Decrypted (live):</strong> <span id="liveOutput"
-                        style="color:var(--brand)"></span></p>
+        <p id="encFeedback" class="mt-2" aria-live="polite"></p>
+      </section>
+    </section>
 
-                <div class="field mt-2">
-                    <label for="finalAnswer">Submit plaintext</label>
-                    <input id="finalAnswer" type="text" placeholder="type the full decrypted sentence…" />
-                </div>
+    <footer class="mt-3">
+      <p style="color:var(--muted)">Tip: the inner ring rotates; align letters to reveal the plaintext.</p>
+    </footer>
+  </main>
 
-                <div class="flex mt-2">
-                    <button class="btn" id="submitBtn">Submit</button>
-                    <a href="game.html"><button class="btn ghost">Back to Vault</button></a>
-                </div>
-
-                <p id="encFeedback" class="mt-1" aria-live="polite"></p>
-            </section>
-        </section>
-    </main>
-      <!-- Global Footer -->
+  <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <nav class="footer-nav">
       <a href="index.html">Home</a>
@@ -109,8 +124,5 @@
     </nav>
     <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
   </footer>
-
 </body>
-
-
 </html>

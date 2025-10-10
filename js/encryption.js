@@ -1,226 +1,201 @@
-/* ===================== Encryption (Caesar Wheel) ====================== */
-/* Config */
-// Hash of: "this is a test message"
-const CORRECT_PLAINTEXT_HASH =
-    "4e4aa09b6d80efbd684e80f54a70c1d8605625c3380f4cb012b32644a002b5be";
-// Ciphertext created with shift 3
-const CIPHERTEXT = "Wklv lv d whvw phvvdjh";
+/* encryption.js — Caesar puzzle logic (Cyber Escape Rooms)
+   Works with encryption.html and (optionally) caesar.js
 
-/* Elements */
-const outerRing = document.getElementById("outerRing");
-const innerRing = document.getElementById("innerRing");
-const wheelWrap = document.getElementById("wheelWrap");
+   What it does:
+   - Sets/reads ciphertext
+   - Shows live decoded output as shift changes
+   - Validates final plaintext on submit
+   - Marks puzzle complete in localStorage + logs time
+*/
 
-const shiftSlider = document.getElementById("shiftSlider");
-const shiftDown = document.getElementById("shiftDown");
-const shiftUp = document.getElementById("shiftUp");
-const shiftValueEl = document.getElementById("shiftValue");
+(function () {
+  'use strict';
 
-const cipherEl = document.getElementById("cipherText");
-const liveOut = document.getElementById("liveOutput");
-const finalAnswer = document.getElementById("finalAnswer");
-const submitBtn = document.getElementById("submitBtn");
-const feedback = document.getElementById("encFeedback");
+  // ---------- DOM helpers ----------
+  const $  = (sel, root=document) => root.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
-/* Helpers */
-function caesarDecrypt(text, shift) {
-    return text
-        .split("")
-        .map((ch) => {
-            const c = ch.charCodeAt(0);
-            if (c >= 65 && c <= 90) return String.fromCharCode(((c - 65 - shift + 26) % 26) + 65);
-            if (c >= 97 && c <= 122) return String.fromCharCode(((c - 97 - shift + 26) % 26) + 97);
-            return ch;
-        })
-        .join("");
-}
+  function announce(msg){ try{ window.a11y?.announce?.(msg); }catch(_){} }
 
-async function sha256Hex(text) {
-    const enc = new TextEncoder().encode(text);
-    const buf = await crypto.subtle.digest("SHA-256", enc);
-    return Array.from(new Uint8Array(buf))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-}
-/** Place letters evenly on a circle.
- * counterRotate=true keeps letters upright (for OUTER).
- * className is "outer" | "inner" for styling.
- */
-function placeLetters(ring, letters, radius, counterRotate, className) {
-    ring.innerHTML = "";
-    const step = 360 / letters.length;
+  // ---------- Caesar helpers (fallback if caesar.js not present) ----------
+  const Caesar = window.Caesar || (() => {
+    const ALPHA = 'abcdefghijklmnopqrstuvwxyz';
+    const normalize = (s) => { let n = Number(s)||0; n%=26; if(n<0)n+=26; return n; };
+    const encode = (text, shift) => {
+      shift = normalize(shift);
+      return (text||'').replace(/[a-z]/gi, ch=>{
+        const u = ch>='A'&&ch<='Z', base = (u?65:97), code = ch.charCodeAt(0)-base;
+        if (code<0 || code>25) return ch;
+        return String.fromCharCode(base+((code+shift)%26));
+      });
+    };
+    const decode = (t,s)=>encode(t,26-normalize(s));
+    return { encode, decode, normalize };
+  })();
 
-    letters.forEach((letter, i) => {
-        // Base angle so index 0 ("A") is at the TOP (12 o'clock)
-        const angle = i * step - 90; // -90° shifts 0° from +X axis to +Y axis (top)
-        const span = document.createElement("span");
-        span.className = `glyph ${className}`;
-        span.textContent = letter;
+  // ---------- Config ----------
+  // If you have an existing config (from an older build), you can define:
+  // window.ENCRYPTION_CONFIG = { plain: "THE SECRET PHRASE", shift: 7 };
+  const CFG = window.ENCRYPTION_CONFIG || {
+    plain:  "KNOWLEDGE IS POWER",
+    shift:  5  // the wheel needs to be turned to this to reveal the plaintext
+  };
 
-        span.style.transform = counterRotate
-            ? `rotate(${angle}deg) translate(${radius}px) rotate(${-angle}deg)`   // upright letters
-            : `rotate(${angle}deg) translate(${radius}px)`;                      // rotate with ring
-        ring.appendChild(span);
-    });
-}
+  // Optional: provide a hash of the expected plaintext for stricter checking
+  // Set EXPECTED_HASH to SHA-256(hex) of the normalized plaintext (normalizePlain()).
+  const EXPECTED_HASH = window.ENCRYPTION_HASH || null;
 
-/** Build both rings using the wrap size so glyphs hug the outlines without overlap. */
-function populateRings() {
-    const rect = wheelWrap.getBoundingClientRect();
-    const wrapR = Math.floor(Math.min(rect.width, rect.height) / 2);
+  // Normalize what users type vs your answer (trim, collapse spaces, upper-case)
+  function normalizePlain(s){
+    return (s||'')
+      .replace(/\s+/g,' ')
+      .trim()
+      .toUpperCase();
+  }
 
-    // Keep glyphs a little inside each border (prevents overlap/clip)
-    const OUTER_TEXT_RADIUS = wrapR - 20;         // sits just inside grey outline
-    const INNER_RING_RATIO = 0.76;               // matches .wheel.inner size in CSS
-    const innerRingR = Math.floor(wrapR * INNER_RING_RATIO);
-    const INNER_TEXT_RADIUS = innerRingR - 12;    // sits just inside blue outline
+  // Web Crypto SHA-256 (hex)
+  async function sha256Hex(s) {
+    const enc = new TextEncoder().encode(s);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
 
-    // Outer = plaintext A–Z (fixed, upright)
-    placeLetters(
-        outerRing,
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
-        OUTER_TEXT_RADIUS,
-        true,
-        "outer"
-    );
+  // ---------- Elements ----------
+  const cipherEl   = $('#cipherText');
+  const liveEl     = $('#liveOutput');
+  const sliderEl   = $('#shiftSlider');
+  const shiftDown  = $('#shiftDown');
+  const shiftUp    = $('#shiftUp');
+  const shiftVal   = $('#shiftValue');
+  const innerRing  = $('#innerRing');
+  const submitBtn  = $('#submitBtn');
+  const answerEl   = $('#finalAnswer');
+  const feedbackEl = $('#encFeedback');
 
-    // Inner = cipher a–z (rotates as a whole with the ring)
-    placeLetters(
-        innerRing,
-        "abcdefghijklmnopqrstuvwxyz".split(""),
-        INNER_TEXT_RADIUS,
-        false,
-        "inner"
-    );
-}
+  if (!cipherEl || !liveEl) return; // not on this page
 
+  // ---------- Timer ----------
+  const t0 = Date.now();
 
-/** Update live decryption + rotate the inner ring smoothly around center */
-function updateLive() {
-    const shift = Number(shiftSlider.value) % 26;
-    shiftValueEl.textContent = String(shift);
+  // ---------- Storage helpers ----------
+  function readUser(){
+    try{ return JSON.parse(localStorage.getItem('user')||'null'); }catch{ return null; }
+  }
+  function progressKey(user){ return `${user?.username||'team'}_progress`; }
+  function timesKey(user){ return `${user?.username||'team'}_times`; }
 
-    // Rotate the whole inner ring by exact letter increments
-    const degPerStep = 360 / 26;
-    innerRing.style.transform = `rotate(${-(shift * degPerStep)}deg)`;
+  function markComplete(){
+    const u = readUser(), pKey = progressKey(u);
+    let p;
+    try{ p = JSON.parse(localStorage.getItem(pKey)||'{}'); }catch{ p = {}; }
+    p.encryption = true;
+    localStorage.setItem(pKey, JSON.stringify(p));
 
-    liveOut.textContent = caesarDecrypt(CIPHERTEXT, shift);
-    innerRing.setAttribute("aria-valuenow", String(shift));
-}
+    // Record time in seconds (append)
+    const secs = Math.round((Date.now()-t0)/1000);
+    let times;
+    try{ times = JSON.parse(localStorage.getItem(timesKey(u))||'[]'); }catch{ times=[]; }
+    times.push(secs);
+    localStorage.setItem(timesKey(u), JSON.stringify(times));
+  }
 
-/* Drag-to-rotate (snaps to letter steps) */
-(function enableDragRotation() {
-    let dragging = false;
+  // ---------- State & rendering ----------
+  let currentShift = 0;
+  const CIPHERTEXT = Caesar.encode(CFG.plain, CFG.shift); // what we show
 
-    function setShiftFromPointer(e) {
-        const rect = wheelWrap.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        const x = clientX - cx;
-        const y = clientY - cy;
-
-        // Angle with 0° at top; positive clockwise
-        let deg = (Math.atan2(y, x) * 180) / Math.PI; // -180..180 (0 at +X axis)
-        deg = (deg + 90 + 360) % 360; // 0 at top
-
-        const step = 360 / 26;
-        const snapped = Math.round(deg / step) % 26;
-        shiftSlider.value = String(snapped);
-        updateLive();
-    }
-
-    innerRing.addEventListener("mousedown", (e) => {
-        dragging = true;
-        e.preventDefault();
-    });
-    window.addEventListener("mousemove", (e) => {
-        if (dragging) setShiftFromPointer(e);
-    });
-    window.addEventListener("mouseup", () => (dragging = false));
-
-    innerRing.addEventListener(
-        "touchstart",
-        (e) => {
-            dragging = true;
-            e.preventDefault();
-        },
-        { passive: false }
-    );
-    window.addEventListener(
-        "touchmove",
-        (e) => {
-            if (dragging) setShiftFromPointer(e);
-        },
-        { passive: false }
-    );
-    window.addEventListener("touchend", () => (dragging = false));
-})();
-
-/* Controls */
-shiftSlider.addEventListener("input", updateLive);
-shiftDown.addEventListener("click", () => {
-    shiftSlider.value = String((Number(shiftSlider.value) + 25) % 26);
-    updateLive();
-});
-shiftUp.addEventListener("click", () => {
-    shiftSlider.value = String((Number(shiftSlider.value) + 1) % 26);
-    updateLive();
-});
-
-/* Submit (hash-only check) */
-submitBtn.addEventListener("click", async () => {
-    const guess = (finalAnswer.value || "").trim().toLowerCase();
-    if (!guess) return;
-
-    const hash = await sha256Hex(guess);
-    if (hash === CORRECT_PLAINTEXT_HASH) {
-        feedback.textContent = "✅ Correct! Progress recorded.";
-        feedback.style.color = "#09ff88";
-
-        // Mark team progress
-        try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            if (user && user.username) {
-                const key = `${user.username}_progress`;
-                const prog =
-                    JSON.parse(localStorage.getItem(key)) || {
-                        phishing: false,
-                        password: false,
-                        encryption: false,
-                        essential: false,
-                    };
-                prog.encryption = true;
-                localStorage.setItem(key, JSON.stringify(prog));
-            }
-        } catch {
-            /* ignore */
-        }
-    } else {
-        feedback.textContent = "❌ Not quite. Adjust the shift and try again.";
-        feedback.style.color = "#ff5555";
-    }
-});
-
-/* Init */
-function initWheel() {
+  function setCiphertext() {
     cipherEl.textContent = CIPHERTEXT;
-    populateRings();
-    updateLive();
-}
-window.addEventListener("resize", () => {
-    populateRings();
-    updateLive();
-});
-initWheel();
+  }
 
-/* Enter = submit */
-finalAnswer.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        submitBtn.click();
+  function setShift(n){
+    currentShift = Caesar.normalize(n);
+    if (sliderEl) sliderEl.value = String(currentShift);
+    if (shiftVal) shiftVal.textContent = String(currentShift);
+    // Rotate ring if caesar.js rendered it (it will also emit caesar:shift)
+    if (innerRing && !window.Caesar) {
+      // simple visual fallback if caesar.js not loaded: rotate inner ring numerically (no letters)
+      innerRing.setAttribute('aria-valuenow', String(currentShift));
     }
-});
+    updateLive();
+  }
+
+  function updateLive(){
+    // Live preview = decoding CIPHERTEXT with *current* shift (not fixed CFG.shift)
+    const decoded = Caesar.decode(CIPHERTEXT, currentShift);
+    liveEl.textContent = decoded;
+  }
+
+  // When caesar.js emits a shift change, mirror it here
+  document.addEventListener('caesar:shift', (e) => {
+    setShift(e?.detail?.shift ?? currentShift);
+  });
+
+  // Wire slider/± in case caesar.js isn’t present
+  sliderEl?.addEventListener('input', () => setShift(Number(sliderEl.value)));
+  shiftDown?.addEventListener('click', () => setShift(currentShift - 1));
+  shiftUp  ?.addEventListener('click', () => setShift(currentShift + 1));
+
+  // ---------- Validation ----------
+  async function handleSubmit(){
+    if (!answerEl) return;
+    const userAnswer = normalizePlain(answerEl.value);
+    const decodedNow = normalizePlain(Caesar.decode(CIPHERTEXT, currentShift));
+
+    // Option A (strict): compare to EXPECTED_HASH if provided
+    if (EXPECTED_HASH) {
+      const h = await sha256Hex(userAnswer);
+      if (h === EXPECTED_HASH) {
+        success();
+        return;
+      }
+    }
+
+    // Option B (default): require that the current decoded text equals user’s input
+    // AND that decoded text also matches the configured plaintext (robust against random shifts)
+    const expectedPlain = normalizePlain(CFG.plain);
+    if (userAnswer && userAnswer === decodedNow && decodedNow === expectedPlain) {
+      success();
+    } else {
+      fail();
+    }
+  }
+
+  function success(){
+    if (feedbackEl){
+      feedbackEl.textContent = '✅ Correct! You earned a digit for the vault.';
+      feedbackEl.classList.remove('warn');
+      feedbackEl.classList.add('ok');
+    }
+    announce('Encryption puzzle solved');
+    markComplete();
+  }
+
+  function fail(){
+    if (feedbackEl){
+      feedbackEl.textContent = '❌ Not quite. Adjust the wheel or check spelling/casing.';
+      feedbackEl.classList.remove('ok');
+      feedbackEl.classList.add('warn');
+    }
+    announce('Try a different shift or check spelling');
+  }
+
+  // ---------- Boot ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    setCiphertext();
+
+    // Initialize shift from slider if present; else start at 0
+    const start = sliderEl ? Number(sliderEl.value) : 0;
+    setShift(isNaN(start) ? 0 : start);
+
+    submitBtn?.addEventListener('click', handleSubmit);
+
+    // Enter key in the answer box triggers submit
+    answerEl?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmit();
+      }
+    });
+  });
+
+})();

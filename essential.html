@@ -1,92 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Match each Essential Eight strategy to its description. Earn your vault digit in Cyber Escape Rooms." />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
-  <title><!-- REPLACE WITH PAGE TITLE --></title>
 
+  <!-- Tight CSP (local assets only) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self';
+                 frame-ancestors 'none'">
+
+  <title>Cyber Escape Rooms — Essential Eight</title>
+
+  <!-- External files only -->
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
-
-  <!-- Page-specific scripts inserted below -->
-    <script src="js/dragdrop.js" defer></script>
+  <script src="js/dragdrop.js" defer></script>
 </head>
 
 <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <!-- Global Header: classic bar -->
-    <header class="site-header site-header--bar" aria-label="Global">
-    <div class="site-header__inner">
-        <a class="brand" href="index.html">
-        <img src="assets/logo.svg" alt="" class="logo">
-        <span class="brand-name">Cyber Escape Rooms</span>
-        </a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-        <nav class="main-nav" aria-label="Primary">
+  <!-- Global Header: classic website bar -->
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.svg" alt="" class="logo" />
+        <span class="brand-name">Cyber Escape Rooms</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary">
         <a class="nav-link" href="javascript:history.back()">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
         <a class="nav-link" href="admin.html">Admin</a>
-        </nav>
+      </nav>
     </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Essential Eight</h1>
+      <p class="mt-1" style="color:var(--muted)">Drag each control to the matching description. Get them all right to earn your digit.</p>
     </header>
 
-    <main class="container">
-        <header class="game-header">
-            <h1 class="glow">Essential Eight Puzzle</h1>
-            <p class="mt-1" style="color:var(--muted)">
-                Drag each <strong>vulnerability</strong> to the <strong>mitigation</strong> that best reduces the risk.
-                Use mouse or keyboard (Enter/Space to pick/place). Click <em>Submit</em> to check your answers.
-            </p>
-        </header>
+    <!-- Two-column layout -->
+    <section class="ess-layout mt-2">
+      <!-- LEFT: draggable controls -->
+      <aside class="ess-column" aria-label="Controls to drag">
+        <h2>Controls</h2>
+        <ul id="dragList" class="drag-list" aria-describedby="dragHelp">
+          <!-- Cards populated by JS if needed; include defaults for accessibility -->
+          <li class="drag-card" draggable="true" tabindex="0" data-key="app-control">
+            <span class="dot" style="background:#86efac;"></span>
+            Application control (allow-listing)
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="patch-apps">
+            <span class="dot" style="background:#a5b4fc;"></span>
+            Patch applications
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="macro-settings">
+            <span class="dot" style="background:#fca5a5;"></span>
+            Configure MS Office macro settings
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="user-hardening">
+            <span class="dot" style="background:#fdba74;"></span>
+            User application hardening
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="restrict-admin">
+            <span class="dot" style="background:#93c5fd;"></span>
+            Restrict administrative privileges
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="patch-os">
+            <span class="dot" style="background:#fcd34d;"></span>
+            Patch operating systems
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="mfa">
+            <span class="dot" style="background:#f472b6;"></span>
+            Multi-factor authentication
+          </li>
+          <li class="drag-card" draggable="true" tabindex="0" data-key="backups">
+            <span class="dot" style="background:#60a5fa;"></span>
+            Regular backups
+          </li>
+        </ul>
+        <p id="dragHelp" class="mt-1" style="color:var(--muted)">Drag a card to a matching slot on the right.</p>
 
-        <section class="ess-layout mt-2" id="essArena">
-            <!-- LEFT: draggable vulnerabilities -->
-            <aside class="card ess-column">
-                <h2>Vulnerabilities</h2>
-                <ul id="vulnList" class="drag-list" aria-label="Vulnerabilities to match">
-                    <!-- Cards are injected & shuffled by JS for consistency -->
-                </ul>
-            </aside>
+        <div class="flex mt-2">
+          <button class="btn" id="checkAnswersBtn">Check</button>
+          <button class="btn ghost" id="shuffleBtn">Shuffle</button>
+          <button class="btn warn" id="resetBoardBtn">Reset</button>
+        </div>
 
-            <!-- RIGHT: target Essential 8 mitigations -->
-            <aside class="card ess-column">
-                <h2>Mitigations (Essential Eight)</h2>
-                <ul id="mitigationList" class="drop-list" aria-label="Essential Eight mitigations">
-                    <!-- Slots with plain-English definitions are injected & shuffled by JS -->
-                </ul>
-            </aside>
+        <!-- Progress bar -->
+        <div class="ess-progress mt-2" aria-label="Puzzle progress">
+          <div class="progress-bar">
+            <div id="progressFill"></div>
+          </div>
+          <p class="mt-1" id="essProgressText" aria-live="polite" style="color:var(--muted)">0/8 correct</p>
+        </div>
 
-            <!-- SVG overlay for color-coded connectors (optional visual) -->
-            <svg id="essWires" class="ess-wires" aria-hidden="true"></svg>
-        </section>
+        <p id="essFeedback" class="mt-2" aria-live="polite"></p>
+      </aside>
 
-        <!-- Controls + Progress -->
-        <section class="card ess-progress mt-2">
-            <div class="flex" style="gap:.5rem; flex-wrap:wrap;">
-                <button class="btn" id="submitBtn" aria-describedby="submitHelp">Submit</button>
-                <button class="btn ghost" id="clearBtn">Clear selections</button>
-                <button class="btn ghost" id="toggleWiresBtn" aria-pressed="true">Hide connections</button>
-                <button class="btn warn" id="autofillBtn" title="Testing helper — remove before real use">Auto-Fill
-                    (test)</button>
+      <!-- RIGHT: drop targets / descriptions -->
+      <section class="ess-column" aria-label="Descriptions">
+        <h2>Descriptions</h2>
+        <ul id="dropList" class="drop-list">
+          <li class="drop-slot" data-slot="app-control" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Only approved executables should run</strong>
             </div>
-            <p id="submitHelp" class="mt-1" style="color:var(--muted)">Submit grades your current matches without
-                revealing the answers.</p>
+            <p class="slot-desc">Prevent unapproved or malicious programs from executing by enforcing allow-lists.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
 
-            <div class="progress-bar mt-2">
-                <div id="progressFill"></div>
+          <li class="drop-slot" data-slot="patch-apps" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Keep apps up to date</strong>
             </div>
-            <p id="progressText" class="mt-1">0/8 placed</p>
+            <p class="slot-desc">Apply vendor patches quickly (e.g., browsers, PDF readers, Office) to reduce exploit windows.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
 
-            <p id="essFeedback" class="mt-1" aria-live="polite"></p>
-        </section>
-    </main>
-      <!-- Global Footer -->
+          <li class="drop-slot" data-slot="macro-settings" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Block risky macros</strong>
+            </div>
+            <p class="slot-desc">Disable or restrict macros, especially from the Internet, and sign trusted ones only.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+
+          <li class="drop-slot" data-slot="user-hardening" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Harden user-facing apps</strong>
+            </div>
+            <p class="slot-desc">Disable unnecessary features (e.g., Flash/Java, ads, dangerous MIME types) to reduce attack surface.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+
+          <li class="drop-slot" data-slot="restrict-admin" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Least privilege</strong>
+            </div>
+            <p class="slot-desc">Only grant admin rights when needed, use separate admin accounts, and monitor changes.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+
+          <li class="drop-slot" data-slot="patch-os" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>OS patching</strong>
+            </div>
+            <p class="slot-desc">Apply security updates promptly across desktops, servers, and mobile devices.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+
+          <li class="drop-slot" data-slot="mfa" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Require MFA</strong>
+            </div>
+            <p class="slot-desc">Add a second factor for remote access, privileged accounts, and high-value apps.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+
+          <li class="drop-slot" data-slot="backups" tabindex="0">
+            <div class="slot-head">
+              <span class="dot"></span>
+              <strong>Back up and test restores</strong>
+            </div>
+            <p class="slot-desc">Perform regular, tamper-resistant backups and verify you can restore quickly after incidents.</p>
+            <div class="slot-bay" aria-live="polite"></div>
+          </li>
+        </ul>
+
+        <div class="mt-2">
+          <a href="game.html" class="btn ghost">Back to Vault</a>
+          <a href="index.html" class="btn">Home</a>
+        </div>
+      </section>
+
+      <!-- Decorative wires SVG (optional, styled in CSS) -->
+      <svg class="ess-wires" viewBox="0 0 1200 600" aria-hidden="true">
+        <path class="wire" d="M40 80 C 220 140, 380 40, 560 100 S 900 180, 1160 120" />
+        <path class="wire" d="M40 220 C 220 260, 380 200, 560 260 S 900 320, 1160 260" />
+        <path class="wire" d="M40 380 C 220 420, 380 360, 560 420 S 900 480, 1160 420" />
+      </svg>
+    </section>
+
+    <footer class="mt-3">
+      <p style="color:var(--muted)">Pro tip: read carefully — several controls sound similar but have distinct goals.</p>
+    </footer>
+  </main>
+
+  <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <nav class="footer-nav">
       <a href="index.html">Home</a>
@@ -97,6 +218,5 @@
     </nav>
     <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
   </footer>
-
 </body>
 </html>

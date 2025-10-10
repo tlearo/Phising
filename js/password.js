@@ -1,159 +1,194 @@
-// Pool of candidate passwords (NO PLAINTEXT in code).
-// Each item has: hash (SHA-256, hex) and an array of clue strings.
-const PUZZLES = [
-    {
-        hash: "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92", // 123456
-        clues: [
-            "Digits only.",
-            "Extremely short.",
-            "Commonly ranked #1 on most-used lists.",
-            "Consecutive ascending numbers.",
-            "This exact choice is often used as a sample in tutorials."
-        ]
-    },
-    {
-        hash: "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8", // password
-        clues: [
-            "All lowercase letters.",
-            "A real word found in the dictionary.",
-            "Ironically the most obvious choice.",
-            "Seen in countless leaked credential dumps.",
-            "It literally describes itself."
-        ]
-    },
-    {
-        hash: "65e84be33532fb784c48129675f9eff3a682b27168c0ea744b2cf58ee02337c5", // qwerty
-        clues: [
-            "Letters only.",
-            "A keyboard pattern.",
-            "Starts on the top row of many keyboards.",
-            "Often extended with numbers to the right.",
-            "Left-to-right sweep with one hand."
-        ]
-    },
-    {
-        hash: "6ca13d52ca70c883e0f0bb101e425a89e8624de51db2d2392593af6a84118090", // abc123
-        clues: [
-            "Mix of letters and numbers.",
-            "Alphabet sequence followed by digits.",
-            "Six characters total.",
-            "Appears on top-10 lists frequently.",
-            "Basic training-wheels combo."
-        ]
-    },
-    {
-        hash: "19513fdc9da4fb72a4a05eb66917548d3c90ff94d5419e1f2363eea89dfee1dd", // Password1
-        clues: [
-            "Looks like it meets 'one uppercase + numbers' rules.",
-            "A capital letter starts it.",
-            "Ends with a single digit.",
-            "Still very weak despite 'complexity'.",
-            "Common policy-compliant bad choice."
-        ]
-    },
-    {
-        hash: "1c8bfe8f801d79745c4631d09fff36c82aa37fc4cce4fc946683d7b336b63032", // letmein
-        clues: [
-            "All lowercase letters.",
-            "A short phrase.",
-            "A plea typed by impatient users.",
-            "Two words merged together.",
-            "Seven characters long."
-        ]
+/* password.js — Password Puzzle (Cyber Escape Rooms)
+   - Progressive clues (Next / Reset)
+   - Guess validation (cleartext OR optional SHA-256 hash)
+   - Marks completion in localStorage for current user
+   - Logs elapsed time (seconds) into ${username}_times
+*/
+
+(function () {
+  'use strict';
+
+  // ---------------- Config ----------------
+  // You can override these before this script loads:
+  // window.PASSWORD_CONFIG = { answer: 'password123', clues: [ '...', '...' ] }
+  // window.PASSWORD_HASH   = '<sha256 hex of normalized answer>';  // optional strict check
+  //
+  // Normalization: trim, collapse spaces, lowercase.
+
+  const DEFAULT_CLUES = [
+    'It’s on every “worst passwords” list.',
+    'It’s all lowercase letters.',
+    'It contains the word itself.',
+    'Sometimes people tack numbers on the end…',
+    'You’ve probably tried it already 😉'
+  ];
+
+  const CFG = window.PASSWORD_CONFIG || {
+    answer: 'password',
+    clues: DEFAULT_CLUES
+  };
+
+  const EXPECTED_HASH = window.PASSWORD_HASH || null;
+
+  // ---------------- Helpers ----------------
+  const $  = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const announce = (m) => { try { window.a11y?.announce?.(m); } catch (_) {} };
+
+  function normalize(s) {
+    return (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  async function sha256Hex(s) {
+    const data = new TextEncoder().encode(s);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // current user + storage keys
+  function readUser() {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
+  }
+  function progressKey(u) { return `${u?.username || 'team'}_progress`; }
+  function timesKey(u)    { return `${u?.username || 'team'}_times`; }
+
+  function markComplete(startTimeMs) {
+    const u = readUser();
+    const pKey = progressKey(u);
+    let p;
+    try { p = JSON.parse(localStorage.getItem(pKey) || '{}'); } catch { p = {}; }
+    p.password = true;
+    localStorage.setItem(pKey, JSON.stringify(p));
+
+    // time logging
+    const secs = Math.round((Date.now() - startTimeMs) / 1000);
+    let times;
+    try { times = JSON.parse(localStorage.getItem(timesKey(u)) || '[]'); } catch { times = []; }
+    times.push(secs);
+    localStorage.setItem(timesKey(u), JSON.stringify(times));
+  }
+
+  // ---------------- Elements ----------------
+  const clueList       = $('#clueList');
+  const nextClueBtn    = $('#nextClueBtn');
+  const resetCluesBtn  = $('#resetCluesBtn');
+
+  const guessInput     = $('#pwGuess');
+  const submitBtn      = $('#submitGuessBtn');
+  const clearBtn       = $('#clearGuessBtn');
+
+  const feedbackEl     = $('#pwFeedback');
+
+  if (!clueList || !guessInput) return; // not on this page
+
+  // Timer start
+  const t0 = Date.now();
+
+  // ---------------- Clues logic ----------------
+  let shown = 0;
+
+  function renderClues(count) {
+    clueList.innerHTML = '';
+    for (let i = 0; i < count && i < CFG.clues.length; i++) {
+      const li = document.createElement('li');
+      li.className = 'clue';
+      li.textContent = CFG.clues[i];
+      clueList.appendChild(li);
     }
-];
-
-// --- Utility: SHA-256 (browser WebCrypto) ---------------------------------
-async function sha256Hex(text) {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-}
-
-// --- Elements --------------------------------------------------------------
-const clueList = document.getElementById("clueList");
-const nextClueBtn = document.getElementById("nextClueBtn");
-const resetCluesBtn = document.getElementById("resetCluesBtn");
-const submitGuessBtn = document.getElementById("submitGuessBtn");
-const clearGuessBtn = document.getElementById("clearGuessBtn");
-const feedback = document.getElementById("pwFeedback");
-const input = document.getElementById("pwGuess");
-
-// --- Pick one puzzle per visit --------------------------------------------
-const chosen = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
-let revealed = 0;
-
-function renderClues() {
-    if (!clueList) return;
-    clueList.innerHTML = "";
-    for (let i = 0; i < revealed; i++) {
-        const li = document.createElement("li");
-        li.textContent = chosen.clues[i];
-        clueList.appendChild(li);
+    if (count === 0) {
+      const li = document.createElement('li');
+      li.className = 'clue muted';
+      li.textContent = 'Click “Reveal next clue” to begin.';
+      clueList.appendChild(li);
     }
-}
+  }
 
-function revealNextClue() {
-    if (revealed < chosen.clues.length) {
-        revealed++;
-        renderClues();
-    }
-}
-
-function resetClues() {
-    revealed = 0;
-    renderClues();
-    if (feedback) feedback.textContent = "";
-}
-
-nextClueBtn?.addEventListener("click", revealNextClue);
-resetCluesBtn?.addEventListener("click", resetClues);
-
-// Show the first clue on load
-revealNextClue();
-
-// --- Guess submission ------------------------------------------------------
-submitGuessBtn?.addEventListener("click", async () => {
-    const guess = (input?.value || "").trim();
-    if (!guess) return;
-
-    const hash = await sha256Hex(guess);
-    if (hash === chosen.hash) {
-        if (feedback) {
-            feedback.textContent = "✅ Correct! Nicely done.";
-            feedback.style.color = "#09ff88";
-        }
-
-        // mark progress for this team
-        try {
-            const user = JSON.parse(localStorage.getItem("user"));
-            if (user && user.username) {
-                const key = `${user.username}_progress`;
-                const prog = JSON.parse(localStorage.getItem(key)) || {
-                    phishing: false, password: false, encryption: false, essential: false
-                };
-                prog.password = true;
-                localStorage.setItem(key, JSON.stringify(prog));
-            }
-        } catch { }
-
+  function revealNextClue() {
+    if (shown < CFG.clues.length) {
+      shown++;
+      renderClues(shown);
+      announce('Clue revealed');
+      // Move focus back to the guess box to encourage attempts
+      guessInput.focus();
     } else {
-        if (feedback) {
-            feedback.textContent = "❌ Not quite. Check the clues and try again.";
-            feedback.style.color = "#ff5555";
-        }
+      announce('All clues revealed');
     }
-});
+  }
 
-clearGuessBtn?.addEventListener("click", () => {
-    if (input) input.value = "";
-    if (feedback) feedback.textContent = "";
-    input?.focus();
-});
+  function resetClues() {
+    shown = 0;
+    renderClues(shown);
+    setFeedback('');
+    announce('Clues reset');
+  }
 
-// Enter to submit
-input?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
+  // ---------------- Feedback ----------------
+  function setFeedback(msg, ok = false) {
+    if (!feedbackEl) return;
+    feedbackEl.textContent = msg || '';
+    feedbackEl.classList.toggle('ok', !!ok);
+    feedbackEl.classList.toggle('warn', !ok && !!msg);
+    if (msg) announce(msg);
+  }
+
+  // ---------------- Validation ----------------
+  async function handleSubmit() {
+    const userGuess = normalize(guessInput.value);
+    if (!userGuess) {
+      setFeedback('Please enter your guess.');
+      guessInput.focus();
+      return;
+    }
+
+    // strict hash route (if provided)
+    if (EXPECTED_HASH) {
+      const h = await sha256Hex(userGuess);
+      if (h === EXPECTED_HASH) {
+        return success();
+      }
+      return fail();
+    }
+
+    // default: compare normalized strings
+    if (userGuess === normalize(CFG.answer)) {
+      return success();
+    }
+    return fail();
+  }
+
+  function success() {
+    setFeedback('✅ Correct! You earned a digit for the vault.', true);
+    markComplete(t0);
+    // Optional: lock inputs to avoid repeated submissions
+    guessInput.setAttribute('disabled', 'true');
+    submitBtn?.setAttribute('disabled', 'true');
+  }
+
+  function fail() {
+    setFeedback('❌ Not quite. Try another guess or reveal another clue.');
+  }
+
+  // ---------------- Wiring ----------------
+  document.addEventListener('DOMContentLoaded', () => {
+    renderClues(shown);
+
+    nextClueBtn   ?.addEventListener('click', revealNextClue);
+    resetCluesBtn ?.addEventListener('click', resetClues);
+
+    submitBtn     ?.addEventListener('click', handleSubmit);
+    clearBtn      ?.addEventListener('click', () => {
+      guessInput.value = '';
+      setFeedback('');
+      guessInput.focus();
+    });
+
+    // Enter key submits
+    guessInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        submitGuessBtn?.click();
-    }
-});
+        handleSubmit();
+      }
+    });
+  });
+
+})();

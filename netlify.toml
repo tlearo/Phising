@@ -1,0 +1,4 @@
+[build]
+  functions = "netlify/functions"
+
+# Optional: add headers here if not using a _headers file

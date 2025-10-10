@@ -1,110 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Cyber Escape Rooms — Admin dashboard with team progress, charts, and data sync." />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
+
+  <!-- Tight CSP for static hosting (local assets only) -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self';
+                 frame-ancestors 'none'">
+
+  <title>Cyber Escape Rooms — Admin Dashboard</title>
+
+  <!-- External files only; no inline CSS/JS per your request -->
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
-
-  <!-- Page-specific scripts inserted below -->
-    <title>Cyber Escape Rooms — Admin Dashboard</title>
-    <!-- Accessibility helpers & app logic -->
-    <script src="js/Chart.min.js" defer></script>
-    <script src="js/admin.js" defer></script>
+  <script src="js/Chart.min.js" defer></script>
+  <script src="js/admin.js" defer></script>
 </head>
 
-
 <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <!-- Global Header: classic bar -->
-    <header class="site-header site-header--bar" aria-label="Global">
-    <div class="site-header__inner">
-        <a class="brand" href="index.html">
-        <img src="assets/logo.svg" alt="" class="logo">
-        <span class="brand-name">Cyber Escape Rooms</span>
-        </a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-        <nav class="main-nav" aria-label="Primary">
+  <!-- Global Header: classic website bar -->
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.svg" alt="" class="logo" />
+        <span class="brand-name">Cyber Escape Rooms</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary">
         <a class="nav-link" href="javascript:history.back()">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
         <a class="nav-link" href="admin.html" aria-current="page">Admin</a>
-        <a class="nav-link" href="#" onclick="localStorage.clear(); location.href='index.html'">Logout</a>
-        </nav>
+        <a class="nav-link" href="#" id="logoutTop">Logout</a>
+      </nav>
     </div>
+  </header>
+
+  <!-- Wider container for dashboards -->
+  <main class="container container-xl admin-main" id="main" role="main" tabindex="-1">
+    <header class="game-header" aria-labelledby="adminTitle">
+      <h1 id="adminTitle" class="glow">Admin Dashboard</h1>
+      <p id="adminWelcome" class="mt-1" style="color:var(--muted)">Welcome, ADMIN!</p>
     </header>
-    <main class="container container-xl admin-main" id="main">
-        <header class="game-header">
-            <h1 class="glow">Admin Dashboard</h1>
-            <p id="adminWelcome" class="mt-1" style="color:var(--muted)">Welcome, Admin!</p>
-        </header>
-        <header class="site-header">
-            <div class="brand">
-                <img src="assets/logo.svg" alt="" class="logo" />
-                <h1 class="glow">Cyber Escape Rooms</h1>
-            </div>
-            <nav class="header-actions">
-                <button class="btn ghost" onclick="history.back()">Back</button>
-                <a class="btn" href="index.html">Home</a>
-            </nav>
-        </header>
 
-        <!-- Two-column layout on laptop; stacks on mobile -->
-        <section class="main-layout mt-2">
-            <!-- LEFT: Leaderboard & summary stats -->
-            <div class="left-panel">
-                <section class="card">
-                    <h2>Team Progress</h2>
-                    <div id="teamProgressList" class="team-grid mt-1"></div>
-                </section>
+    <!-- Fun escape-room overlays (hooks only; style/JS later) -->
+    <div id="confettiLayer" aria-hidden="true" class="hidden"></div>
+    <div id="spotlightLayer" aria-hidden="true" class="hidden"></div>
 
-                <section class="card mt-2">
-                    <h2>Stats &amp; Metrics</h2>
-                    <p id="averageTimeStats" class="mt-1"></p>
-                </section>
+    <!-- Admin Grid: left = teams/stats/controls, right = charts -->
+    <div class="admin-grid mt-2">
 
-                <div class="flex mt-2">
-                    <a href="index.html"><button class="btn ghost">Back to Login</button></a>
-                    <button class="btn" onclick="logout()">Logout</button>
-                </div>
-            </div>
-
-            <!-- RIGHT: Charts -->
-            <div class="right-panel">
-                <section class="card">
-                    <h2>Puzzle Completion Overview</h2>
-                    <canvas id="progressChart" width="400" height="220" class="mt-1"></canvas>
-                </section>
-
-                <section class="card mt-2">
-                    <h2>Avg Completion Time (seconds)</h2>
-                    <canvas id="timeChart" width="400" height="220" class="mt-1"></canvas>
-                </section>
-            </div>
+      <!-- LEFT column -->
+      <aside class="admin-left" aria-label="Team progress and controls">
+        <section class="card" aria-labelledby="teamProgressHeading">
+          <h2 id="teamProgressHeading">Team Progress</h2>
+          <div id="teamProgressList" class="team-grid mt-1" aria-live="polite"></div>
         </section>
 
-        <footer class="mt-3">
-            <p style="color:var(--muted)">Charts update based on each team’s local progress/timing data.</p>
-        </footer>
-    </main>
-      <!-- Global Footer -->
+        <section class="card mt-2" aria-labelledby="statsHeading">
+          <h2 id="statsHeading">Stats &amp; Metrics</h2>
+          <p id="averageTimeStats" class="mt-1"></p>
+          <ul class="mt-1" style="list-style: disc; padding-left: 1.25rem">
+            <li>Total teams detected: <strong id="statTotalTeams">—</strong></li>
+            <li>Overall puzzles completed: <strong id="statTotalCompleted">—</strong></li>
+            <li>Average completion time: <strong id="statAvgTime">—</strong></li>
+          </ul>
+        </section>
+
+        <!-- Data Sync (Netlify ↔ Neon) — hooks only -->
+        <section class="card mt-2" aria-labelledby="syncHeading">
+          <h2 id="syncHeading">Data Sync (Netlify ↔ Neon)</h2>
+          <p class="mt-1" style="color:var(--muted)">
+            Pull/push team progress to a Neon Postgres instance (wire-up later).
+          </p>
+          <div class="flex mt-1">
+            <button class="btn" id="pullNeonBtn" title="Fetch latest stats from Neon">Pull from Neon</button>
+            <button class="btn ghost" id="pushNeonBtn" title="Write local stats to Neon">Push to Neon</button>
+          </div>
+          <p id="syncStatus" class="mt-1" aria-live="polite" style="color:var(--muted)"></p>
+        </section>
+
+        <!-- Game Controls / Utilities -->
+        <section class="card mt-2" aria-labelledby="controlsHeading">
+          <h2 id="controlsHeading">Controls</h2>
+          <div class="flex mt-1">
+            <button class="btn" id="resetAllProgress">Reset All Teams</button>
+            <button class="btn ghost" id="toggleSpotlight">Toggle Spotlight</button>
+            <button class="btn ghost" id="triggerConfetti">Celebrate</button>
+          </div>
+          <div class="flex mt-1">
+            <a href="index.html"><button class="btn ghost">Back to Login</button></a>
+            <button class="btn" id="logoutBottom">Logout</button>
+          </div>
+        </section>
+      </aside>
+
+      <!-- RIGHT column: charts -->
+      <section class="admin-right admin-chart" aria-label="Charts">
+        <section class="card" aria-labelledby="chartProgressHeading">
+          <h2 id="chartProgressHeading">Puzzle Completion Overview</h2>
+          <canvas id="progressChart" width="400" height="220" class="mt-1" role="img"
+                  aria-label="Bar chart of puzzles completed per team"></canvas>
+        </section>
+
+        <section class="card mt-2" aria-labelledby="chartTimeHeading">
+          <h2 id="chartTimeHeading">Avg Completion Time (seconds)</h2>
+          <canvas id="timeChart" width="400" height="220" class="mt-1" role="img"
+                  aria-label="Bar chart of average completion times per team"></canvas>
+        </section>
+
+        <!-- Optional: notes panel for admins -->
+        <section class="card mt-2" aria-labelledby="notesHeading">
+          <h2 id="notesHeading">Admin Notes</h2>
+          <p class="mt-1" style="color:var(--muted)">Jot observations during a session (local only).</p>
+          <div class="field mt-1">
+            <label for="adminNotes">Notes</label>
+            <textarea id="adminNotes" rows="4" style="width:100%;"></textarea>
+          </div>
+          <div class="flex mt-1">
+            <button class="btn" id="saveNotesBtn">Save Notes</button>
+            <button class="btn ghost" id="clearNotesBtn">Clear</button>
+          </div>
+          <p id="notesStatus" class="mt-1" aria-live="polite" style="color:var(--muted)"></p>
+        </section>
+      </section>
+    </div>
+
+    <footer class="mt-3">
+      <p style="color:var(--muted)">Charts update based on each team’s local progress and timing data.</p>
+    </footer>
+  </main>
+
+  <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <nav class="footer-nav">
       <a href="index.html">Home</a>
       <span aria-hidden="true">•</span>
       <a href="game.html">Game</a>
       <span aria-hidden="true">•</span>
-      <a href="admin.html">Admin</a>
+      <a href="admin.html" aria-current="page">Admin</a>
     </nav>
     <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
   </footer>
 
+  <!-- Minimal inline handlers (no logic) -->
+  <script defer>
+    // wire header/footer logout to existing logout() if present
+    document.getElementById('logoutTop')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof logout === 'function') logout(); else { localStorage.clear(); location.href='index.html'; }
+    });
+    document.getElementById('logoutBottom')?.addEventListener('click', () => {
+      if (typeof logout === 'function') logout(); else { localStorage.clear(); location.href='index.html'; }
+    });
+  </script>
 </body>
-
-
 </html>

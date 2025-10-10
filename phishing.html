@@ -3,85 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Spot phishing indicators by marking the risky parts of real-looking emails." />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'">
-  <title><!-- REPLACE WITH PAGE TITLE --></title>
 
+  <!-- Tight CSP (local assets only) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self';
+                 frame-ancestors 'none'">
+
+  <title>Cyber Escape Rooms — Phishing Spotter</title>
+
+  <!-- External files only -->
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
-
-  <!-- Page-specific scripts inserted below -->
-    <title>Phishing Spotter</title>
-    <script src="js/phishing.js" defer></script>
+  <script src="js/phishing.js" defer></script>
 </head>
-<body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <!-- Global Header: classic bar -->
-    <header class="site-header site-header--bar" aria-label="Global">
-    <div class="site-header__inner">
-        <a class="brand" href="index.html">
-        <img src="assets/logo.svg" alt="" class="logo">
-        <span class="brand-name">Cyber Escape Rooms</span>
-        </a>
 
-        <nav class="main-nav" aria-label="Primary">
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Global Header: classic website bar -->
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <a class="brand" href="index.html">
+        <img src="assets/logo.svg" alt="" class="logo" />
+        <span class="brand-name">Cyber Escape Rooms</span>
+      </a>
+
+      <nav class="main-nav" aria-label="Primary">
         <a class="nav-link" href="javascript:history.back()">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
         <a class="nav-link" href="admin.html">Admin</a>
-        </nav>
+      </nav>
     </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Phishing Spotter</h1>
+      <p class="mt-1" style="color:var(--muted)">
+        Mark the risky parts of the email (domains, grammar, urgency, mismatched branding…). Find enough indicators to earn your digit.
+      </p>
     </header>
 
-    <main class="container">
-        <header class="game-header">
-            <h1 class="glow">Phishing Spotter</h1>
-            <p class="mt-1" style="color:var(--muted)">
-                Highlight suspicious parts of the email. Find at least <strong>3</strong> vulnerabilities to pass.
-            </p>
-        </header>
+    <!-- Layout: left tools, right stage -->
+    <section class="main-layout mt-2">
+      <!-- LEFT: toolbox -->
+      <aside class="card" aria-label="Toolbox">
+        <h2>Tools</h2>
 
-        <section class="main-layout mt-2">
-            <!-- LEFT: toolbox -->
-            <aside class="toolbox card">
-                <h2>Tools</h2>
-                <div class="tool-row mt-1">
-                    <button class="btn block tool-btn" data-tool="brush" onclick="setTool('brush')">Brush</button>
-                    <button class="btn block tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
-                </div>
-                <div class="tool-row mt-1">
-                    <button class="btn block" onclick="eraseAll()">Erase All</button>
-                    <button class="btn block" onclick="selectAll()">Auto-Highlight</button>
-                </div>
-                <div class="tool-row mt-1">
-                    <label for="brushSize" class="team-stat-label">Brush size</label>
-                    <input id="brushSize" type="range" min="4" max="30" value="10" />
-                </div>
-                <div class="tool-row mt-1">
-                    <button class="btn block" onclick="saveHighlights()">💾 Save</button>
-                    <button class="btn block" onclick="loadHighlights()">📂 Load</button>
-                </div>
-            </aside>
+        <div class="flex mt-1" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="btn tool-btn" data-tool="brush" onclick="setTool('brush')" aria-pressed="true">Brush</button>
+          <button class="btn ghost tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
+        </div>
 
+        <div class="field mt-2">
+          <label for="brushSize">Brush size</label>
+          <input id="brushSize" type="range" min="6" max="36" value="12" />
+        </div>
 
-            <!-- RIGHT: phishing image + canvas -->
-            <section class="card image-container">
-                <div class="image-stage" id="imageStage">
-                    <img src="assets/Picture1.png" alt="Phishing Email Example" id="phishingImage" />
-                    <canvas id="drawCanvas"></canvas>
-                </div>
+        <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="btn" onclick="saveHighlights()">Save</button>
+          <button class="btn ghost" onclick="loadHighlights()">Load</button>
+          <button class="btn warn" onclick="eraseAll()">Clear</button>
+          <button class="btn ghost" onclick="selectAll()">Auto-place</button>
+        </div>
 
-                <div id="feedbackPanel" class="mt-2">
-                    <button id="submitButton" class="btn" onclick="submitHighlights()">Submit</button>
-                    <p id="phishingFeedback" class="mt-1"></p>
-                    <p id="vulnerabilityCount" class="mt-1"></p>
-                </div>
-            </section>
-        </section>
-    </main>
-      <!-- Global Footer -->
+        <hr class="mt-2" />
+
+        <h2 class="mt-2">Examples</h2>
+        <!-- Plain links change the image source via the query string (phishing.js reads img.src for save keys).
+             You can switch examples by clicking a link; the page will reload with that image. -->
+        <nav class="thumb-nav mt-1" aria-label="Examples">
+          <ul class="link-list">
+            <li><a href="phishing.html?img=Picture1.png">Apple – “sound played”</a></li>
+            <li><a href="phishing.html?img=Picture2.png">iCloud – “storage full”</a></li>
+            <li><a href="phishing.html?img=Picture3.png">Amazon – “order confirmation”</a></li>
+            <li><a href="phishing.html?img=Picture4.png">SharePoint – “file shared”</a></li>
+          </ul>
+        </nav>
+
+        <p class="mt-2" id="vulnerabilityCount" aria-live="polite">You marked 0 out of 5 vulnerabilities.</p>
+
+        <div class="mt-2">
+          <a href="game.html" class="btn ghost">Back to Vault</a>
+          <a href="index.html" class="btn">Home</a>
+        </div>
+      </aside>
+
+      <!-- RIGHT: image stage -->
+      <section class="card" aria-label="Email example">
+        <h2>Canvas</h2>
+
+        <!-- Stage holds the image + drawing canvas (canvas sized to image) -->
+        <div id="imageStage" class="image-stage mt-1" style="position:relative; overflow:auto;">
+          <img id="phishingImage"
+               src="assets/Picture1.png"
+               alt="Email screenshot for phishing analysis"
+               referrerpolicy="no-referrer" />
+
+          <canvas id="drawCanvas"
+                  width="800" height="600"
+                  style="position:absolute; left:0; top:0; pointer-events:auto;"></canvas>
+        </div>
+
+        <div id="feedbackPanel" class="mt-2">
+          <button id="submitButton" class="btn" onclick="submitHighlights()">Submit</button>
+          <p id="phishingFeedback" class="mt-1" aria-live="polite"></p>
+        </div>
+      </section>
+    </section>
+
+    <footer class="mt-3">
+      <p style="color:var(--muted)">Tip: check sender domain, links, grammar/formatting, urgency, and mismatched branding.</p>
+    </footer>
+  </main>
+
+  <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <nav class="footer-nav">
       <a href="index.html">Home</a>
@@ -92,5 +138,55 @@
     </nav>
     <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
   </footer>
+
+  <!-- Hotspot map (percentages) for future strict marking.
+       This is inert JSON (no executable JS) and won’t run with CSP. -->
+  <script type="application/json" id="phishingHotspots">
+  {
+    "Picture1.png": [
+      { "xPct": 0.16, "yPct": 0.17, "label": "Sender address (lookalike domain appl3.co)" },
+      { "xPct": 0.50, "yPct": 0.44, "label": "Suspicious link region" },
+      { "xPct": 0.50, "yPct": 0.58, "label": "Branding inconsistency / spacing" },
+      { "xPct": 0.50, "yPct": 0.70, "label": "Footer fine print / spoofable" },
+      { "xPct": 0.08, "yPct": 0.14, "label": "Avatar/sender details panel" }
+    ],
+    "Picture2.png": [
+      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (icloudsecure.co)" },
+      { "xPct": 0.38, "yPct": 0.36, "label": "Grammar errors / inconsistent casing" },
+      { "xPct": 0.36, "yPct": 0.46, "label": "Urgency / scare wording" },
+      { "xPct": 0.33, "yPct": 0.56, "label": "Upgrade link (hover domain)" },
+      { "xPct": 0.52, "yPct": 0.82, "label": "Fake footer branding" }
+    ],
+    "Picture3.png": [
+      { "xPct": 0.18, "yPct": 0.18, "label": "Display name looks legit; verify domain" },
+      { "xPct": 0.46, "yPct": 0.30, "label": "Order details link (hover target)" },
+      { "xPct": 0.45, "yPct": 0.44, "label": "View/manage button (link domain)" },
+      { "xPct": 0.46, "yPct": 0.78, "label": "Image ad/CTA region (tracking link)" },
+      { "xPct": 0.10, "yPct": 0.90, "label": "Footer small print (spoof indicators)" }
+    ],
+    "Picture4.png": [
+      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (sharep0int.com with zero)" },
+      { "xPct": 0.48, "yPct": 0.44, "label": "Document name (generic bait)" },
+      { "xPct": 0.50, "yPct": 0.52, "label": "Green 'anyone with link' icon" },
+      { "xPct": 0.50, "yPct": 0.62, "label": "Big Open button (hover domain)" },
+      { "xPct": 0.12, "yPct": 0.90, "label": "Footer brand misspelling" }
+    ]
+  }
+  </script>
+
+  <!-- Fallback: set image from query string (?img=Picture2.png). Small inline script; if CSP blocks inline,
+       you can instead pre-generate separate pages per image or allow 'unsafe-inline' just for this page. -->
+  <script>
+    (function () {
+      try {
+        const params = new URLSearchParams(location.search);
+        const imgName = params.get('img');
+        if (imgName) {
+          const el = document.getElementById('phishingImage');
+          if (el) el.src = 'assets/' + imgName;
+        }
+      } catch (_) {}
+    })();
+  </script>
 </body>
 </html>
