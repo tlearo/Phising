@@ -178,3 +178,13 @@
     fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus
   };
 })();
+// Go back if there is history, otherwise go home
+function backOrHome(href='index.html'){
+  try {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = href;
+  } catch {
+    window.location.href = href;
+  }
+}
+window.utils.backOrHome = backOrHome;

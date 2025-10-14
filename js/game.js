@@ -21,6 +21,16 @@
 
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  
+  
+  function computeLockDigits(){
+  const d1 = Number(localStorage.getItem('lock_digit_phishing_total') || 0);
+  const d2 = Number(localStorage.getItem('lock_digit_caesar_shift') || 0);
+  const d3 = Number(localStorage.getItem('lock_digit_pw_clues') || 0);
+  const d4 = 8;
+  return [d1,d2,d3,d4];
+}
+
 
   function announce(msg){ try{ window.a11y?.announce?.(msg); }catch(_){} }
 
@@ -40,6 +50,7 @@
       return {};
     }
   }
+  
 
   // -------------------- Team display --------------------------------------
 
@@ -223,6 +234,12 @@
     ensureLogout();
     renderTeamName();
     renderProgress();
+    const how = document.getElementById('lockHow');
+    if (how){
+        const [a,b,c,d] = computeLockDigits();
+        how.textContent = `Hint: digits are → [# of phishing emails = ${a}] [Caesar shift = ${b}] [# clues used = ${c}] [Essential controls = ${d}]`;
+     }
+
     autoAdvanceWire();
 
     unlockBtn?.addEventListener('click', tryUnlock);

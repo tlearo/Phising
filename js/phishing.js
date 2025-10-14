@@ -39,8 +39,23 @@
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
   const REQUIRED_PCT = 0.75;
 
-  const DEFAULT_IMAGE = 'Picture1.png';
-  const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
+// ---------- Config ----------
+const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
+
+// Mark which images are truly phishing (used for digit #1 and auto-scoring)
+// Adjust if your ground truth differs:
+const IS_PHISHING = {
+  'Picture1.png': true,   // iCloud tone email (phishy)
+  'Picture2.png': true,   // iCloud full storage upsell (phishy)
+  'Picture3.png': false,  // Amazon order confirmation (legit example)
+  'Picture4.png': true    // SharePoint "file shared" lure (phishy)
+};
+
+// how many of the examples are phishing (for the lock digit #1)
+function countPhishingGroundTruth() {
+  return IMAGES.reduce((n, name) => n + (IS_PHISHING[name] ? 1 : 0), 0);
+}
+localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTruth()));
 
   // Tool state
   const state = {
@@ -379,30 +394,74 @@
   }
 
   // ---------- Submit ----------
-  function submitHighlights() {
-    recomputeFoundFromMask();
-    const total = state.hotspots.length;
-    const found = state.found.size;
-    const required = Math.ceil(total * REQUIRED_PCT);
+function submitHighlights() {
+  recomputeFoundFromMask();
+  const name = currentName();
+  const total = state.hotspots.length;
+  const found = state.found.size;
+  const required = Math.ceil(total * REQUIRED_PCT);
 
-    if (!total) {
-      setFeedback('No hotspot map for this image, so scoring is disabled.');
-      return;
-    }
+  const userClass = localStorage.getItem(`class_${name}`); // phish|legit|null
+  const truth = !!IS_PHISHING[name];
 
-    if (found >= required) {
-      setFeedback(`✅ Nice! You found ${found}/${total}.`, true);
-      markCompleteIfReady(); // will set global progress if not already
-    } else {
-      setFeedback(`❌ You found ${found}/${total}. Keep looking (need ≥ ${required}).`);
-    }
+  // Require a classification
+  if (!userClass) {
+    setFeedback('Choose “Is phishing” or “Isn’t phishing” first.');
+    return;
   }
+  // If they said phishing, require at least one highlight
+  if (userClass === 'phish' && !maskHasAnyInk()){
+    setFeedback('Mark at least one suspicious indicator (highlight).');
+    return;
+  }
+
+  // Score: classification must match truth, and if phishing, highlights must meet threshold.
+  const okClass = (userClass === 'phish') === truth;
+  const okHotspots = truth ? (found >= required) : true;
+
+  if (okClass && okHotspots) {
+    setFeedback('✅ Correct for this example.', true);
+
+    // Track per-image completion to gate the overall puzzle
+    localStorage.setItem(`phish_done_${name}`, '1');
+
+    // If all images are done, mark puzzle complete
+    const allDone = IMAGES.every(n => localStorage.getItem(`phish_done_${n}`) === '1');
+    if (allDone) {
+      markCompleteIfReady(); // also sets phishing flag
+    }
+
+    // Move to next image (cycle once)
+    if (state.index < IMAGES.length - 1) next();
+  } else {
+    setFeedback('❌ Not quite. Check your choice and highlights.');
+  }
+}
+
 
   window.saveHighlights  = saveHighlights;
   window.loadHighlights  = loadHighlights;
   window.eraseAll        = eraseAll;
   window.selectAll       = selectAll;
   window.submitHighlights= submitHighlights;
+
+  function maskHasAnyInk(){
+  const id = maskCtx.getImageData(0,0,maskCanvas.width,maskCanvas.height).data;
+  for (let i=3;i<id.length;i+=4){ if(id[i]>0) return true; }
+  return false;
+}
+
+function classify(isPhish){
+  const name = currentName();
+  localStorage.setItem(`class_${name}`, isPhish ? 'phish' : 'legit');
+
+  if (isPhish && !maskHasAnyInk()){
+    setFeedback('Mark at least one suspicious indicator before submitting.', false);
+    return;
+  }
+  setFeedback(isPhish ? 'Marked as phishing.' : 'Marked as not phishing.', true);
+}
+
 
   // ---------- Image lifecycle ----------
   function syncCanvasPositioning() {
@@ -457,6 +516,26 @@
     if (imgEl.complete && imgEl.naturalWidth) {
       onImageReady();
     }
+document.addEventListener('DOMContentLoaded', () => {
+  // existing init here…
+
+  // slideshow buttons
+  document.getElementById('prevImg')?.addEventListener('click', prev);
+  document.getElementById('nextImg')?.addEventListener('click', next);
+
+  // classify
+  document.getElementById('markPhish')?.addEventListener('click', ()=>classify(true));
+  document.getElementById('markLegit')?.addEventListener('click', ()=>classify(false));
+
+  // file ops
+  document.getElementById('saveBtn') ?.addEventListener('click', saveHighlights);
+  document.getElementById('loadBtn') ?.addEventListener('click', loadHighlights);
+  document.getElementById('clearBtn')?.addEventListener('click', eraseAll);
+  document.getElementById('submitBtn')?.addEventListener('click', submitHighlights);
+
+  // start at first image
+  goto(0);
+});
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
