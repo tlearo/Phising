@@ -71,6 +71,9 @@
 
   function renderProgress(){
     const p = readProgress();
+    const meta = typeof window.utils?.readProgressMeta === 'function'
+      ? window.utils.readProgressMeta()
+      : {};
     const done = computeCompleted(p);
 
     // Text
@@ -91,6 +94,20 @@
     // Journey steps
     PUZZLES.forEach(k => {
       const el = $(`#step-${k}`);
+      const btn = document.querySelector(`[data-puzzle="${k}"]`);
+      const entry = meta?.[k];
+      const percent = typeof entry?.percent === 'number'
+        ? Math.max(0, Math.min(100, Math.round(entry.percent)))
+        : (p[k] ? 100 : 0);
+
+      if (btn) {
+        const ratio = percent / 100;
+        btn.style.setProperty('--progress-ratio', ratio.toFixed(2));
+        btn.setAttribute('data-progress', String(percent));
+        btn.classList.toggle('is-complete', !!p[k]);
+        btn.setAttribute('aria-label', `${btn.textContent.trim()} — ${percent}% complete${p[k] ? ', solved' : ''}`);
+      }
+
       if (!el) return;
       if (p[k]) el.classList.add('done');
       else el.classList.remove('done');
@@ -297,10 +314,18 @@
     ensureLogout();
     renderTeamName();
     renderProgress();
+    const metaKey = `${user.username || 'team'}_progress_meta`;
+    const pKey = progressKey(user);
+    window.addEventListener('storage', (ev) => {
+      if (!ev.key) return;
+      if (ev.key === pKey || ev.key === metaKey) {
+        renderProgress();
+      }
+    });
     const how = document.getElementById('lockHow');
     if (how){
         const [a,b,c,d,e] = computeLockDigits();
-        how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary digit = ${e}`;
+        how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary product ones digit = ${e}`;
      }
 
     autoAdvanceWire();

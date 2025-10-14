@@ -18,7 +18,14 @@
   const HINT_COST = 5;
   const BONUS_HINT_COST = 8;
   const WRONG_COST = 5;
-  const SUCCESS_REWARD = 10;
+  const SPEED_REWARD_BANDS = [
+    { threshold: 45, points: 24, label: 'Lightning solve bonus' },
+    { threshold: 90, points: 18, label: 'Quick solve bonus' },
+    { threshold: 180, points: 14, label: 'Steady solve bonus' },
+    { threshold: Infinity, points: 10, label: 'Solved' }
+  ];
+  const GUESSES_PER_SECOND = 2e9; // 2 billion guesses/second for crack-time lab
+  const WEAK_SAMPLES = ['password', 'letmein', 'summer2024', 'dragon1', 'football!', 'iloveyou', 'qwerty123'];
 
   const SCENARIOS = [
     {
@@ -146,19 +153,38 @@
   }
 
   function formatCrackTime(seconds) {
-    if (!seconds || seconds <= 0) return '<1 second';
+    if (!Number.isFinite(seconds) || seconds === Infinity) {
+      return 'Centuries+';
+    }
+    if (!seconds || seconds <= 0.5) return '<1 second';
     if (seconds < 60) {
       const s = Math.round(seconds);
       return `${s} second${s === 1 ? '' : 's'}`;
     }
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    if (mins >= 60) {
-      const hours = Math.floor(mins / 60);
-      const remMins = mins % 60;
-      return `${hours}h ${remMins}m`;
+    const mins = seconds / 60;
+    if (mins < 60) {
+      const whole = Math.floor(mins);
+      const remainder = Math.round((mins - whole) * 60);
+      return remainder ? `${whole}m ${remainder}s` : `${whole} minutes`;
     }
-    return secs ? `${mins}m ${secs}s` : `${mins} minutes`;
+    const hours = mins / 60;
+    if (hours < 48) {
+      const whole = Math.floor(hours);
+      const remainder = Math.round((hours - whole) * 60);
+      return remainder ? `${whole}h ${remainder}m` : `${whole} hours`;
+    }
+    const days = hours / 24;
+    if (days < 365) {
+      const whole = Math.floor(days);
+      return `${whole} day${whole === 1 ? '' : 's'}`;
+    }
+    const years = days / 365;
+    if (years < 1000) {
+      const rounded = years >= 10 ? Math.round(years) : years.toFixed(1);
+      return `${rounded} year${Number(rounded) === 1 ? '' : 's'}`;
+    }
+    const millennia = years / 1000;
+    return `${millennia.toFixed(1)} millennia`;
   }
 
   function strengthScale(seconds) {
@@ -170,6 +196,50 @@
     if (seconds <= 900) return 7;
     if (seconds <= 1800) return 8;
     return 9;
+  }
+
+  function rewardForSolve(seconds) {
+    for (const band of SPEED_REWARD_BANDS) {
+      if (seconds <= band.threshold) return band;
+    }
+    return SPEED_REWARD_BANDS[SPEED_REWARD_BANDS.length - 1];
+  }
+
+  function estimateCrackSeconds(sample) {
+    if (!sample) return 0;
+    let pool = 0;
+    if (/[a-z]/.test(sample)) pool += 26;
+    if (/[A-Z]/.test(sample)) pool += 26;
+    if (/[0-9]/.test(sample)) pool += 10;
+    if (/[^a-zA-Z0-9]/.test(sample)) pool += 32;
+    if (pool === 0) pool = 26;
+    const length = sample.length;
+    const logSeconds = length * Math.log(pool) - Math.log(GUESSES_PER_SECOND);
+    if (logSeconds > 700) return Number.POSITIVE_INFINITY;
+    return Math.exp(logSeconds);
+  }
+
+  function generateWeakPassword() {
+    return WEAK_SAMPLES[Math.floor(Math.random() * WEAK_SAMPLES.length)];
+  }
+
+  function updateLab() {
+    if (!labCrackEl || !labDigitEl) return;
+    const sample = labInput?.value?.trim() || '';
+    if (!sample) {
+      labCrackEl.textContent = '—';
+      labDigitEl.textContent = '—';
+      labDigitEl.removeAttribute('title');
+      return;
+    }
+    const seconds = estimateCrackSeconds(sample);
+    const minutesRaw = seconds === Infinity ? Infinity : Math.round(seconds / 60);
+    const minutes = Math.max(1, Number.isFinite(minutesRaw) ? minutesRaw : 0);
+    labCrackEl.textContent = formatCrackTime(seconds);
+    const digit = crackSecondsToDigit(seconds);
+    const suffix = !Number.isFinite(minutesRaw) || minutes >= 10 ? '+' : '';
+    labDigitEl.textContent = `${digit}${suffix}`;
+    labDigitEl.setAttribute('title', `Rounded minutes: ${Number.isFinite(minutesRaw) ? minutes : 'Infinity'}`);
   }
 
   // current user + storage keys
@@ -193,6 +263,7 @@
     try { times = JSON.parse(localStorage.getItem(timesKey(u)) || '[]'); } catch { times = []; }
     times.push(secs);
     localStorage.setItem(timesKey(u), JSON.stringify(times));
+    return secs;
   }
 
   // ---------------- Elements ----------------
@@ -202,6 +273,7 @@
   const hintCostEl     = $('#pwHintCost');
   const scenarioLabelEl= $('#pwScenarioLabel');
   const crackTimeEl    = $('#pwCrackTime');
+  const vaultDigitEl   = $('#pwVaultDigit');
   const crackMeterEl   = $('#pwStrengthMeter');
   const bonusHintBtn   = $('#pwHintBtn');
   const bonusHintEl    = $('#pwBonusHint');
@@ -215,6 +287,10 @@
   const clearBtn       = $('#clearGuessBtn');
 
   const feedbackEl     = $('#pwFeedback');
+  const labInput       = $('#pwLabInput');
+  const labGenerateBtn = $('#pwLabGenerate');
+  const labCrackEl     = $('#pwLabCrack');
+  const labDigitEl     = $('#pwLabDigit');
 
   if (!clueList || !guessInput) return; // not on this page
 
@@ -241,6 +317,8 @@
   if (scenarioLabelEl) scenarioLabelEl.textContent = ACTIVE_SCENARIO.label;
   const crackTimeDisplay = formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
   if (crackTimeEl) crackTimeEl.textContent = crackTimeDisplay;
+  const vaultMinutes = Math.max(1, Math.round(ACTIVE_SCENARIO.crackSeconds / 60));
+  if (vaultDigitEl) vaultDigitEl.textContent = String(vaultMinutes);
   if (crackMeterEl) crackMeterEl.value = strengthScale(ACTIVE_SCENARIO.crackSeconds);
   if (!ACTIVE_SCENARIO.bonusHint && bonusHintBtn) {
     bonusHintBtn.setAttribute('disabled', 'true');
@@ -255,6 +333,26 @@
 
   // ---------------- Clues logic ----------------
   let shown = 0;
+  let progressPercent = 0;
+
+  function updateProgressPercent(amount, opts = {}) {
+    const setter = window.utils?.setProgressPercent;
+    if (typeof setter !== 'function') return;
+    const capped = Math.max(0, Math.min(100, Math.round(amount)));
+    if (opts.complete) {
+      progressPercent = 100;
+      setter('password', 100, { complete: true });
+      return;
+    }
+    if (opts.reset) {
+      progressPercent = capped;
+      setter('password', capped, { complete: false });
+      return;
+    }
+    if (capped <= progressPercent) return;
+    progressPercent = capped;
+    setter('password', progressPercent, { complete: false });
+  }
 
   function renderClues(count) {
     clueList.innerHTML = '';
@@ -270,6 +368,8 @@
       li.textContent = 'Click “Reveal next clue” to begin.';
       clueList.appendChild(li);
     }
+    const base = CFG.clues.length ? Math.round((count / CFG.clues.length) * 60) : 0;
+    updateProgressPercent(base, { reset: count === 0 });
   }
 
   function revealNextClue() {
@@ -328,13 +428,23 @@
   }
 
   function success() {
-    setFeedback('✅ Correct! You earned a digit for the vault.', true);
+    const solveSeconds = markComplete(t0);
+    const reward = rewardForSolve(solveSeconds);
+    if (points) {
+      points.add(reward.points, `${reward.label} (${formatCrackTime(solveSeconds)})`);
+    }
     localStorage.setItem('lock_digit_pw_clues', String(shown)); // backwards compatibility
     localStorage.setItem('lock_digit_pw_minutes', String(passwordDigit));
     localStorage.setItem('password_crack_time_display', crackTimeDisplay);
     localStorage.removeItem(SCENARIO_KEY);
-    points?.add(SUCCESS_REWARD, 'Password solved');
-    markComplete(t0);
+    const minutesText = vaultMinutes === 1 ? '1 minute' : `${vaultMinutes} minutes`;
+    const message = `Success! You cracked it in ${formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
+    setFeedback(message, true);
+    if (labInput) {
+      labInput.value = ACTIVE_SCENARIO.answer;
+      updateLab();
+    }
+    updateProgressPercent(100, { complete: true });
     // Optional: lock inputs to avoid repeated submissions
     guessInput.setAttribute('disabled', 'true');
     submitBtn?.setAttribute('disabled', 'true');
@@ -350,8 +460,8 @@
   document.addEventListener('DOMContentLoaded', () => {
     renderClues(shown);
 
-    nextClueBtn   ?.addEventListener('click', revealNextClue);
-    resetCluesBtn ?.addEventListener('click', resetClues);
+    nextClueBtn?.addEventListener('click', revealNextClue);
+    resetCluesBtn?.addEventListener('click', resetClues);
 
     bonusHintBtn?.addEventListener('click', () => {
       if (bonusHintUsed) {
@@ -367,14 +477,24 @@
       bonusHintUsed = true;
       bonusHintBtn.setAttribute('disabled', 'true');
       setFeedback('Bonus hint revealed.');
+      updateProgressPercent(70);
     });
 
-    submitBtn     ?.addEventListener('click', handleSubmit);
-    clearBtn      ?.addEventListener('click', () => {
+    submitBtn?.addEventListener('click', handleSubmit);
+    clearBtn?.addEventListener('click', () => {
       guessInput.value = '';
       setFeedback('');
       guessInput.focus();
     });
+
+    labInput?.addEventListener('input', updateLab);
+    labGenerateBtn?.addEventListener('click', () => {
+      if (!labInput) return;
+      labInput.value = generateWeakPassword();
+      updateLab();
+      labInput.focus();
+    });
+    updateLab();
 
     // Enter key submits
     guessInput?.addEventListener('keydown', (e) => {

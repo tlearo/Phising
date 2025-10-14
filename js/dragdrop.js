@@ -201,6 +201,12 @@
       roleBar.setAttribute('aria-valuemax', String(total));
       roleBar.setAttribute('aria-valuenow', String(correct));
     }
+
+    const setPercent = window.utils?.setProgressPercent;
+    if (typeof setPercent === 'function') {
+      const percent = total ? Math.round((correct / total) * 100) : 0;
+      setPercent('essential', percent, { complete: total > 0 && correct === total });
+    }
   }
 
   function countPlacedCorrectlySoft(){

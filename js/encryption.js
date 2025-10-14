@@ -106,7 +106,23 @@
 
   // ---------- State & rendering ----------
   let currentShift = 0;
+  let progressPercent = 0;
   const CIPHERTEXT = Caesar.encode(CFG.plain, CFG.shift); // what we show
+
+  function updateProgressPercent(amount, opts = {}) {
+    const setter = window.utils?.setProgressPercent;
+    if (typeof setter !== 'function') return;
+    const capped = Math.max(0, Math.min(100, Math.round(amount)));
+    const complete = !!opts.complete;
+    if (complete) {
+      progressPercent = 100;
+      setter('encryption', 100, { complete: true });
+      return;
+    }
+    if (capped <= progressPercent) return;
+    progressPercent = capped;
+    setter('encryption', progressPercent, { complete: false });
+  }
 
   function setCiphertext() {
     cipherEl.textContent = CIPHERTEXT;
@@ -122,6 +138,13 @@
       innerRing.setAttribute('aria-valuenow', String(currentShift));
     }
     updateLive();
+    if (currentShift !== 0) {
+      updateProgressPercent(20);
+    }
+    const normalizedShift = Caesar.normalize(CFG.shift);
+    if (currentShift === normalizedShift) {
+      updateProgressPercent(80);
+    }
   }
 
   function updateLive(){
@@ -173,6 +196,7 @@
     }
     announce('Encryption puzzle solved');
     markComplete();
+    updateProgressPercent(100, { complete: true });
   }
 
   function fail(){

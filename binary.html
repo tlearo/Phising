@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Decrypt the message using a Caesar wheel. Earn your digit for the final vault lock in Cyber Escape Rooms." />
+  <meta name="description" content="Work through XOR logic and binary multiplication to earn your vault digit in Cyber Escape Rooms." />
   <link rel="icon" href="assets/favicon.png" type="image/png" />
 
   <!-- Tight CSP (local assets only) -->
@@ -17,7 +17,7 @@
                  base-uri 'self';
                  frame-ancestors 'none'">
 
-  <title>Cyber Escape Rooms — Binary</title>
+  <title>Cyber Escape Rooms — Binary Lab</title>
 
   <!-- External files only -->
   <link rel="stylesheet" href="css/styles.css" />
@@ -29,46 +29,141 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Global Header: classic website bar -->
+  <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
       <a class="brand" href="index.html">
         <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-name">Cyber Escape Rooms</span>
+        <span class="brand-copy">
+          <span class="brand-name">Cyber Escape Rooms</span>
+          <span class="brand-tagline">Team-based security missions</span>
+        </span>
       </a>
 
-      <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
-        <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="game.html">Game</a>
-        <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
-      </nav>
+      <div class="header-actions">
+        <button class="nav-btn ghost" type="button" data-back="index.html">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="index.html">Home</a>
+          <a class="nav-link" href="game.html">Game</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
+        </nav>
+      </div>
     </div>
   </header>
-  <section class="card">
-  <h2>Binary Decoder</h2>
-  <p>Convert the binary to text. The last character (0-9) is your vault digit.</p>
-  <label>Binary input (8-bit groups):<br>
-    <textarea id="binInput" rows="4" placeholder="01001000 01100101 01101100 01101100 01101111"></textarea>
-  </label>
-  <div class="row g-1 mt-1">
-    <button id="binCheck" class="btn">Check</button>
-    <button id="binClear" class="btn ghost">Clear</button>
-  </div>
-  <p id="binFeedback" class="feedback"></p>
-</section>
 
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Binary Operations Lab</h1>
+      <p class="mt-1" style="color:var(--muted)">Compare bits with XOR, multiply the values, and capture the vault digit from the decimal result.</p>
+    </header>
+
+    <section class="binary-layout mt-2">
+      <section class="card binary-challenge" aria-labelledby="binaryChallengeHeading">
+        <h2 id="binaryChallengeHeading">Compute &amp; Combine</h2>
+        <p class="mt-1">Two binary strings power this lock. Complete the table to prove you understand both XOR and binary multiplication.</p>
+
+        <div class="binary-meta mt-2" role="group" aria-label="Given values">
+          <div class="meta-item">
+            <h3>Binary A</h3>
+            <code id="binaryA">1101</code>
+            <p class="meta-caption">decimal <strong id="decimalA">13</strong></p>
+          </div>
+          <div class="meta-item">
+            <h3>Binary B</h3>
+            <code id="binaryB">1011</code>
+            <p class="meta-caption">decimal <strong id="decimalB">11</strong></p>
+          </div>
+        </div>
+
+        <table class="binary-table mt-2" aria-describedby="binaryHint">
+          <thead>
+            <tr>
+              <th scope="col">Step</th>
+              <th scope="col">Binary Result</th>
+              <th scope="col">Decimal Result</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Binary A</th>
+              <td><code data-label="Binary A">1101</code></td>
+              <td><span data-label="Decimal A">13</span></td>
+              <td aria-hidden="true">Given</td>
+            </tr>
+            <tr>
+              <th scope="row">Binary B</th>
+              <td><code data-label="Binary B">1011</code></td>
+              <td><span data-label="Decimal B">11</span></td>
+              <td aria-hidden="true">Given</td>
+            </tr>
+            <tr class="answer-row" data-step="xor">
+              <th scope="row">A XOR B</th>
+              <td>
+                <input id="xorBin" name="xorBin" type="text" inputmode="numeric" autocomplete="off"
+                       placeholder="0000" aria-label="Binary XOR of A and B" />
+              </td>
+              <td>
+                <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off"
+                       placeholder="0" aria-label="Decimal XOR of A and B" />
+              </td>
+              <td><span class="status-pill" id="xorStatus" aria-live="polite">Pending</span></td>
+            </tr>
+            <tr class="answer-row" data-step="product">
+              <th scope="row">A × B</th>
+              <td>
+                <input id="productBin" name="productBin" type="text" inputmode="numeric" autocomplete="off"
+                       placeholder="00000000" aria-label="Binary product of A multiplied by B" />
+              </td>
+              <td>
+                <input id="productDec" name="productDec" type="number" inputmode="numeric" autocomplete="off"
+                       placeholder="0" aria-label="Decimal product of A multiplied by B" />
+              </td>
+              <td><span class="status-pill" id="productStatus" aria-live="polite">Pending</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. Multiplication works just like in decimal—add the shifted partial products.</p>
+
+        <div class="row g-1 mt-2">
+          <button class="btn" type="button" id="binaryCheck">Check answers</button>
+          <button class="btn ghost" type="button" id="binaryReset">Reset</button>
+        </div>
+
+        <p class="feedback mt-2" id="binaryFeedback" aria-live="polite"></p>
+        <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit is the ones place of the decimal product.</p>
+      </section>
+
+      <section class="card binary-xor" aria-labelledby="xorHeading">
+        <h2 id="xorHeading">Why XOR Matters</h2>
+        <p class="mt-1">Exclusive OR (XOR) is the Swiss army knife of bitwise operations:</p>
+        <ul class="mt-1">
+          <li>It flags every bit-flip between two values, making differences easy to spot.</li>
+          <li>It powers parity checks and error detection in network packets.</li>
+          <li>It forms the backbone of many stream ciphers and one-time pads.</li>
+        </ul>
+        <p class="mt-1">In this lab, XOR warms you up before the multiplication so you understand how the numbers interact. Once you nail the product, convert it to decimal and capture the ones digit for the vault.</p>
+      </section>
+    </section>
+  </main>
 
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
-    <nav class="footer-nav">
-      <a href="index.html">Home</a>
-      <span aria-hidden="true">•</span>
-      <a href="game.html">Game</a>
-      <span aria-hidden="true">•</span>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    <div class="footer-inner">
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <span aria-hidden="true">•</span>
+        <a href="game.html">Game</a>
+        <span aria-hidden="true">•</span>
+        <a href="admin.html">Admin</a>
+      </nav>
+      <p class="footer-note">Solve the XOR, multiply the binaries, and the vault digit reveals itself.</p>
+      <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    </div>
   </footer>
 </body>
 </html>

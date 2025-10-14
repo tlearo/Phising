@@ -16,8 +16,14 @@
 
   const PUZZLES = ['phishing', 'password', 'encryption', 'essential'];
 
+  const SCORE_BASE = 100;
+  const SCORE_LOG_LIMIT = 60;
+
   const qs = (sel, root = document) => root.querySelector(sel);
   const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  const scoreKey = (team) => `${team}_score`;
+  const scoreLogKey = (team) => `${team}_score_log`;
 
   function getJSON(key, fallback) {
     try {
@@ -57,6 +63,73 @@
     }
   }
 
+  // ---------- Points helpers ----------------------------------------------
+
+  function readScore(team) {
+    const raw = localStorage.getItem(scoreKey(team));
+    if (raw == null || Number.isNaN(Number(raw))) {
+      localStorage.setItem(scoreKey(team), String(SCORE_BASE));
+      return SCORE_BASE;
+    }
+    return Math.max(0, Math.round(Number(raw)));
+  }
+
+  function readScoreLog(team) {
+    try {
+      const log = JSON.parse(localStorage.getItem(scoreLogKey(team)) || '[]');
+      return Array.isArray(log) ? log : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function persistScore(team, total, delta, reason) {
+    const entry = {
+      delta,
+      reason: reason || (delta >= 0 ? 'Adjustment' : 'Deduction'),
+      at: Date.now(),
+      total
+    };
+    let log = readScoreLog(team);
+    log.push(entry);
+    if (log.length > SCORE_LOG_LIMIT) {
+      log = log.slice(log.length - SCORE_LOG_LIMIT);
+    }
+    localStorage.setItem(scoreLogKey(team), JSON.stringify(log));
+    localStorage.setItem(scoreKey(team), String(total));
+    return { total, delta, log };
+  }
+
+  function adjustTeamScore(team, delta, reason) {
+    const adj = Math.round(Number(delta) || 0);
+    const current = readScore(team);
+    const updated = Math.max(0, current + adj);
+    return persistScore(team, updated, adj, reason || 'Manual adjustment');
+  }
+
+  function setTeamScore(team, total, reason) {
+    const target = Math.max(0, Math.round(Number(total) || 0));
+    const current = readScore(team);
+    const delta = target - current;
+    return persistScore(team, target, delta, reason || 'Set total');
+  }
+
+  function resetTeamScore(team, reason = 'Log cleared') {
+    const entry = {
+      delta: 0,
+      reason,
+      at: Date.now(),
+      total: SCORE_BASE
+    };
+    localStorage.setItem(scoreKey(team), String(SCORE_BASE));
+    localStorage.setItem(scoreLogKey(team), JSON.stringify([entry]));
+    return { total: SCORE_BASE, delta: 0, log: [entry] };
+  }
+
+  let teamRows = [];
+  let activePointsTeam = null;
+  let pointsModalChart = null;
+
   // ---------- Auth guard ---------------------------------------------------
 
   function guardAdmin() {
@@ -85,8 +158,25 @@
 
       const completed = PUZZLES.reduce((acc, p) => acc + (progress[p] ? 1 : 0), 0);
       const avgTime = average(times);
+      const totalTime = Array.isArray(times)
+        ? times.filter(n => typeof n === 'number' && isFinite(n)).reduce((a, b) => a + b, 0)
+        : 0;
+      const score = readScore(team);
+      const scoreLog = readScoreLog(team);
+      const progressPercent = Math.round((completed / PUZZLES.length) * 100);
 
-      rows.push({ team, progress, times, completed, avgTime });
+      rows.push({
+        team,
+        progress,
+        times,
+        completed,
+        avgTime,
+        totalTime,
+        score,
+        scoreLog,
+        progressPercent,
+        lastLog: scoreLog[scoreLog.length - 1] || null
+      });
     });
 
     return rows;
@@ -104,34 +194,104 @@
     if (!listEl) return;
     listEl.innerHTML = '';
 
-    rows.forEach(({ team, progress, completed, avgTime }) => {
-      const card = document.createElement('div');
-      card.className = 'team-card';
+    rows.forEach(row => {
+      const { team, progress, completed, avgTime, totalTime, score, progressPercent, lastLog } = row;
+      const puzzleCount = PUZZLES.length;
+      const percent = Math.max(0, Math.min(100, Number(progressPercent) || 0));
 
-      // Title
+      const card = document.createElement('article');
+      card.className = 'team-card';
+      card.dataset.team = team;
+
+      // Header with team name + points / action
+      const header = document.createElement('div');
+      header.className = 'team-card__header';
+
+      const titleWrap = document.createElement('div');
+      titleWrap.className = 'team-card__title';
+
       const h3 = document.createElement('h3');
       h3.textContent = team.toUpperCase();
-      card.appendChild(h3);
 
-      // Badges for each puzzle
+      const subtitle = document.createElement('small');
+      subtitle.textContent = `${completed}/${puzzleCount} puzzles`;
+
+      titleWrap.append(h3, subtitle);
+
+      const actionWrap = document.createElement('div');
+      actionWrap.className = 'team-card__action';
+
+      const pointsSpan = document.createElement('span');
+      pointsSpan.className = 'team-card__points';
+      pointsSpan.textContent = String(score).padStart(3, '0');
+      pointsSpan.setAttribute('aria-label', `Score ${score}`);
+
+      const viewBtn = document.createElement('button');
+      viewBtn.className = 'btn ghost sm';
+      viewBtn.type = 'button';
+      viewBtn.dataset.team = team;
+      viewBtn.textContent = 'Points log';
+      viewBtn.setAttribute('aria-label', `View ${team.toUpperCase()} points log`);
+      viewBtn.addEventListener('click', () => openPointsModal(team));
+
+      actionWrap.append(pointsSpan, viewBtn);
+      header.append(titleWrap, actionWrap);
+      card.appendChild(header);
+
+      // Progress bar
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'team-card__progress';
+
+      const track = document.createElement('div');
+      track.className = 'team-card__progress-track';
+
+      const fill = document.createElement('div');
+      fill.className = 'team-card__progress-fill';
+      fill.style.setProperty('--progress', `${percent}%`);
+      fill.style.width = `${percent}%`;
+      track.appendChild(fill);
+
+      const progressInfo = document.createElement('span');
+      progressInfo.className = 'muted';
+      progressInfo.textContent = `${completed}/${puzzleCount} puzzles complete`;
+
+      progressWrap.append(track, progressInfo);
+      card.appendChild(progressWrap);
+
+      // Meta stats
+      const meta = document.createElement('div');
+      meta.className = 'team-card__meta';
+
+      const avgSpan = document.createElement('span');
+      avgSpan.innerHTML = `Avg time <strong>${fmtSecs(avgTime)}</strong>`;
+
+      const totalSpan = document.createElement('span');
+      totalSpan.innerHTML = `Total time <strong>${fmtSecs(totalTime)}</strong>`;
+
+      const lastSpan = document.createElement('span');
+      if (lastLog) {
+        const change = lastLog.delta || 0;
+        const sign = change >= 0 ? '+' : '−';
+        const abs = Math.abs(change);
+        lastSpan.innerHTML = `Last change <strong>${sign}${abs}</strong>`;
+      } else {
+        lastSpan.textContent = 'No score changes yet';
+      }
+
+      meta.append(avgSpan, totalSpan, lastSpan);
+      card.appendChild(meta);
+
       const badges = document.createElement('div');
-      badges.className = 'puzzle-badges';
+      badges.className = 'team-card__badges';
 
       PUZZLES.forEach(p => {
-        const b = document.createElement('span');
-        b.className = `badge ${progress[p] ? 'ok' : 'dim'}`;
-        b.textContent = p.charAt(0).toUpperCase() + p.slice(1);
-        badges.appendChild(b);
+        const badge = document.createElement('span');
+        badge.className = `badge ${progress[p] ? 'ok' : 'dim'}`;
+        badge.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+        badges.appendChild(badge);
       });
 
       card.appendChild(badges);
-
-      // Stats row
-      const meta = document.createElement('p');
-      meta.className = 'muted mt-1';
-      meta.innerHTML = `Puzzles: <strong>${completed}/4</strong> &nbsp;•&nbsp; Avg Time: <strong>${fmtSecs(avgTime)}</strong>`;
-      card.appendChild(meta);
-
       listEl.appendChild(card);
     });
   }
@@ -159,14 +319,336 @@
     const totalTeams = rows.length;
     const totalCompleted = rows.reduce((a, r) => a + r.completed, 0);
     const overallAvg = average(rows.map(r => r.avgTime).filter(Boolean));
+    const averageScore = rows.reduce((acc, r) => acc + (r.score || 0), 0) / (rows.length || 1);
 
     if (statsEl) {
-      statsEl.textContent = `Teams: ${totalTeams} • Avg puzzles completed/team: ${(totalCompleted / totalTeams).toFixed(2)} • Overall avg time: ${fmtSecs(overallAvg)}`;
+      statsEl.textContent = `Teams: ${totalTeams} • Avg puzzles completed/team: ${(totalCompleted / totalTeams).toFixed(2)} • Overall avg time: ${fmtSecs(overallAvg)} • Avg score: ${Math.round(averageScore)} pts`;
     }
     if (statTotalTeams) statTotalTeams.textContent = String(totalTeams);
     if (statTotalCompleted) statTotalCompleted.textContent = String(totalCompleted);
     if (statAvgTime) statAvgTime.textContent = fmtSecs(overallAvg);
     renderLockDigits();
+  }
+
+  function renderPodium(rows) {
+    const list = qs('#adminPodiumList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    const sorted = rows
+      .slice()
+      .sort((a, b) => {
+        const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        const completionDiff = (b.completed ?? 0) - (a.completed ?? 0);
+        if (completionDiff !== 0) return completionDiff;
+        const aAvg = Number.isFinite(a.avgTime) ? a.avgTime : Infinity;
+        const bAvg = Number.isFinite(b.avgTime) ? b.avgTime : Infinity;
+        return aAvg - bAvg;
+      })
+      .slice(0, 3);
+
+    if (!sorted.length) {
+      const empty = document.createElement('li');
+      empty.className = 'admin-podium__empty';
+      empty.textContent = 'Play a round to populate the podium.';
+      list.appendChild(empty);
+      return;
+    }
+
+    sorted.forEach((row, index) => {
+      const rank = index + 1;
+      const li = document.createElement('li');
+      li.className = 'admin-podium__item';
+      li.dataset.rank = String(rank);
+
+      const column = document.createElement('div');
+      column.className = 'admin-podium__column';
+
+      const rankEl = document.createElement('span');
+      rankEl.className = 'admin-podium__rank';
+      rankEl.textContent = `#${rank}`;
+
+      const teamEl = document.createElement('strong');
+      teamEl.className = 'admin-podium__team';
+      teamEl.textContent = row.team.toUpperCase();
+
+      const scoreEl = document.createElement('span');
+      scoreEl.className = 'admin-podium__score';
+      scoreEl.textContent = `${Math.round(row.score ?? 0)} pts`;
+
+      const metaEl = document.createElement('span');
+      metaEl.className = 'admin-podium__meta';
+      const avgDisplay = fmtSecs(row.avgTime);
+      metaEl.textContent = `${row.completed}/4 puzzles • Avg ${avgDisplay}`;
+
+      column.append(rankEl, teamEl, scoreEl, metaEl);
+      li.appendChild(column);
+      list.appendChild(li);
+    });
+  }
+
+  // ---------- Points modal -------------------------------------------------
+
+  const modalRefs = {
+    wrapper: null,
+    title: null,
+    subtitle: null,
+    chart: null,
+    log: null,
+    form: null,
+    amount: null,
+    totalInput: null,
+    reason: null,
+    feedback: null,
+    resetBtn: null
+  };
+
+  function sanitizeScoreLog(team, log = []) {
+    const sorted = log.slice().sort((a, b) => (a?.at || 0) - (b?.at || 0));
+    const sanitized = [];
+    sorted.forEach((entry, idx) => {
+      const delta = Math.round(Number(entry?.delta) || 0);
+      let total = Number(entry?.total);
+      if (!Number.isFinite(total)) {
+        if (idx === 0) {
+          total = readScore(team);
+        } else {
+          total = sanitized[idx - 1].total + delta;
+        }
+      }
+      sanitized.push({
+        delta,
+        total: Math.max(0, Math.round(total)),
+        reason: entry?.reason || (delta >= 0 ? 'Adjustment' : 'Deduction'),
+        at: entry?.at || Date.now()
+      });
+    });
+    if (!sanitized.length) {
+      sanitized.push({
+        delta: 0,
+        total: readScore(team),
+        reason: 'No adjustments yet',
+        at: Date.now()
+      });
+    }
+    return sanitized;
+  }
+
+  function formatLogTime(ts) {
+    const date = new Date(ts);
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const day = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `${day} ${time}`;
+  }
+
+  function renderPointsLogTable(container, team, log) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!log.length) {
+      container.textContent = 'No adjustments recorded yet.';
+      return;
+    }
+
+    const table = document.createElement('table');
+
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    ['When', 'Change', 'Reason', 'Total'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    log.slice().reverse().forEach(entry => {
+      const tr = document.createElement('tr');
+      const delta = entry.delta || 0;
+      const sign = delta >= 0 ? '+' : '−';
+      const abs = Math.abs(delta);
+
+      const when = document.createElement('td');
+      when.textContent = formatLogTime(entry.at);
+
+      const change = document.createElement('td');
+      change.textContent = `${sign}${abs}`;
+
+      const reason = document.createElement('td');
+      reason.textContent = entry.reason || (delta >= 0 ? 'Adjustment' : 'Deduction');
+
+      const total = document.createElement('td');
+      total.textContent = String(entry.total);
+
+      tr.append(when, change, reason, total);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    container.appendChild(table);
+    container.setAttribute('aria-label', `${team} points log`);
+  }
+
+  function renderPointsChart(canvas, log) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    if (pointsModalChart) {
+      pointsModalChart.destroy();
+      pointsModalChart = null;
+    }
+    const sorted = log.slice().sort((a, b) => (a.at || 0) - (b.at || 0));
+    const labels = sorted.map(entry => formatLogTime(entry.at));
+    const totals = sorted.map(entry => entry.total);
+
+    pointsModalChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Total points',
+            data: totals,
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88,166,255,0.18)',
+            tension: 0.35,
+            fill: true,
+            pointRadius: 3,
+            pointBackgroundColor: '#58a6ff'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  function hydratePointsModal(row) {
+    const { wrapper, title, subtitle, chart, log, amount, totalInput, reason, feedback } = modalRefs;
+    if (!wrapper || !row) return;
+    const { team, score, scoreLog } = row;
+    const friendlyTeam = team.toUpperCase();
+    const entries = sanitizeScoreLog(team, scoreLog);
+
+    if (title) title.textContent = `${friendlyTeam} — Points Log`;
+    if (subtitle) subtitle.textContent = `Current total: ${score} pts • Entries: ${entries.length}`;
+    renderPointsLogTable(log, friendlyTeam, entries);
+    renderPointsChart(chart, entries);
+
+    if (amount) amount.value = '0';
+    if (totalInput) totalInput.value = '';
+    if (reason) reason.value = '';
+    if (feedback) feedback.textContent = '';
+  }
+
+  function openPointsModal(team) {
+    if (!modalRefs.wrapper) return;
+    activePointsTeam = team;
+    const data = teamRows.find(r => r.team === team);
+    if (!data) return;
+    hydratePointsModal(data);
+    modalRefs.wrapper.classList.add('is-open');
+    modalRefs.wrapper.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    const closeBtn = modalRefs.wrapper.querySelector('.admin-modal__close');
+    if (closeBtn) {
+      if (window.utils?.safeFocus) window.utils.safeFocus(closeBtn);
+      else closeBtn.focus();
+    }
+  }
+
+  function closePointsModal() {
+    if (!modalRefs.wrapper) return;
+    modalRefs.wrapper.classList.remove('is-open');
+    modalRefs.wrapper.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    activePointsTeam = null;
+  }
+
+  function onPointsAdjustSubmit(ev) {
+    ev.preventDefault();
+    if (!activePointsTeam) return;
+    const amountVal = Number(modalRefs.amount?.value || 0);
+    const totalValRaw = modalRefs.totalInput?.value?.trim() || '';
+    const reasonVal = modalRefs.reason?.value?.trim() || '';
+    if (!reasonVal) {
+      if (modalRefs.feedback) modalRefs.feedback.textContent = 'Provide a reason for the adjustment.';
+      return;
+    }
+    if (!totalValRaw && amountVal === 0) {
+      if (modalRefs.feedback) modalRefs.feedback.textContent = 'Enter a delta or set a new total.';
+      return;
+    }
+
+    try {
+      if (totalValRaw) {
+        setTeamScore(activePointsTeam, Number(totalValRaw), reasonVal);
+      } else {
+        adjustTeamScore(activePointsTeam, amountVal, reasonVal);
+      }
+      if (modalRefs.feedback) {
+        const freshScore = readScore(activePointsTeam);
+        modalRefs.feedback.textContent = `Saved. New total: ${freshScore} pts.`;
+      }
+      announce(`Updated ${activePointsTeam} score.`);
+      refreshAll();
+      const updatedRow = teamRows.find(r => r.team === activePointsTeam);
+      hydratePointsModal(updatedRow);
+    } catch (err) {
+      if (modalRefs.feedback) modalRefs.feedback.textContent = `Adjustment failed: ${err.message}`;
+    }
+  }
+
+  function onPointsResetClick() {
+    if (!activePointsTeam) return;
+    const confirmed = window.confirm(`Reset ${activePointsTeam.toUpperCase()} points log to base?`);
+    if (!confirmed) return;
+    resetTeamScore(activePointsTeam, 'Log reset by admin');
+    announce(`Reset ${activePointsTeam} points log.`);
+    refreshAll();
+    const updatedRow = teamRows.find(r => r.team === activePointsTeam);
+    hydratePointsModal(updatedRow);
+    if (modalRefs.feedback) modalRefs.feedback.textContent = 'Log cleared and score reset to 100.';
+  }
+
+  function setupPointsModal() {
+    modalRefs.wrapper = qs('#pointsModal');
+    if (!modalRefs.wrapper) return;
+    modalRefs.title = qs('#pointsModalTitle');
+    modalRefs.subtitle = qs('#pointsModalSubtitle');
+    modalRefs.chart = qs('#pointsModalChart');
+    modalRefs.log = qs('#pointsModalLog');
+    modalRefs.form = qs('#pointsAdjustForm');
+    modalRefs.amount = qs('#pointsAdjustAmount');
+    modalRefs.totalInput = qs('#pointsSetTotal');
+    modalRefs.reason = qs('#pointsAdjustReason');
+    modalRefs.feedback = qs('#pointsAdjustFeedback');
+    modalRefs.resetBtn = qs('#pointsResetBtn');
+
+    modalRefs.wrapper.querySelectorAll('[data-close-modal]').forEach(btn => {
+      btn.addEventListener('click', closePointsModal);
+    });
+
+    modalRefs.form?.addEventListener('submit', onPointsAdjustSubmit);
+    modalRefs.resetBtn?.addEventListener('click', onPointsResetClick);
+
+    modalRefs.wrapper.addEventListener('click', (ev) => {
+      if (ev.target === modalRefs.wrapper) closePointsModal();
+    });
+
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && modalRefs.wrapper.classList.contains('is-open')) {
+        closePointsModal();
+      }
+    });
   }
 
   // ---------- Charts -------------------------------------------------------
@@ -274,6 +756,7 @@
       TEAMS.forEach(t => {
         localStorage.removeItem(`${t}_progress`);
         localStorage.removeItem(`${t}_times`);
+        resetTeamScore(t, 'Reset via admin');
       });
       localStorage.removeItem('lock_digit_pw_clues');
       announce('All team progress reset.');
@@ -287,6 +770,7 @@
 
     qs('#triggerConfetti')?.addEventListener('click', () => {
       if (!confettiLayer) return;
+      renderPodium(teamRows);
       confettiLayer.classList.add('is-active');
       confettiLayer.setAttribute('aria-hidden', 'false');
       announce('Celebration!');
@@ -294,7 +778,7 @@
       setTimeout(() => {
         confettiLayer.classList.remove('is-active');
         confettiLayer.setAttribute('aria-hidden', 'true');
-      }, 2800);
+      }, 3600);
     });
 
     qs('#toggleSpotlight')?.addEventListener('click', () => {
@@ -408,9 +892,14 @@
 
   function refreshAll() {
     const rows = loadTeamData();
+    teamRows = rows;
     renderTeamCards(rows);
     renderStats(rows);
     drawCharts(rows);
+    if (activePointsTeam && modalRefs.wrapper?.classList.contains('is-open')) {
+      const row = teamRows.find(r => r.team === activePointsTeam);
+      if (row) hydratePointsModal(row);
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -418,6 +907,7 @@
     if (!user) return;
 
     renderWelcome(user);
+    setupPointsModal();
     refreshAll();
     wireChartTabs();
     wireControls(refreshAll);

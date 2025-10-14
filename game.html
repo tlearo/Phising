@@ -29,21 +29,29 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Global Header: classic website bar -->
+  <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
       <a class="brand" href="index.html">
         <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-name">Cyber Escape Rooms</span>
+        <span class="brand-copy">
+          <span class="brand-name">Cyber Escape Rooms</span>
+          <span class="brand-tagline">Team-based security missions</span>
+        </span>
       </a>
 
-      <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
-        <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="game.html" aria-current="page">Game</a>
-        <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
-        <a class="nav-link" href="#" id="logoutTop">Logout</a>
-      </nav>
+      <div class="header-actions">
+        <button class="nav-btn ghost" type="button" data-back="index.html">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="index.html">Home</a>
+          <a class="nav-link" href="game.html" aria-current="page">Game</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
+        </nav>
+        <button class="nav-btn alert" type="button" id="logoutTop">Logout</button>
+      </div>
     </div>
   </header>
 
@@ -53,92 +61,91 @@
       <p class="mt-1" style="color:var(--muted)">Welcome, <span id="teamName">TEAM</span>!</p>
     </header>
 
-    <!-- Two-column main layout -->
-    <section class="main-layout mt-2">
-      <!-- LEFT: puzzle navigation + progress -->
-      <aside class="left-panel">
-        <section class="card puzzle-nav">
-          <h2>Puzzles</h2>
-          <div class="buttons mt-1">
-            <a class="btn" href="phishing.html">
-              Phishing Spotter <span aria-hidden="true">→</span>
-            </a>
-            <a class="btn" href="password.html">
-              Password Puzzle <span aria-hidden="true">→</span>
-            </a>
-            <a class="btn" href="encryption.html">
-              Encryption <span aria-hidden="true">→</span>
-            </a>
-            <a class="btn" href="essential.html">
-              Essential Eight <span aria-hidden="true">→</span>
-            </a>
-            <a class="btn" href="binary.html">
-              Binary Decoder <span aria-hidden="true">→</span>
-            </a>
-          </div>
-        </section>
+    <!-- Mission layout -->
+    <section class="dashboard-grid mt-2" aria-label="Cyber mission layout">
+      <section class="card mission-card" aria-labelledby="missionHeading">
+        <header class="mission-card__header">
+          <h2 id="missionHeading">Mission Hub</h2>
+          <p class="muted">Launch puzzles, monitor progress, and stay ahead of rival crews.</p>
+        </header>
 
-        <section class="card mt-2 score-card">
-          <h2>Team Points</h2>
-          <p class="muted mt-1">Hints and mistakes adjust your total. Keep it high for bragging rights.</p>
-          <div class="score-display">
-            <span id="scoreTotal">000</span>
-            <button class="btn ghost sm" type="button" id="scoreLogBtn">View log</button>
-          </div>
-          <div id="scoreLog" class="score-log" hidden></div>
-        </section>
-
-        <!-- Overall progress -->
-        <section class="card mt-2">
-          <h2>Progress</h2>
-          <p class="mt-1"><span id="progressStatus">0/5 puzzles completed</span></p>
-
-          <!-- Visual progress bar -->
-          <div class="progress-bar mt-2" role="progressbar" aria-label="Overall progress"
-               aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
-            <div id="progressFill"></div>
-          </div>
-
-          <!-- Journey steps (IDs used by game.js to mark done) -->
-          <div class="journey-map mt-2">
-            <h3>Your Journey</h3>
-            <div class="journey-steps" aria-label="Journey progress">
-              <div class="step" id="step-phishing">1. Phishing</div>
-              <div class="arrow">➜</div>
-              <div class="step" id="step-password">2. Password</div>
-              <div class="arrow">➜</div>
-              <div class="step" id="step-encryption">3. Encryption</div>
-              <div class="arrow">➜</div>
-              <div class="step" id="step-essential">4. Essential 8</div>
-              <div class="arrow">➜</div>
-              <div class="step final" id="step-binary">5. Binary</div>
+        <div class="mission-card__grid">
+          <div class="mission-card__section mission-card__section--puzzles">
+            <h3>Puzzles</h3>
+            <div class="buttons mt-1">
+              <a class="btn" href="phishing.html" data-puzzle="phishing">
+                Phishing Spotter <span aria-hidden="true">→</span>
+              </a>
+              <a class="btn" href="password.html" data-puzzle="password">
+                Password Puzzle <span aria-hidden="true">→</span>
+              </a>
+              <a class="btn" href="encryption.html" data-puzzle="encryption">
+                Encryption <span aria-hidden="true">→</span>
+              </a>
+              <a class="btn" href="essential.html" data-puzzle="essential">
+                Essential Eight <span aria-hidden="true">→</span>
+              </a>
+              <a class="btn" href="binary.html" data-puzzle="binary">
+                Binary Lab <span aria-hidden="true">→</span>
+              </a>
             </div>
           </div>
-        </section>
 
-        <div class="flex mt-2">
-          <button class="btn ghost" type="button" data-back="index.html">Back</button>
-          <button class="btn" type="button" id="logoutSide">Logout</button>
-        </div>
-      </aside>
+          <div class="mission-card__section mission-card__section--score">
+            <h3>Team Points</h3>
+            <p class="muted mt-1">Hints and mistakes adjust your total. Keep it high for bragging rights.</p>
+            <div class="score-display">
+              <span id="scoreTotal">000</span>
+              <button class="btn ghost sm" type="button" id="scoreLogBtn">View log</button>
+            </div>
+            <div id="scoreLog" class="score-log" hidden></div>
+          </div>
 
-      <!-- RIGHT: vault lock -->
-      <section class="right-panel">
-        <section class="card chest-section">
-          <h2>Vault Lock</h2>
-          <p class="mt-1" style="color:var(--muted)">Gather each digit from the puzzles and unlock the vault.</p>
+          <div class="mission-card__section mission-card__section--progress">
+            <h3>Progress</h3>
+            <p class="mt-1"><span id="progressStatus">0/5 puzzles completed</span></p>
 
-          <div class="vault-box mt-2">
-            <!-- Chest visual -->
-            <div id="vaultChest" class="chest" aria-live="polite">
-              <div class="chest-lid"></div>
-              <div class="chest-body">
-                <button class="lock-button" type="button" id="lockOpenBtn" title="Open vault (when code is correct)">🔒</button>
+            <div class="progress-bar mt-2" role="progressbar" aria-label="Overall progress"
+                 aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+              <div id="progressFill"></div>
+            </div>
+
+            <div class="journey-map mt-2">
+              <h4 class="journey-map__title">Your Journey</h4>
+              <div class="journey-steps" aria-label="Journey progress">
+                <div class="step" id="step-phishing">1. Phishing</div>
+                <div class="arrow">➜</div>
+                <div class="step" id="step-password">2. Password</div>
+                <div class="arrow">➜</div>
+                <div class="step" id="step-encryption">3. Encryption</div>
+                <div class="arrow">➜</div>
+                <div class="step" id="step-essential">4. Essential 8</div>
+                <div class="arrow">➜</div>
+                <div class="step final" id="step-binary">5. Binary Lab</div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Lock panel -->
-            <div class="lock-panel mt-2">
+        <footer class="mission-card__footer">
+          <button class="btn ghost" type="button" data-back="index.html">Back</button>
+          <button class="btn" type="button" id="logoutSide">Logout</button>
+        </footer>
+      </section>
+
+      <section class="card chest-section">
+        <h2>Vault Lock</h2>
+        <p class="mt-1" style="color:var(--muted)">Gather each digit from the puzzles and unlock the vault.</p>
+
+        <div class="vault-box mt-2">
+          <div id="vaultChest" class="chest" aria-live="polite">
+            <div class="chest-lid"></div>
+            <div class="chest-body">
+              <button class="lock-button" type="button" id="lockOpenBtn" title="Open vault (when code is correct)">🔒</button>
+            </div>
+          </div>
+
+          <div class="lock-panel mt-2">
             <div class="lock-box">
               <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1 (Phishing)">
               <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2 (Encryption)">
@@ -150,23 +157,32 @@
             <div class="flex mt-2">
               <button class="btn" id="unlockBtn" type="button">Unlock</button>
               <button class="btn ghost" id="clearCodeBtn" type="button">Clear</button>
-              </div>
-
-              <p id="lockFeedback" class="mt-2" aria-live="polite"></p>
             </div>
-            <details class="mt-2">
+
+            <p id="lockFeedback" class="mt-2" aria-live="polite"></p>
+          </div>
+
+          <details class="mt-2 vault-hint">
             <summary>How do we get the 5 digits?</summary>
             <ol>
-                <li><strong>Phishing Spotter</strong> — number of phishing emails in the set.</li>
-                <li><strong>Encryption</strong> — the Caesar wheel shift that reveals the plaintext.</li>
-                <li><strong>Password Puzzle</strong> — the rounded minutes to crack the winning password.</li>
-                <li><strong>Essential Eight</strong> — there are 8 essential mitigation strategies.</li>
-                <li><strong>Binary Decoder</strong> — the last digit of the decoded phrase.</li>
+              <li><strong>Phishing Spotter</strong> — number of phishing emails in the set.</li>
+              <li><strong>Encryption</strong> — the Caesar wheel shift that reveals the plaintext.</li>
+              <li><strong>Password Puzzle</strong> — the rounded minutes to crack the winning password.</li>
+              <li><strong>Essential Eight</strong> — there are 8 essential mitigation strategies.</li>
+              <li><strong>Binary Lab</strong> — the ones digit of your binary multiplication result.</li>
             </ol>
-            </details>
+          </details>
+        </div>
+      </section>
 
-          </div>
-        </section>
+      <section class="card quick-tips" aria-labelledby="tipsHeading">
+        <h2 id="tipsHeading">Speed Boost</h2>
+        <p class="muted mt-1">Answer puzzles fast to secure bonus points before the timer cools off.</p>
+        <ul class="tip-list mt-1">
+          <li>Precision beats volume — mark specific phishing clues.</li>
+          <li>Password rewards scale with how quickly you solve.</li>
+          <li>Celebrate to reveal a live podium of top teams.</li>
+        </ul>
       </section>
     </section>
 
@@ -177,14 +193,17 @@
 
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
-    <nav class="footer-nav">
-      <a href="index.html">Home</a>
-      <span aria-hidden="true">•</span>
-      <a href="game.html" aria-current="page">Game</a>
-      <span aria-hidden="true">•</span>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    <div class="footer-inner">
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <span aria-hidden="true">•</span>
+        <a href="game.html" aria-current="page">Game</a>
+        <span aria-hidden="true">•</span>
+        <a href="admin.html">Admin</a>
+      </nav>
+      <p class="footer-note">Unlock the vault by cracking five cyber puzzles as a team.</p>
+      <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    </div>
   </footer>
 
   <!-- Minimal inline glue (no logic) to call your existing logout() if present -->

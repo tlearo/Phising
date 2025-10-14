@@ -45,6 +45,9 @@
   // ---------- Config ----------
   // How close (in pixels) the highlight must be to the hotspot center to count
   const HOTSPOT_RADIUS_PX = 28; // tuned for typical email screenshots
+  const MAX_STROKE_LENGTH = 640; // pixels of travel per stroke
+  const MAX_STROKE_SPAN = 260;   // max width/height of a single stroke highlight
+  const MAX_STROKE_AREA = 52000; // approx area (px^2) before we consider it too large
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
   const REQUIRED_PCT = 0.75;
 
@@ -70,10 +73,13 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   // Tool state
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
-    size: 12,
+    size: 8,
     drawing: false,
     lastX: 0,
     lastY: 0,
+    strokeLength: 0,
+    strokeBounds: null,
+    maskSnapshot: null,
     scaleX: 1,
     scaleY: 1,
     hotspots: [],
@@ -208,6 +214,7 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   }
 
   function eraseAll() {
+    resetStrokeState();
     ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     state.found.clear();
@@ -273,10 +280,12 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     state.scaleY = h / imgEl.naturalHeight;
 
     // Reset visible overlay (we keep mask separately)
+    resetStrokeState();
     ctx.clearRect(0, 0, w, h);
   }
 
   function loadHotspotsForImage() {
+    resetStrokeState();
     state.imgName = currentName();
     state.hotspots = (HOTSPOTS[state.imgName] || []).map(h => ({
       xPct: Number(h.xPct), yPct: Number(h.yPct), label: h.label || 'Indicator'
@@ -297,6 +306,20 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     };
   }
 
+  function broadcastProgress() {
+    const setPercent = window.utils?.setProgressPercent;
+    if (typeof setPercent !== 'function') return;
+    const total = state.hotspots.length;
+    if (!total) {
+      setPercent('phishing', 0, { complete: false });
+      return;
+    }
+    const found = state.found.size;
+    const required = Math.ceil(total * REQUIRED_PCT);
+    const percent = Math.round((found / total) * 100);
+    setPercent('phishing', percent, { complete: found >= required });
+  }
+
   function updateVulnText() {
     if (!vulnCountEl) return;
     const total = state.hotspots.length || 0;
@@ -306,6 +329,7 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     } else {
       vulnCountEl.textContent = 'No hotspots defined for this image.';
     }
+    broadcastProgress();
   }
 
   function syncClassificationUi() {
@@ -331,10 +355,17 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   }
   window.setTool = setTool; // called by HTML buttons
 
+  const clampBrushSize = (val) => {
+    const min = Number(brushSizeEl?.min || 2);
+    const max = Number(brushSizeEl?.max || 24);
+    const num = Math.round(Number(val) || 8);
+    return Math.max(min, Math.min(max, num));
+  };
+
   if (brushSizeEl) {
-    state.size = Number(brushSizeEl.value) || 12;
+    state.size = clampBrushSize(brushSizeEl.value);
     brushSizeEl.addEventListener('input', () => {
-      state.size = Number(brushSizeEl.value) || 12;
+      state.size = clampBrushSize(brushSizeEl.value);
     });
   }
 
@@ -348,23 +379,77 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     return { x: evt.clientX - r.left, y: evt.clientY - r.top };
   }
 
+  function resetStrokeState() {
+    state.strokeLength = 0;
+    state.strokeBounds = null;
+    state.maskSnapshot = null;
+  }
+
+  function restoreMaskSnapshot() {
+    if (state.maskSnapshot) {
+      maskCtx.putImageData(state.maskSnapshot, 0, 0);
+      redrawFromMask();
+    }
+  }
+
+  function exceedsStrokeLimits() {
+    if (!state.strokeBounds) return false;
+    const width = Math.abs(state.strokeBounds.maxX - state.strokeBounds.minX);
+    const height = Math.abs(state.strokeBounds.maxY - state.strokeBounds.minY);
+    const area = width * height;
+    return state.strokeLength > MAX_STROKE_LENGTH || width > MAX_STROKE_SPAN || height > MAX_STROKE_SPAN || area > MAX_STROKE_AREA;
+  }
+
   function beginDraw(x, y) {
     state.drawing = true;
-    state.lastX = x; state.lastY = y;
+    state.lastX = x;
+    state.lastY = y;
+    state.strokeLength = 0;
+    state.strokeBounds = { minX: x, maxX: x, minY: y, maxY: y };
+    try {
+      state.maskSnapshot = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+    } catch {
+      state.maskSnapshot = null;
+    }
     drawStroke(x, y, true);
   }
 
-  function endDraw() {
+  function finishStroke() {
+    if (!state.drawing) return;
     state.drawing = false;
-    // After stroke, recompute found hotspots
+    if (exceedsStrokeLimits()) {
+      restoreMaskSnapshot();
+      setFeedback('Keep highlights focused on the suspicious detail, not the entire email.', false);
+      updateVulnText();
+      resetStrokeState();
+      return;
+    }
+    resetStrokeState();
     recomputeFoundFromMask();
     markCompleteIfReady();
   }
 
   function moveDraw(x, y) {
     if (!state.drawing) return;
+    const dx = x - state.lastX;
+    const dy = y - state.lastY;
+    state.strokeLength += Math.hypot(dx, dy);
+    if (state.strokeBounds) {
+      state.strokeBounds.minX = Math.min(state.strokeBounds.minX, x);
+      state.strokeBounds.maxX = Math.max(state.strokeBounds.maxX, x);
+      state.strokeBounds.minY = Math.min(state.strokeBounds.minY, y);
+      state.strokeBounds.maxY = Math.max(state.strokeBounds.maxY, y);
+    }
     drawStroke(x, y, false);
-    state.lastX = x; state.lastY = y;
+    state.lastX = x;
+    state.lastY = y;
+    if (exceedsStrokeLimits()) {
+      state.drawing = false;
+      restoreMaskSnapshot();
+      setFeedback('Keep highlights focused on the suspicious detail, not the entire email.', false);
+      resetStrokeState();
+      updateVulnText();
+    }
   }
 
   function drawStroke(x, y, first) {
@@ -417,11 +502,12 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   // Events
   drawCanvas.addEventListener('mousedown', (e) => { const p = getPos(e); beginDraw(p.x, p.y); });
   drawCanvas.addEventListener('mousemove', (e) => { const p = getPos(e); moveDraw(p.x, p.y); });
-  window.addEventListener('mouseup', endDraw);
+  window.addEventListener('mouseup', finishStroke);
 
   drawCanvas.addEventListener('touchstart', (e) => { const p = getPos(e); beginDraw(p.x, p.y); e.preventDefault(); }, { passive:false });
   drawCanvas.addEventListener('touchmove',  (e) => { const p = getPos(e); moveDraw(p.x, p.y);  e.preventDefault(); }, { passive:false });
-  drawCanvas.addEventListener('touchend',   (e) => { endDraw(); e.preventDefault(); }, { passive:false });
+  drawCanvas.addEventListener('touchend',   (e) => { finishStroke(); e.preventDefault(); }, { passive:false });
+  drawCanvas.addEventListener('touchcancel',(e) => { finishStroke(); e.preventDefault(); }, { passive:false });
 
   // ---------- Scoring ----------
   function recomputeFoundFromMask() {
@@ -627,10 +713,16 @@ function classify(isPhish){
     markLegitBtn?.addEventListener('click', () => classify(false));
 
     // File operations
-    saveBtn ?.addEventListener('click', saveHighlights);
-    loadBtn ?.addEventListener('click', loadHighlights);
+    saveBtn?.addEventListener('click', saveHighlights);
+    loadBtn?.addEventListener('click', loadHighlights);
     clearBtn?.addEventListener('click', eraseAll);
-    selectAllBtn?.addEventListener('click', selectAll);
+    selectAllBtn?.addEventListener('click', () => {
+      if (!confirm('Auto-place markers is intended for facilitators. Continue?')) {
+        setFeedback('Manual practice keeps your skills sharp. Try highlighting the clues yourself.', false);
+        return;
+      }
+      selectAll();
+    });
     submitBtn?.addEventListener('click', submitHighlights);
 
     // If src differs from the desired start, update it
@@ -645,8 +737,14 @@ function classify(isPhish){
     document.addEventListener('keydown', (e) => {
       if (e.key === 'b' || e.key === 'B') setTool('brush');
       if (e.key === 'e' || e.key === 'E') setTool('eraser');
-      if (e.key === '[') { state.size = Math.max(6, state.size - 2); if (brushSizeEl) brushSizeEl.value = String(state.size); }
-      if (e.key === ']') { state.size = Math.min(36, state.size + 2); if (brushSizeEl) brushSizeEl.value = String(state.size); }
+      if (e.key === '[') {
+        state.size = clampBrushSize(state.size - 2);
+        if (brushSizeEl) brushSizeEl.value = String(state.size);
+      }
+      if (e.key === ']') {
+        state.size = clampBrushSize(state.size + 2);
+        if (brushSizeEl) brushSizeEl.value = String(state.size);
+      }
       if (e.key === 'ArrowLeft') { prev(); }
       if (e.key === 'ArrowRight') { next(); }
     });

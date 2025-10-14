@@ -29,20 +29,29 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Global Header: classic website bar -->
+  <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
       <a class="brand" href="index.html">
         <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-name">Cyber Escape Rooms</span>
+        <span class="brand-copy">
+          <span class="brand-name">Cyber Escape Rooms</span>
+          <span class="brand-tagline">Team-based security missions</span>
+        </span>
       </a>
 
-      <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
-        <a class="nav-link" href="index.html" aria-current="page">Home</a>
-        <a class="nav-link" href="game.html">Game</a>
-        <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
-      </nav>
+      <div class="header-actions">
+        <button class="nav-btn ghost" type="button" data-back="index.html">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="index.html" aria-current="page">Home</a>
+          <a class="nav-link" href="game.html">Game</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -87,14 +96,17 @@
 
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
-    <nav class="footer-nav">
-      <a href="index.html" aria-current="page">Home</a>
-      <span aria-hidden="true">•</span>
-      <a href="game.html">Game</a>
-      <span aria-hidden="true">•</span>
-      <a href="admin.html">Admin</a>
-    </nav>
-    <p><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    <div class="footer-inner">
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="index.html" aria-current="page">Home</a>
+        <span aria-hidden="true">•</span>
+        <a href="game.html">Game</a>
+        <span aria-hidden="true">•</span>
+        <a href="admin.html">Admin</a>
+      </nav>
+      <p class="footer-note">Stay ahead of phishing, passwords, encryption, and essential cyber controls.</p>
+      <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
+    </div>
   </footer>
 </body>
 </html>

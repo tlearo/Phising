@@ -86,6 +86,31 @@
     setJSON(key, p);
     return p;
   }
+  function progressMetaKey(u = getUser()) {
+    return `${u?.username || 'team'}_progress_meta`;
+  }
+  function readProgressMeta(u = getUser()) {
+    return getJSON(progressMetaKey(u), {});
+  }
+  function setProgressPercent(flag, percent, opts = {}, u = getUser()) {
+    const key = progressMetaKey(u);
+    const meta = getJSON(key, {});
+    const clamped = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
+    meta[flag] = {
+      percent: clamped,
+      updatedAt: Date.now()
+    };
+    setJSON(key, meta);
+    if (typeof opts.complete === 'boolean') {
+      setProgressFlag(flag, opts.complete, u);
+    }
+    return meta[flag];
+  }
+  function getProgressPercent(flag, u = getUser()) {
+    const meta = readProgressMeta(u);
+    const entry = meta?.[flag];
+    return entry && typeof entry.percent === 'number' ? entry.percent : 0;
+  }
   function pushTime(seconds, u = getUser()) {
     const key = timesKey(u);
     const arr = getJSON(key, []);
@@ -320,7 +345,8 @@
   window.utils = {
     $, $$, on, createEl, addClass, removeClass, toggleClass,
     getJSON, setJSON, removeJSON,
-    getUser, saveUser, progressKey, timesKey, readProgress, setProgressFlag, pushTime,
+    getUser, saveUser, progressKey, timesKey, readProgress, setProgressFlag,
+    readProgressMeta, setProgressPercent, getProgressPercent, pushTime,
     fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus,
     points: pointsApi,
     backOrHome
