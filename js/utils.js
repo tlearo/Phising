@@ -71,7 +71,13 @@
     return `${u?.username || 'team'}_times`;
   }
   function readProgress(u = getUser()) {
-    return getJSON(progressKey(u), { phishing: false, password: false, encryption: false, essential: false });
+    return getJSON(progressKey(u), {
+      phishing: false,
+      password: false,
+      encryption: false,
+      essential: false,
+      binary: false
+    });
   }
   function setProgressFlag(flag, value = true, u = getUser()) {
     const key = progressKey(u);
@@ -170,21 +176,153 @@
     if (prev == null) el.addEventListener('blur', () => el.removeAttribute('tabindex'), { once: true });
   }
 
+  // ---------- Points / Scoreboard -----------------------------------------
+  const SCORE_BASE = 100;
+  const SCORE_LOG_LIMIT = 40;
+
+  function scoreKey(u = getUser()) {
+    return `${u?.username || 'team'}_score`;
+  }
+
+  function scoreLogKey(u = getUser()) {
+    return `${u?.username || 'team'}_score_log`;
+  }
+
+  function readScore(u = getUser()) {
+    const key = scoreKey(u);
+    const raw = localStorage.getItem(key);
+    if (raw == null || Number.isNaN(Number(raw))) {
+      localStorage.setItem(key, String(SCORE_BASE));
+      return SCORE_BASE;
+    }
+    return Math.max(0, Math.floor(Number(raw)));
+  }
+
+  function writeScore(value, reason = 'update', u = getUser()) {
+    const key = scoreKey(u);
+    const clamped = Math.max(0, Math.round(value));
+    localStorage.setItem(key, String(clamped));
+    appendScoreLog({ delta: 0, reason, at: Date.now(), total: clamped }, u, true);
+    dispatchScoreEvent(clamped);
+    return clamped;
+  }
+
+  function appendScoreLog(entry, u = getUser(), replaceLast = false) {
+    const key = scoreLogKey(u);
+    let log;
+    try {
+      log = JSON.parse(localStorage.getItem(key) || '[]');
+    } catch {
+      log = [];
+    }
+    if (replaceLast && log.length) {
+      log[log.length - 1] = entry;
+    } else {
+      log.push(entry);
+    }
+    if (log.length > SCORE_LOG_LIMIT) {
+      log = log.slice(log.length - SCORE_LOG_LIMIT);
+    }
+    localStorage.setItem(key, JSON.stringify(log));
+    return log;
+  }
+
+  function adjustScore(delta, reason, u = getUser()) {
+    const current = readScore(u);
+    if (!delta) {
+      appendScoreLog({ delta: 0, reason, at: Date.now(), total: current }, u);
+      return current;
+    }
+    const updated = Math.max(0, Math.round(current + delta));
+    localStorage.setItem(scoreKey(u), String(updated));
+    appendScoreLog({ delta, reason, at: Date.now(), total: updated }, u);
+    dispatchScoreEvent(updated, delta, reason);
+    return updated;
+  }
+
+  function dispatchScoreEvent(total, delta = 0, reason = 'update') {
+    window.dispatchEvent(new CustomEvent('score:change', {
+      detail: { total, delta, reason }
+    }));
+  }
+
+  function readScoreLog(u = getUser()) {
+    try {
+      return JSON.parse(localStorage.getItem(scoreLogKey(u)) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  const pointsApi = {
+    ensure() {
+      return readScore();
+    },
+    get() {
+      return readScore();
+    },
+    log() {
+      return readScoreLog();
+    },
+    set(value, reason = 'set') {
+      return writeScore(value, reason);
+    },
+    add(amount, reason = 'award') {
+      return adjustScore(Math.abs(amount), reason);
+    },
+    spend(amount, reason = 'spend') {
+      const cost = Math.abs(amount);
+      return adjustScore(-cost, reason);
+    },
+    adjust(amount, reason = 'adjust') {
+      return adjustScore(amount, reason);
+    }
+  };
+
+  // ---------- Back link / nav helpers -------------------------------------
+  function backOrHome(href = 'index.html') {
+    try {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = href;
+      }
+    } catch {
+      window.location.href = href;
+    }
+  }
+
+  function initBackLinks(root = document) {
+    root.querySelectorAll('[data-back]').forEach(link => {
+      link.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const href = link.getAttribute('data-back') || 'index.html';
+        backOrHome(href);
+      });
+    });
+  }
+
+  function hideAdminLinksForTeams(root = document) {
+    const user = getUser();
+    if (user?.role === 'admin') return;
+    root.querySelectorAll('[data-role="admin-link"]').forEach(link => {
+      link.setAttribute('hidden', 'hidden');
+      link.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initBackLinks();
+    hideAdminLinksForTeams();
+  }, { once: true });
+
   // ---------- Public API ---------------------------------------------------
   window.utils = {
     $, $$, on, createEl, addClass, removeClass, toggleClass,
     getJSON, setJSON, removeJSON,
     getUser, saveUser, progressKey, timesKey, readProgress, setProgressFlag, pushTime,
-    fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus
+    fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus,
+    points: pointsApi,
+    backOrHome
   };
 })();
-// Go back if there is history, otherwise go home
-function backOrHome(href='index.html'){
-  try {
-    if (window.history.length > 1) window.history.back();
-    else window.location.href = href;
-  } catch {
-    window.location.href = href;
-  }
-}
-window.utils.backOrHome = backOrHome;

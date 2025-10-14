@@ -38,10 +38,10 @@
       </a>
 
       <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="#" onclick="utils.backOrHome();return false;">Back</a>
+        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html" aria-current="page">Game</a>
-        <a class="nav-link" href="admin.html">Admin</a>
+        <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         <a class="nav-link" href="#" id="logoutTop">Logout</a>
       </nav>
     </div>
@@ -72,17 +72,30 @@
             <a class="btn" href="essential.html">
               Essential Eight <span aria-hidden="true">→</span>
             </a>
+            <a class="btn" href="binary.html">
+              Binary Decoder <span aria-hidden="true">→</span>
+            </a>
           </div>
+        </section>
+
+        <section class="card mt-2 score-card">
+          <h2>Team Points</h2>
+          <p class="muted mt-1">Hints and mistakes adjust your total. Keep it high for bragging rights.</p>
+          <div class="score-display">
+            <span id="scoreTotal">000</span>
+            <button class="btn ghost sm" type="button" id="scoreLogBtn">View log</button>
+          </div>
+          <div id="scoreLog" class="score-log" hidden></div>
         </section>
 
         <!-- Overall progress -->
         <section class="card mt-2">
           <h2>Progress</h2>
-          <p class="mt-1"><span id="progressStatus">0/4 puzzles completed</span></p>
+          <p class="mt-1"><span id="progressStatus">0/5 puzzles completed</span></p>
 
           <!-- Visual progress bar -->
           <div class="progress-bar mt-2" role="progressbar" aria-label="Overall progress"
-               aria-valuemin="0" aria-valuemax="4" aria-valuenow="0">
+               aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
             <div id="progressFill"></div>
           </div>
 
@@ -96,13 +109,15 @@
               <div class="arrow">➜</div>
               <div class="step" id="step-encryption">3. Encryption</div>
               <div class="arrow">➜</div>
-              <div class="step final" id="step-essential">4. Essential 8</div>
+              <div class="step" id="step-essential">4. Essential 8</div>
+              <div class="arrow">➜</div>
+              <div class="step final" id="step-binary">5. Binary</div>
             </div>
           </div>
         </section>
 
         <div class="flex mt-2">
-          <button class="btn ghost" type="button" onclick="history.back()">Back</button>
+          <button class="btn ghost" type="button" data-back="index.html">Back</button>
           <button class="btn" type="button" id="logoutSide">Logout</button>
         </div>
       </aside>
@@ -124,27 +139,29 @@
 
             <!-- Lock panel -->
             <div class="lock-panel mt-2">
-              <div class="lock-box">
-                <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1">
-                <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2">
-                <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3">
-                <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4">
-              </div>
+            <div class="lock-box">
+              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1 (Phishing)">
+              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2 (Encryption)">
+              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3 (Password)">
+              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4 (Essential)">
+              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5 (Binary)">
+            </div>
 
-              <div class="flex mt-2">
-                <button class="btn" id="unlockBtn" type="button">Unlock</button>
-                <button class="btn ghost" id="clearCodeBtn" type="button">Clear</button>
+            <div class="flex mt-2">
+              <button class="btn" id="unlockBtn" type="button">Unlock</button>
+              <button class="btn ghost" id="clearCodeBtn" type="button">Clear</button>
               </div>
 
               <p id="lockFeedback" class="mt-2" aria-live="polite"></p>
             </div>
             <details class="mt-2">
-            <summary>How do we get the 4 digits?</summary>
+            <summary>How do we get the 5 digits?</summary>
             <ol>
-                <li><strong>Phishing Spotter</strong> — how many of the email examples are phishing.</li>
-                <li><strong>Encryption</strong> — the Caesar wheel shift you used to decode.</li>
-                <li><strong>Password Puzzle</strong> — how many clues you revealed before solving.</li>
-                <li><strong>Essential Eight</strong> — there are 8 essential controls.</li>
+                <li><strong>Phishing Spotter</strong> — number of phishing emails in the set.</li>
+                <li><strong>Encryption</strong> — the Caesar wheel shift that reveals the plaintext.</li>
+                <li><strong>Password Puzzle</strong> — the rounded minutes to crack the winning password.</li>
+                <li><strong>Essential Eight</strong> — there are 8 essential mitigation strategies.</li>
+                <li><strong>Binary Decoder</strong> — the last digit of the decoded phrase.</li>
             </ol>
             </details>
 
@@ -154,7 +171,7 @@
     </section>
 
     <footer class="mt-3">
-      <p style="color:var(--muted)">Tip: finish all four puzzles to learn the full 4-digit code.</p>
+      <p style="color:var(--muted)">Tip: finish all five puzzles to learn the full 5-digit code.</p>
     </footer>
   </main>
 

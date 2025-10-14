@@ -17,7 +17,7 @@
 }
 
 /* Wider container for desktops */
-.container-xl { max-width: 1280px; margin-inline: auto; padding: 0 20px; }
+.container-xl { max-width: 1280px; margin-inline: auto; padding-inline: clamp(.75rem, 2.5vw, 2rem); }
 @media (min-width: 1440px){ .container-xl { max-width: 1400px; } }
 
 /* Header as a real bar */
@@ -61,13 +61,23 @@ body {
     color: var(--ink);
     background: linear-gradient(120deg, var(--bg-1), var(--bg-2));
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-    padding: 2rem;
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+p, li {
+    line-height: 1.55;
 }
 
 /* ==== Utilities =========================================================== */
 .container {
     max-width: 1200px;
-    margin-inline: auto
+    margin-inline: auto;
+    padding-inline: clamp(.75rem, 2vw, 1.25rem);
+}
+
+main.container,
+main.container-xl {
+    padding-block: clamp(1rem, 2.5vw, 1.75rem);
 }
 
 .grid {
@@ -78,6 +88,18 @@ body {
 .flex {
     display: flex;
     gap: .75rem
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.status-ok {
+    color: var(--accent);
+}
+
+.status-warn {
+    color: var(--warn);
 }
 
 .center {
@@ -122,6 +144,11 @@ body {
     box-shadow: var(--shadow);
 }
 
+.card.sm {
+    padding: .9rem;
+    border-radius: 12px;
+}
+
 /* ==== Headings ============================================================ */
 h1.glow {
     font-size: 2.6rem;
@@ -152,6 +179,10 @@ h3 {
     padding: .8rem 1rem;
     border-radius: 10px;
     transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .btn:hover {
@@ -168,6 +199,23 @@ h3 {
 .btn.ghost:hover {
     border-color: var(--brand);
     color: #fff
+}
+
+.btn.warn {
+    border-color: var(--warn);
+    background: rgba(255, 166, 87, 0.18);
+    color: #fff;
+}
+
+.btn.warn:hover {
+    box-shadow: 0 8px 18px rgba(255, 166, 87, 0.3);
+}
+
+.btn[aria-pressed="true"] {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    box-shadow: 0 0 0 1px var(--brand-soft);
 }
 
 .btn.block {
@@ -251,6 +299,83 @@ form .row {
     justify-content: space-between;
     display: flex;
     align-items: center
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 600;
+    background: rgba(88,166,255,.18);
+    color: var(--brand);
+}
+
+.badge.ghost {
+    background: transparent;
+    border: 1px dashed rgba(139,148,158,.55);
+    color: var(--muted);
+}
+
+.badge.ok {
+    background: rgba(9,255,136,.18);
+    color: var(--accent);
+}
+
+.badge.dim {
+    background: rgba(139,148,158,.14);
+    color: var(--muted);
+}
+
+.score-card {
+    display: grid;
+    gap: .65rem;
+}
+
+.score-card .score-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(88, 166, 255, .08);
+    border: 1px solid rgba(88, 166, 255, .25);
+    border-radius: 12px;
+    padding: .75rem 1rem;
+}
+
+.score-card .score-display span {
+    font-size: clamp(2rem, 4.5vw, 3.1rem);
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--accent);
+}
+
+.score-card .btn.sm {
+    flex: 0 0 auto;
+}
+
+.score-log {
+    background: rgba(17, 22, 29, .7);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .75rem 1rem;
+    max-height: 190px;
+    overflow-y: auto;
+}
+
+.score-log__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: .4rem;
+    font-size: .92rem;
+}
+
+.score-log__list li {
+    color: var(--muted);
+    font-family: "JetBrains Mono", Consolas, monospace;
 }
 
 /* ==== Journey Map ========================================================= */
@@ -523,15 +648,61 @@ form .row {
 }
 
 /* ==== Password Puzzle ===================================================== */
-.pw-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+.password-container {
+    max-width: min(1320px, 96vw);
 }
 
-.card.sm {
-    padding: .9rem;
-    border-radius: 12px;
+.pw-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 320px) minmax(420px, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.pw-meta .pw-score-readout {
+    display: flex;
+    align-items: baseline;
+    gap: .75rem;
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--accent);
+}
+
+.pw-meta .pw-score-readout small {
+    font-size: .9rem;
+    color: var(--muted);
+}
+
+.pw-strength progress {
+    width: 100%;
+    height: 10px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(88,166,255,.15);
+    overflow: hidden;
+}
+
+.pw-strength progress::-webkit-progress-bar {
+    background: rgba(88,166,255,.15);
+    border-radius: 999px;
+}
+
+.pw-strength progress::-webkit-progress-value {
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    border-radius: 999px;
+}
+
+.pw-strength progress::-moz-progress-bar {
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+}
+
+.pw-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .clue-list {
@@ -545,9 +716,50 @@ form .row {
 }
 
 @media (max-width: 900px) {
-    .pw-layout {
+    .pw-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* ==== Phishing Puzzle ==================================================== */
+.thumb-nav .link-list {
+    display: grid;
+    gap: .35rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.thumb-nav a {
+    color: var(--ink);
+    text-decoration: none;
+    transition: color .2s ease;
+}
+
+.thumb-nav a:hover {
+    color: var(--brand);
+}
+
+.thumb-nav a.is-active {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.slideshow-controls {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.slideshow-controls p {
+    margin: 0;
+    flex: 1 1 160px;
+    text-align: center;
+    font-size: .92rem;
+}
+
+.slideshow-controls .btn {
+    flex: 0 0 auto;
 }
 
 /* ==== Encryption (Caesar Wheel) ========================================= */
@@ -622,6 +834,10 @@ form .row {
     z-index: 3;
     font-weight: 700;
     letter-spacing: .05em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .1rem;
 }
 
 .wheel .glyph.outer {
@@ -632,6 +848,17 @@ form .row {
 .wheel .glyph.inner {
     color: #c9d1d9;
     font-size: 14px;
+}
+
+.wheel .glyph__letter {
+    line-height: 1;
+}
+
+.wheel .glyph__index {
+    font-size: .62em;
+    opacity: .7;
+    line-height: 1;
+    font-weight: 600;
 }
 
 /* Right panel minimum height */
@@ -1047,25 +1274,141 @@ h1.glow { font-size: clamp(1.9rem, 4.5vw, 3.2rem); }
 /* Admin responsive grid */
 .admin-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;   /* left sidebar + main area */
-  gap: 1.25rem;
+  grid-template-columns: minmax(320px, 360px) 1fr;
+  gap: 1.1rem;
   align-items: start;
 }
 @media (min-width: 1400px) {
-  .admin-grid { grid-template-columns: 420px 1fr; }
+  .admin-grid { grid-template-columns: minmax(340px, 420px) 1fr; }
 }
 @media (max-width: 900px) {
   .admin-grid { grid-template-columns: 1fr; }
 }
 
-/* cards stretch nicely */
 .admin-grid .card { width: 100%; }
 
-/* charts get some height */
-.admin-chart .card { min-height: 420px; }
-.admin-chart canvas { width: 100% !important; height: 320px !important; }
+.control-row {
+  flex-wrap: wrap;
+  gap: .6rem;
+}
 
-/* tidy little section headings */
-.card h2 { display: flex; align-items: center; gap: .5rem; }
+.control-row .btn,
+.control-row a.btn {
+  flex: 1 1 160px;
+  text-align: center;
+}
 
+.admin-analytics {
+  min-height: 360px;
+}
 
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.chart-tabs {
+  display: inline-flex;
+  gap: .5rem;
+  background: rgba(34,41,59,0.6);
+  border-radius: 999px;
+  padding: .25rem;
+}
+
+.chart-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: .45rem .85rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.chart-tab.is-active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.chart-carousel {
+  position: relative;
+  margin-top: .75rem;
+  min-height: clamp(260px, 32vh, 340px);
+}
+
+.chart-panel {
+  width: 100% !important;
+  height: clamp(260px, 32vh, 340px) !important;
+  display: block;
+  background: rgba(17, 22, 29, .55);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgba(88,166,255,.1);
+  transition: opacity .25s ease;
+}
+
+.chart-panel:not(.is-active) {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+.chart-panel.is-active {
+  opacity: 1;
+  position: relative;
+}
+
+.card h2 {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+#confettiLayer,
+#spotlightLayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .35s ease;
+  z-index: 1500;
+}
+
+#confettiLayer::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 90, 196, .85) 0, rgba(255, 90, 196, .85) 12px, transparent 12px),
+    radial-gradient(circle at 60% 40%, rgba(88, 166, 255, .9) 0, rgba(88, 166, 255, .9) 10px, transparent 10px),
+    radial-gradient(circle at 80% 70%, rgba(9, 255, 136, .9) 0, rgba(9, 255, 136, .9) 14px, transparent 14px),
+    radial-gradient(circle at 30% 75%, rgba(255, 166, 87, .9) 0, rgba(255, 166, 87, .9) 11px, transparent 11px);
+  background-size: 180px 180px;
+  animation: confetti-fall 1.4s linear infinite;
+  opacity: .85;
+}
+
+#confettiLayer.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+#spotlightLayer {
+  background: radial-gradient(circle at 50% 40%, transparent 0, transparent 28%, rgba(0,0,0,.72) 60%, rgba(0,0,0,.85) 100%);
+  backdrop-filter: blur(2px);
+}
+
+#spotlightLayer.is-active {
+  opacity: 1;
+  visibility: visible;
+}
+
+@keyframes confetti-fall {
+  from { transform: translateY(-3%); }
+  to { transform: translateY(3%); }
+}

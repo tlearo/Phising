@@ -24,6 +24,15 @@
   const feedbackEl   = $('#phishingFeedback');
   const vulnCountEl  = $('#vulnerabilityCount');
   const submitBtn    = $('#submitButton');
+  const prevBtn      = $('#prevImg');
+  const nextBtn      = $('#nextImg');
+  const slideStatus  = $('#slideStatus');
+  const markPhishBtn = $('#markPhish');
+  const markLegitBtn = $('#markLegit');
+  const saveBtn      = $('#saveBtn');
+  const loadBtn      = $('#loadBtn');
+  const clearBtn     = $('#clearBtn');
+  const selectAllBtn = $('#selectAllBtn');
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
@@ -41,6 +50,7 @@
 
 // ---------- Config ----------
 const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
+const DEFAULT_IMAGE = IMAGES[0];
 
 // Mark which images are truly phishing (used for digit #1 and auto-scoring)
 // Adjust if your ground truth differs:
@@ -70,6 +80,77 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     found: new Set(), // indexes of hotspots found
     imgName: DEFAULT_IMAGE
   };
+
+  // Add slideshow state + helpers (keeps track of current email example)
+  const slideshow = {
+    index: 0,
+    order: IMAGES.slice(),
+    get total() { return this.order.length; },
+    clamp(i) {
+      if (!this.total) return 0;
+      if (i < 0) return 0;
+      if (i >= this.total) return this.total - 1;
+      return i;
+    },
+    current() {
+      return this.order[this.index] || DEFAULT_IMAGE;
+    }
+  };
+
+  function currentName() {
+    return slideshow.current();
+  }
+
+  function updateSlideUi() {
+    const current = currentName();
+    if (slideStatus) {
+      slideStatus.textContent = `Example ${slideshow.index + 1} of ${Math.max(slideshow.total, 1)}`;
+    }
+    if (prevBtn) prevBtn.disabled = slideshow.index <= 0;
+    if (nextBtn) nextBtn.disabled = slideshow.index >= slideshow.total - 1;
+
+    // Highlight current link in the list nav (if present)
+    $$('.thumb-nav a').forEach((link, i) => {
+      if (slideshow.order[i]) {
+        const isCurrent = slideshow.order[i] === current;
+        link.classList.toggle('is-active', isCurrent);
+        if (isCurrent) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  function goto(index) {
+    if (!slideshow.total) return;
+    slideshow.index = slideshow.clamp(index);
+    const name = currentName();
+    if (state.imgName === name) {
+      updateSlideUi();
+      return;
+    }
+    state.imgName = name;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('img', name);
+      history.replaceState(null, '', url);
+    } catch (_) {
+      // ignore if URL parsing fails (older browsers)
+    }
+    syncClassificationUi();
+    imgEl.setAttribute('data-loading', 'true');
+    imgEl.src = `assets/${name}`;
+    updateSlideUi();
+  }
+
+  function next() {
+    if (slideshow.index >= slideshow.total - 1) return;
+    goto(slideshow.index + 1);
+  }
+
+  function prev() {
+    if (slideshow.index <= 0) return;
+    goto(slideshow.index - 1);
+  }
 
   // ---------- Utility: Storage ----------
   function readUser() {
@@ -165,14 +246,15 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   const HOTSPOTS = getHotspotMap();
 
   // ---------- Init image & canvas ----------
-  function currentImageName() {
+  function resolveInitialImage() {
     // Prefer query string if present; else whatever src ends with; else default
     const params = new URLSearchParams(location.search);
     const q = params.get('img');
-    if (q && /\.(png|jpe?g|webp|gif|svg)$/i.test(q)) return q;
+    if (q && IMAGES.includes(q)) return q;
     const src = imgEl.getAttribute('src') || '';
     const m = src.match(/([^/]+)$/);
-    return m ? m[1] : DEFAULT_IMAGE;
+    if (m && IMAGES.includes(m[1])) return m[1];
+    return DEFAULT_IMAGE;
   }
 
   function fitCanvasToImage() {
@@ -195,12 +277,13 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   }
 
   function loadHotspotsForImage() {
-    state.imgName = currentImageName();
+    state.imgName = currentName();
     state.hotspots = (HOTSPOTS[state.imgName] || []).map(h => ({
       xPct: Number(h.xPct), yPct: Number(h.yPct), label: h.label || 'Indicator'
     }));
     state.found.clear();
     updateVulnText();
+    syncClassificationUi();
   }
 
   // Convert pct hotspot to canvas pixel coords
@@ -223,6 +306,12 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     } else {
       vulnCountEl.textContent = 'No hotspots defined for this image.';
     }
+  }
+
+  function syncClassificationUi() {
+    const saved = localStorage.getItem(`class_${currentName()}`);
+    if (markPhishBtn) markPhishBtn.setAttribute('aria-pressed', saved === 'phish' ? 'true' : 'false');
+    if (markLegitBtn) markLegitBtn.setAttribute('aria-pressed', saved === 'legit' ? 'true' : 'false');
   }
 
   function setFeedback(msg, ok=false) {
@@ -394,49 +483,49 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
   }
 
   // ---------- Submit ----------
-function submitHighlights() {
-  recomputeFoundFromMask();
-  const name = currentName();
-  const total = state.hotspots.length;
-  const found = state.found.size;
-  const required = Math.ceil(total * REQUIRED_PCT);
+  function submitHighlights() {
+    recomputeFoundFromMask();
+    const name = currentName();
+    const total = state.hotspots.length;
+    const found = state.found.size;
+    const required = Math.ceil(total * REQUIRED_PCT);
 
-  const userClass = localStorage.getItem(`class_${name}`); // phish|legit|null
-  const truth = !!IS_PHISHING[name];
+    const userClass = localStorage.getItem(`class_${name}`); // phish|legit|null
+    const truth = !!IS_PHISHING[name];
 
-  // Require a classification
-  if (!userClass) {
-    setFeedback('Choose “Is phishing” or “Isn’t phishing” first.');
-    return;
-  }
-  // If they said phishing, require at least one highlight
-  if (userClass === 'phish' && !maskHasAnyInk()){
-    setFeedback('Mark at least one suspicious indicator (highlight).');
-    return;
-  }
-
-  // Score: classification must match truth, and if phishing, highlights must meet threshold.
-  const okClass = (userClass === 'phish') === truth;
-  const okHotspots = truth ? (found >= required) : true;
-
-  if (okClass && okHotspots) {
-    setFeedback('✅ Correct for this example.', true);
-
-    // Track per-image completion to gate the overall puzzle
-    localStorage.setItem(`phish_done_${name}`, '1');
-
-    // If all images are done, mark puzzle complete
-    const allDone = IMAGES.every(n => localStorage.getItem(`phish_done_${n}`) === '1');
-    if (allDone) {
-      markCompleteIfReady(); // also sets phishing flag
+    // Require a classification
+    if (!userClass) {
+      setFeedback('Choose “Is phishing” or “Isn’t phishing” first.');
+      return;
+    }
+    // If they said phishing, require at least one highlight
+    if (userClass === 'phish' && !maskHasAnyInk()) {
+      setFeedback('Mark at least one suspicious indicator (highlight).');
+      return;
     }
 
-    // Move to next image (cycle once)
-    if (state.index < IMAGES.length - 1) next();
-  } else {
-    setFeedback('❌ Not quite. Check your choice and highlights.');
+    // Score: classification must match truth, and if phishing, highlights must meet threshold.
+    const okClass = (userClass === 'phish') === truth;
+    const okHotspots = truth ? (found >= required) : true;
+
+    if (okClass && okHotspots) {
+      setFeedback('✅ Correct for this example.', true);
+
+      // Track per-image completion to gate the overall puzzle
+      localStorage.setItem(`phish_done_${name}`, '1');
+
+      // If all images are done, mark puzzle complete
+      const allDone = IMAGES.every(n => localStorage.getItem(`phish_done_${n}`) === '1');
+      if (allDone) {
+        markCompleteIfReady(); // also sets phishing flag
+      }
+
+      // Move to next image (cycle once)
+      if (slideshow.index < slideshow.total - 1) next();
+    } else {
+      setFeedback('❌ Not quite. Check your choice and highlights.');
+    }
   }
-}
 
 
   window.saveHighlights  = saveHighlights;
@@ -460,6 +549,7 @@ function classify(isPhish){
     return;
   }
   setFeedback(isPhish ? 'Marked as phishing.' : 'Marked as not phishing.', true);
+  syncClassificationUi();
 }
 
 
@@ -490,12 +580,14 @@ function classify(isPhish){
   }
 
   function onImageReady() {
+    imgEl.removeAttribute('data-loading');
     loadHotspotsForImage();
     fitCanvasToImage();
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     state.found.clear();
     updateVulnText();
+    updateSlideUi();
     // Try to load saved highlights for this image
     loadHighlights().catch(()=>{ /* ignore */ });
   }
@@ -511,31 +603,43 @@ function classify(isPhish){
     // Ensure tool button reflects default
     setTool('brush');
 
-    // If src already set, onImageReady will fire on 'load'
-    // If image is cached and 'load' won't fire, force sync:
-    if (imgEl.complete && imgEl.naturalWidth) {
+    // Determine starting slide from query/src
+    const initialName = resolveInitialImage();
+    const startIndex = Math.max(0, IMAGES.indexOf(initialName));
+    slideshow.index = startIndex;
+    state.imgName = currentName();
+    updateSlideUi();
+
+    // Wire slideshow buttons & keyboard toggles
+    prevBtn?.addEventListener('click', prev);
+    nextBtn?.addEventListener('click', next);
+
+    // Convert list links into in-page navigation
+    $$('.thumb-nav a').forEach((link, idx) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        goto(idx);
+      });
+    });
+
+    // Classification buttons
+    markPhishBtn?.addEventListener('click', () => classify(true));
+    markLegitBtn?.addEventListener('click', () => classify(false));
+
+    // File operations
+    saveBtn ?.addEventListener('click', saveHighlights);
+    loadBtn ?.addEventListener('click', loadHighlights);
+    clearBtn?.addEventListener('click', eraseAll);
+    selectAllBtn?.addEventListener('click', selectAll);
+    submitBtn?.addEventListener('click', submitHighlights);
+
+    // If src differs from the desired start, update it
+    const desiredSrc = `assets/${state.imgName}`;
+    if ((imgEl.getAttribute('src') || '').replace(/^assets\//, 'assets/') !== desiredSrc) {
+      imgEl.src = desiredSrc;
+    } else if (imgEl.complete && imgEl.naturalWidth) {
       onImageReady();
     }
-document.addEventListener('DOMContentLoaded', () => {
-  // existing init here…
-
-  // slideshow buttons
-  document.getElementById('prevImg')?.addEventListener('click', prev);
-  document.getElementById('nextImg')?.addEventListener('click', next);
-
-  // classify
-  document.getElementById('markPhish')?.addEventListener('click', ()=>classify(true));
-  document.getElementById('markLegit')?.addEventListener('click', ()=>classify(false));
-
-  // file ops
-  document.getElementById('saveBtn') ?.addEventListener('click', saveHighlights);
-  document.getElementById('loadBtn') ?.addEventListener('click', loadHighlights);
-  document.getElementById('clearBtn')?.addEventListener('click', eraseAll);
-  document.getElementById('submitBtn')?.addEventListener('click', submitHighlights);
-
-  // start at first image
-  goto(0);
-});
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -543,6 +647,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'e' || e.key === 'E') setTool('eraser');
       if (e.key === '[') { state.size = Math.max(6, state.size - 2); if (brushSizeEl) brushSizeEl.value = String(state.size); }
       if (e.key === ']') { state.size = Math.min(36, state.size + 2); if (brushSizeEl) brushSizeEl.value = String(state.size); }
+      if (e.key === 'ArrowLeft') { prev(); }
+      if (e.key === 'ArrowRight') { next(); }
     });
   });
 

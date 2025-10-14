@@ -136,6 +136,20 @@
     });
   }
 
+  function renderLockDigits() {
+    const lockEl = qs('#lockHow');
+    if (!lockEl) return;
+    const toDigit = (val, fallback = '—') => {
+      const num = Number(val);
+      return Number.isFinite(num) && num >= 0 ? String(num) : fallback;
+    };
+    const d1 = toDigit(localStorage.getItem('lock_digit_phishing_total'), '—');
+    const d2 = toDigit(localStorage.getItem('lock_digit_caesar_shift'), '—');
+    const d3 = toDigit(localStorage.getItem('lock_digit_pw_clues'), '0');
+    const d4 = '8';
+    lockEl.textContent = `Vault digits → 1: ${d1} phishing emails • 2: shift ${d2} • 3: clues ${d3} • 4: ${d4} (fixed)`;
+  }
+
   function renderStats(rows) {
     const statsEl = qs('#averageTimeStats');
     const statTotalTeams = qs('#statTotalTeams');
@@ -152,6 +166,7 @@
     if (statTotalTeams) statTotalTeams.textContent = String(totalTeams);
     if (statTotalCompleted) statTotalCompleted.textContent = String(totalCompleted);
     if (statAvgTime) statAvgTime.textContent = fmtSecs(overallAvg);
+    renderLockDigits();
   }
 
   // ---------- Charts -------------------------------------------------------
@@ -224,6 +239,34 @@
 
   // ---------- Controls -----------------------------------------------------
 
+  function wireChartTabs() {
+    const tabs = qsa('.chart-tab');
+    const panels = qsa('.chart-panel');
+    if (!tabs.length || !panels.length) return;
+
+    const activate = (targetId) => {
+      tabs.forEach(tab => {
+        const isActive = tab.dataset.target === targetId;
+        tab.classList.toggle('is-active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      panels.forEach(panel => {
+        const isActive = panel.dataset.panel === targetId;
+        panel.classList.toggle('is-active', isActive);
+        panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      });
+    };
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        activate(tab.dataset.target);
+      });
+    });
+
+    // Initialize state
+    activate(tabs.find(tab => tab.classList.contains('is-active'))?.dataset.target || panels[0].dataset.panel);
+  }
+
   function wireControls(refresh) {
     // Reset all local team progress/times
     qs('#resetAllProgress')?.addEventListener('click', () => {
@@ -232,7 +275,9 @@
         localStorage.removeItem(`${t}_progress`);
         localStorage.removeItem(`${t}_times`);
       });
+      localStorage.removeItem('lock_digit_pw_clues');
       announce('All team progress reset.');
+      renderLockDigits();
       refresh();
     });
 
@@ -242,17 +287,21 @@
 
     qs('#triggerConfetti')?.addEventListener('click', () => {
       if (!confettiLayer) return;
-      confettiLayer.classList.remove('hidden');
-      confettiLayer.classList.add('show');
+      confettiLayer.classList.add('is-active');
+      confettiLayer.setAttribute('aria-hidden', 'false');
       announce('Celebration!');
-      // Auto hide after a few seconds (CSS handles animation if present)
-      setTimeout(() => confettiLayer.classList.add('hidden'), 3000);
+      // Auto hide after a few seconds
+      setTimeout(() => {
+        confettiLayer.classList.remove('is-active');
+        confettiLayer.setAttribute('aria-hidden', 'true');
+      }, 2800);
     });
 
     qs('#toggleSpotlight')?.addEventListener('click', () => {
       if (!spotlightLayer) return;
-      spotlightLayer.classList.toggle('hidden');
-      announce('Spotlight toggled');
+      const active = spotlightLayer.classList.toggle('is-active');
+      spotlightLayer.setAttribute('aria-hidden', active ? 'false' : 'true');
+      announce(active ? 'Spotlight on' : 'Spotlight off');
     });
 
     // Notes
@@ -288,7 +337,10 @@
     qs('#pullNeonBtn')?.addEventListener('click', async () => {
       const status = qs('#syncStatus');
       try {
-        status && (status.textContent = 'Pulling from Neon…');
+        if (status) {
+          status.textContent = 'Pulling from Neon…';
+          status.classList.remove('status-ok', 'status-warn');
+        }
         const res = await fetch('/.netlify/functions/pull', { method: 'GET' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json(); // expected: { teams: [{team, progress, times}] }
@@ -298,21 +350,33 @@
             if (row.progress) setJSON(`${row.team}_progress`, row.progress);
             if (row.times) setJSON(`${row.team}_times`, row.times);
           });
-          status && (status.textContent = 'Pulled latest stats from Neon.');
+          if (status) {
+            status.textContent = 'Pulled latest stats from Neon.';
+            status.classList.add('status-ok');
+          }
           announce('Pulled latest stats from Neon.');
           refresh();
         } else {
-          status && (status.textContent = 'No data returned.');
+          if (status) {
+            status.textContent = 'No data returned.';
+            status.classList.add('status-warn');
+          }
         }
       } catch (e) {
-        status && (status.textContent = `Pull failed: ${e.message}`);
+        if (status) {
+          status.textContent = `Pull failed: ${e.message}`;
+          status.classList.add('status-warn');
+        }
       }
     });
 
     qs('#pushNeonBtn')?.addEventListener('click', async () => {
       const status = qs('#syncStatus');
       try {
-        status && (status.textContent = 'Pushing to Neon…');
+        if (status) {
+          status.textContent = 'Pushing to Neon…';
+          status.classList.remove('status-ok', 'status-warn');
+        }
         const teams = TEAMS.map(team => ({
           team,
           progress: getJSON(`${team}_progress`, {
@@ -326,10 +390,16 @@
           body: JSON.stringify({ teams })
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        status && (status.textContent = 'Push complete.');
+        if (status) {
+          status.textContent = 'Push complete.';
+          status.classList.add('status-ok');
+        }
         announce('Pushed stats to Neon.');
       } catch (e) {
-        status && (status.textContent = `Push failed: ${e.message}`);
+        if (status) {
+          status.textContent = `Push failed: ${e.message}`;
+          status.classList.add('status-warn');
+        }
       }
     });
   }
@@ -349,6 +419,7 @@
 
     renderWelcome(user);
     refreshAll();
+    wireChartTabs();
     wireControls(refreshAll);
   });
 

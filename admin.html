@@ -39,7 +39,7 @@
       </a>
 
       <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="#" onclick="utils.backOrHome();return false;">Back</a>
+        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
         <a class="nav-link" href="admin.html" aria-current="page">Admin</a>
@@ -56,8 +56,8 @@
     </header>
 
     <!-- Fun escape-room overlays (hooks only; style/JS later) -->
-    <div id="confettiLayer" aria-hidden="true" class="hidden"></div>
-    <div id="spotlightLayer" aria-hidden="true" class="hidden"></div>
+    <div id="confettiLayer" aria-hidden="true"></div>
+    <div id="spotlightLayer" aria-hidden="true"></div>
 
     <!-- Admin Grid: left = teams/stats/controls, right = charts -->
     <div class="admin-grid mt-2">
@@ -77,6 +77,7 @@
             <li>Overall puzzles completed: <strong id="statTotalCompleted">—</strong></li>
             <li>Average completion time: <strong id="statAvgTime">—</strong></li>
           </ul>
+          <p id="lockHow" class="muted mt-1"></p>
         </section>
 
         <!-- Data Sync (Netlify ↔ Neon) — hooks only -->
@@ -85,40 +86,44 @@
           <p class="mt-1" style="color:var(--muted)">
             Pull/push team progress to a Neon Postgres instance (wire-up later).
           </p>
-          <div class="flex mt-1">
-            <button class="btn" id="pullNeonBtn" title="Fetch latest stats from Neon">Pull from Neon</button>
-            <button class="btn ghost" id="pushNeonBtn" title="Write local stats to Neon">Push to Neon</button>
+          <div class="flex mt-1 control-row">
+            <button class="btn" id="pullNeonBtn" type="button" title="Fetch latest stats from Neon">Pull from Neon</button>
+            <button class="btn ghost" id="pushNeonBtn" type="button" title="Write local stats to Neon">Push to Neon</button>
           </div>
-          <p id="syncStatus" class="mt-1" aria-live="polite" style="color:var(--muted)"></p>
+          <p id="syncStatus" class="mt-1 muted" aria-live="polite"></p>
         </section>
 
         <!-- Game Controls / Utilities -->
         <section class="card mt-2" aria-labelledby="controlsHeading">
           <h2 id="controlsHeading">Controls</h2>
-          <div class="flex mt-1">
-            <button class="btn" id="resetAllProgress">Reset All Teams</button>
-            <button class="btn ghost" id="toggleSpotlight">Toggle Spotlight</button>
-            <button class="btn ghost" id="triggerConfetti">Celebrate</button>
+          <div class="flex mt-1 control-row">
+            <button class="btn" id="resetAllProgress" type="button">Reset All Teams</button>
+            <button class="btn ghost" id="toggleSpotlight" type="button">Toggle Spotlight</button>
+            <button class="btn ghost" id="triggerConfetti" type="button">Celebrate</button>
           </div>
-          <div class="flex mt-1">
-            <a href="index.html"><button class="btn ghost">Back to Login</button></a>
-            <button class="btn" id="logoutBottom">Logout</button>
+          <div class="flex mt-1 control-row">
+            <a class="btn ghost" id="backToLogin" href="index.html">Back to Login</a>
+            <button class="btn" id="logoutBottom" type="button">Logout</button>
           </div>
         </section>
       </aside>
 
-      <!-- RIGHT column: charts -->
-      <section class="admin-right admin-chart" aria-label="Charts">
-        <section class="card" aria-labelledby="chartProgressHeading">
-          <h2 id="chartProgressHeading">Puzzle Completion Overview</h2>
-          <canvas id="progressChart" width="400" height="220" class="mt-1" role="img"
-                  aria-label="Bar chart of puzzles completed per team"></canvas>
-        </section>
-
-        <section class="card mt-2" aria-labelledby="chartTimeHeading">
-          <h2 id="chartTimeHeading">Avg Completion Time (seconds)</h2>
-          <canvas id="timeChart" width="400" height="220" class="mt-1" role="img"
-                  aria-label="Bar chart of average completion times per team"></canvas>
+      <!-- RIGHT column: charts + notes -->
+      <section class="admin-right" aria-label="Charts and notes">
+        <section class="card admin-analytics" aria-labelledby="chartHeading">
+          <div class="chart-header">
+            <h2 id="chartHeading">Team Analytics</h2>
+            <div class="chart-tabs" role="tablist">
+              <button class="chart-tab is-active" type="button" data-target="progressChart" aria-controls="progressChart" aria-selected="true">Puzzle Completion</button>
+              <button class="chart-tab" type="button" data-target="timeChart" aria-controls="timeChart" aria-selected="false">Avg Time (s)</button>
+            </div>
+          </div>
+          <div class="chart-carousel">
+            <canvas id="progressChart" data-panel="progressChart" width="400" height="220" class="chart-panel is-active" role="img"
+                    aria-label="Bar chart of puzzles completed per team"></canvas>
+            <canvas id="timeChart" data-panel="timeChart" width="400" height="220" class="chart-panel" role="img"
+                    aria-label="Bar chart of average completion times per team"></canvas>
+          </div>
         </section>
 
         <!-- Optional: notes panel for admins -->
@@ -130,8 +135,8 @@
             <textarea id="adminNotes" rows="4" style="width:100%;"></textarea>
           </div>
           <div class="flex mt-1">
-            <button class="btn" id="saveNotesBtn">Save Notes</button>
-            <button class="btn ghost" id="clearNotesBtn">Clear</button>
+            <button class="btn" id="saveNotesBtn" type="button">Save Notes</button>
+            <button class="btn ghost" id="clearNotesBtn" type="button">Clear</button>
           </div>
           <p id="notesStatus" class="mt-1" aria-live="polite" style="color:var(--muted)"></p>
         </section>

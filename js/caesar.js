@@ -70,17 +70,27 @@
     els.outer.innerHTML = '';
     els.inner.innerHTML = '';
 
-    const build = (container, letters, isUpper) => {
+    const build = (container, letters, { kind, upper }) => {
       for (let i = 0; i < letters.length; i++) {
-        const span = document.createElement('span');
-        span.className = 'wheel-letter';
-        span.textContent = isUpper ? letters[i].toUpperCase() : letters[i];
-        container.appendChild(span);
+        const glyph = document.createElement('span');
+        glyph.className = `glyph ${kind}`;
+
+        const letterSpan = document.createElement('span');
+        letterSpan.className = 'glyph__letter';
+        letterSpan.textContent = upper ? letters[i].toUpperCase() : letters[i].toLowerCase();
+        glyph.appendChild(letterSpan);
+
+        const indexSpan = document.createElement('span');
+        indexSpan.className = 'glyph__index';
+        indexSpan.textContent = String(i);
+        glyph.appendChild(indexSpan);
+
+        container.appendChild(glyph);
       }
     };
 
-    build(els.outer, ALPHA, true);
-    build(els.inner, ALPHA, false);
+    build(els.outer, ALPHA, { kind: 'outer', upper: true });
+    build(els.inner, ALPHA, { kind: 'inner', upper: true });
 
     layoutRings();
     updateRotation();

@@ -40,6 +40,11 @@
     plain:  "KNOWLEDGE IS POWER",
     shift:  5  // the wheel needs to be turned to this to reveal the plaintext
   };
+  try {
+    localStorage.setItem('lock_digit_caesar_shift', String(CFG.shift));
+  } catch (_) {
+    // ignore storage issues (e.g., private browsing)
+  }
 
   // Optional: provide a hash of the expected plaintext for stricter checking
   // Set EXPECTED_HASH to SHA-256(hex) of the normalized plaintext (normalizePlain()).

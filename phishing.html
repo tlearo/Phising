@@ -38,10 +38,10 @@
       </a>
 
       <nav class="main-nav" aria-label="Primary">
-        <a class="nav-link" href="#" onclick="utils.backOrHome();return false;">Back</a>
+        <a class="nav-link" href="index.html" data-back="index.html">Back</a>
         <a class="nav-link" href="index.html">Home</a>
         <a class="nav-link" href="game.html">Game</a>
-        <a class="nav-link" href="admin.html">Admin</a>
+        <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
       </nav>
     </div>
   </header>
@@ -71,10 +71,10 @@
         </div>
 
         <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
-          <button class="btn" onclick="saveHighlights()">Save</button>
-          <button class="btn ghost" onclick="loadHighlights()">Load</button>
-          <button class="btn warn" onclick="eraseAll()">Clear</button>
-          <button class="btn ghost" onclick="selectAll()">Auto-place</button>
+          <button class="btn" id="saveBtn" type="button">Save</button>
+          <button class="btn ghost" id="loadBtn" type="button">Load</button>
+          <button class="btn warn" id="clearBtn" type="button">Clear</button>
+          <button class="btn ghost" id="selectAllBtn" type="button">Auto-place</button>
         </div>
 
         <hr class="mt-2" />
@@ -90,6 +90,18 @@
             <li><a href="phishing.html?img=Picture4.png">SharePoint – “file shared”</a></li>
           </ul>
         </nav>
+
+        <div class="slideshow-controls flex mt-1" style="gap:.5rem; align-items:center;">
+          <button class="btn ghost sm" id="prevImg" type="button">Previous</button>
+          <p id="slideStatus" class="muted" aria-live="polite">Example 1 of 4</p>
+          <button class="btn ghost sm" id="nextImg" type="button">Next</button>
+        </div>
+
+        <h2 class="mt-2">Classify This Email</h2>
+        <div class="flex mt-1" style="gap:.5rem; flex-wrap:wrap;">
+          <button class="btn ghost" id="markLegit" type="button" aria-pressed="false">Isn't Phishing</button>
+          <button class="btn warn" id="markPhish" type="button" aria-pressed="false">Is Phishing</button>
+        </div>
 
         <p class="mt-2" id="vulnerabilityCount" aria-live="polite">You marked 0 out of 5 vulnerabilities.</p>
 
@@ -116,7 +128,7 @@
         </div>
 
         <div id="feedbackPanel" class="mt-2">
-          <button id="submitButton" class="btn" onclick="submitHighlights()">Submit</button>
+          <button id="submitButton" class="btn" type="button">Submit</button>
           <p id="phishingFeedback" class="mt-1" aria-live="polite"></p>
         </div>
       </section>

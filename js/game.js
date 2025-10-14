@@ -21,15 +21,14 @@
 
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-  
-  
   function computeLockDigits(){
-  const d1 = Number(localStorage.getItem('lock_digit_phishing_total') || 0);
-  const d2 = Number(localStorage.getItem('lock_digit_caesar_shift') || 0);
-  const d3 = Number(localStorage.getItem('lock_digit_pw_clues') || 0);
-  const d4 = 8;
-  return [d1,d2,d3,d4];
-}
+    const d1 = Number(localStorage.getItem('lock_digit_phishing_total') || 0);
+    const d2 = Number(localStorage.getItem('lock_digit_caesar_shift') || 0);
+    const d3 = Number(localStorage.getItem('lock_digit_pw_minutes') || localStorage.getItem('lock_digit_pw_clues') || 0);
+    const d4 = 8;
+    const d5 = Number(localStorage.getItem('lock_digit_binary') || 0);
+    return [d1, d2, d3, d4, d5];
+  }
 
 
   function announce(msg){ try{ window.a11y?.announce?.(msg); }catch(_){} }
@@ -64,7 +63,7 @@
 
   // -------------------- Progress rendering --------------------------------
 
-  const PUZZLES = ['phishing','password','encryption','essential'];
+  const PUZZLES = ['phishing','password','encryption','essential','binary'];
 
   function computeCompleted(p){
     return PUZZLES.reduce((n, key) => n + (p[key] ? 1 : 0), 0);
@@ -76,16 +75,16 @@
 
     // Text
     const status = $('#progressStatus');
-    if (status) status.textContent = `${done}/4 puzzles completed`;
+    if (status) status.textContent = `${done}/${PUZZLES.length} puzzles completed`;
 
     // Bar
     const fill = $('#progressFill');
-    if (fill) fill.style.width = `${(done/4)*100}%`;
+    if (fill) fill.style.width = `${(done/PUZZLES.length)*100}%`;
 
     const bar = $('.progress-bar');
     if (bar) {
       bar.setAttribute('aria-valuemin', '0');
-      bar.setAttribute('aria-valuemax', '4');
+      bar.setAttribute('aria-valuemax', String(PUZZLES.length));
       bar.setAttribute('aria-valuenow', String(done));
     }
 
@@ -184,13 +183,13 @@
 
   async function tryUnlock(){
     const code = getCode();
-    if (code.length !== 4) {
-      setFeedback('Enter all 4 digits.');
+    if (code.length !== digits.length) {
+      setFeedback(`Enter all ${digits.length} digits.`);
       return;
     }
 
     if (!allPuzzlesComplete()) {
-      setFeedback('Finish all four puzzles before unlocking the vault.');
+      setFeedback(`Finish all ${PUZZLES.length} puzzles before unlocking the vault.`);
       return;
     }
 
@@ -223,6 +222,70 @@
 
   // -------------------- Boot ----------------------------------------------
 
+  // ---------- Scoreboard ---------------------------------------------------
+
+  const scoreEl = $('#scoreTotal');
+  const scoreLogBtn = $('#scoreLogBtn');
+  const scoreLogPanel = $('#scoreLog');
+
+  function fmtScoreLogEntry(entry) {
+    const time = new Date(entry.at || Date.now());
+    const delta = entry.delta || 0;
+    const sign = delta >= 0 ? '+' : '−';
+    const amount = Math.abs(delta);
+    const date = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${date} ${sign}${amount}: ${entry.reason || 'update'} → ${entry.total}`;
+  }
+
+  function renderScoreLog() {
+    if (!scoreLogPanel) return;
+    const log = window.utils.points.log().slice().reverse();
+    if (!log.length) {
+      scoreLogPanel.textContent = 'No adjustments yet.';
+      return;
+    }
+    scoreLogPanel.innerHTML = '';
+    const ul = document.createElement('ul');
+    ul.className = 'score-log__list';
+    log.forEach(entry => {
+      const li = document.createElement('li');
+      li.textContent = fmtScoreLogEntry(entry);
+      ul.appendChild(li);
+    });
+    scoreLogPanel.appendChild(ul);
+  }
+
+  function updateScore(total) {
+    if (!scoreEl) return;
+    const t = total ?? window.utils.points.get();
+    scoreEl.textContent = String(t).padStart(3, '0');
+  }
+
+  window.addEventListener('score:change', (ev) => {
+    updateScore(ev?.detail?.total);
+    if (scoreLogPanel && !scoreLogPanel.hasAttribute('hidden')) {
+      renderScoreLog();
+    }
+  });
+
+  function initScoreboard() {
+    window.utils.points.ensure();
+    updateScore();
+    if (scoreLogBtn && scoreLogPanel) {
+      scoreLogBtn.addEventListener('click', () => {
+        const hidden = scoreLogPanel.hasAttribute('hidden');
+        if (hidden) {
+          renderScoreLog();
+          scoreLogPanel.removeAttribute('hidden');
+          scoreLogBtn.textContent = 'Hide log';
+        } else {
+          scoreLogPanel.setAttribute('hidden', 'hidden');
+          scoreLogBtn.textContent = 'View log';
+        }
+      });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     // Session guard (teams only)
     const user = readUser();
@@ -236,16 +299,18 @@
     renderProgress();
     const how = document.getElementById('lockHow');
     if (how){
-        const [a,b,c,d] = computeLockDigits();
-        how.textContent = `Hint: digits are → [# of phishing emails = ${a}] [Caesar shift = ${b}] [# clues used = ${c}] [Essential controls = ${d}]`;
+        const [a,b,c,d,e] = computeLockDigits();
+        how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary digit = ${e}`;
      }
 
     autoAdvanceWire();
+    initScoreboard();
 
     unlockBtn?.addEventListener('click', tryUnlock);
 
     // Optional: allow pressing Enter in last digit to attempt unlock
-    digits[3]?.addEventListener('keydown', (e) => {
+    const lastDigit = digits[digits.length - 1];
+    lastDigit?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); tryUnlock(); }
     });
   });
