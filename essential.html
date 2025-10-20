@@ -48,7 +48,6 @@
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="game.html">Game</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         </nav>
       </div>
     </div>
@@ -59,6 +58,36 @@
       <h1 class="glow">Essential Eight</h1>
       <p class="mt-1" style="color:var(--muted)">Drag each control to the matching description. Get them all right to earn your digit.</p>
     </header>
+
+    <section class="intro-banner mt-2" aria-labelledby="essentialBriefHeading">
+      <h2 id="essentialBriefHeading">Points briefing</h2>
+      <p>Accuracy beats speed here. Every correct placement cements your score; every mis-match chips away at it. Take a moment to read the descriptions, line up the controls, then lock in the digit.</p>
+      <ul>
+        <li>Progress meter shows how many of the eight controls you have correct—aim for green before submitting.</li>
+        <li>Use <strong>Check</strong> sparingly; each failed review hints at mistakes and can lower points.</li>
+        <li>Need help? The hint button costs points, so time it wisely.</li>
+        <li>Digit four is always the number of Essential Eight strategies—make sure you’ve earned it first!</li>
+      </ul>
+      <div class="vault-callout" role="status">
+        <span class="tag">Vault digit</span>
+        <p><strong>8</strong> Essential Eight strategies — complete the set before claiming the digit.</p>
+      </div>
+    </section>
+
+    <section class="status-hud" aria-label="Team status">
+      <div class="points-box">
+        <p class="points-box__label">Team points</p>
+        <p class="points-box__value" id="essentialPointsTotal">000</p>
+        <p class="points-box__delta" id="essentialPointsDelta" aria-live="polite"></p>
+      </div>
+      <div class="progress-mini">
+        <p class="progress-mini__label">Puzzle progress</p>
+        <div class="progress-mini__track">
+          <div class="progress-mini__fill" id="essentialProgressFill"></div>
+        </div>
+        <p class="progress-mini__text" id="essentialProgressText">0% complete</p>
+      </div>
+    </section>
 
     <!-- Two-column layout -->
     <section class="ess-layout mt-2">
@@ -106,6 +135,7 @@
           <button class="btn" id="checkAnswersBtn">Check</button>
           <button class="btn ghost" id="shuffleBtn">Shuffle</button>
           <button class="btn warn" id="resetBoardBtn">Reset</button>
+          <button class="btn ghost" id="essHintBtn" type="button">Hint (−5 pts)</button>
         </div>
 
         <!-- Progress bar -->
@@ -117,6 +147,7 @@
         </div>
 
         <p id="essFeedback" class="mt-2" aria-live="polite"></p>
+        <p id="essHintText" class="hint-callout" hidden>Group the controls by purpose: prevent, limit, detect, and recover. Matching that intent to the description is key.</p>
       </aside>
 
       <!-- RIGHT: drop targets / descriptions -->
@@ -209,6 +240,20 @@
         <path class="wire" d="M40 380 C 220 420, 380 360, 560 420 S 900 480, 1160 420" />
       </svg>
     </section>
+
+    <section class="card resources-card mt-2" aria-labelledby="essentialResourcesHeading">
+      <h2 id="essentialResourcesHeading">Further learning</h2>
+      <ul>
+        <li><a href="https://www.cyber.gov.au/resources-business-and-government/strategies/prevent-cyber-security-incidents/essential-eight" target="_blank" rel="noopener">ACSC — Essential Eight guidance</a></li>
+        <li><a href="https://www.cisa.gov/secure-by-design" target="_blank" rel="noopener">CISA — Secure by Design principles</a></li>
+        <li><a href="https://learn.microsoft.com/en-us/security/compass/essential-eight" target="_blank" rel="noopener">Microsoft — Essential Eight deployment</a></li>
+      </ul>
+    </section>
+
+    <nav class="challenge-nav" aria-label="Puzzle navigation">
+      <a class="btn ghost" href="encryption.html">&larr; Previous: Encryption</a>
+      <a class="btn" href="binary.html">Next: Binary Lab &rarr;</a>
+    </nav>
 
     <footer class="mt-3">
       <p style="color:var(--muted)">Pro tip: read carefully — several controls sound similar but have distinct goals.</p>

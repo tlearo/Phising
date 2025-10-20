@@ -48,19 +48,69 @@
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="game.html">Game</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         </nav>
       </div>
     </div>
   </header>
 
-  <main class="container" id="main" role="main" tabindex="-1">
+  <main class="container-xl" id="main" role="main" tabindex="-1">
     <header class="game-header">
       <h1 class="glow">Phishing Spotter</h1>
       <p class="mt-1" style="color:var(--muted)">
         Mark the risky parts of the email (domains, grammar, urgency, mismatched branding…). Find enough indicators to earn your digit.
       </p>
     </header>
+
+    <section class="intro-banner mt-2" aria-labelledby="phishingBriefHeading">
+      <h2 id="phishingBriefHeading">Points & objectives</h2>
+      <p>Each correct highlight and classification keeps your score intact. Missing obvious clues, clearing highlights without reason, or guessing the verdict too early chips away at your total.</p>
+      <ul>
+        <li>Capture at least three hotspots per message to stay on pace for full credit.</li>
+        <li>Hints cost points—use them only when the trail goes cold.</li>
+        <li>Record the digit once <strong>Submit Highlights</strong> gives you the all-clear.</li>
+        <li>Need a breather? Use Save/Load to preserve your work without losing points.</li>
+      </ul>
+      <div class="vault-callout" role="status">
+        <span class="tag">Vault digit</span>
+        <p><strong id="phishVaultValue">—</strong> phishing emails in this gallery. Mark them correctly to unlock digit one.</p>
+      </div>
+    </section>
+
+    <section class="status-hud" aria-label="Team status">
+      <div class="points-box">
+        <p class="points-box__label">Team points</p>
+        <p class="points-box__value" id="phishPointsTotal">000</p>
+        <p class="points-box__delta" id="phishPointsDelta" aria-live="polite"></p>
+      </div>
+      <div class="progress-mini">
+        <p class="progress-mini__label">Puzzle progress</p>
+        <div class="progress-mini__track">
+          <div class="progress-mini__fill" id="phishProgressFill"></div>
+        </div>
+        <p class="progress-mini__text" id="phishProgressText">0% complete</p>
+      </div>
+    </section>
+
+    <section class="card instructions-card mt-2" aria-labelledby="missionHeading">
+      <div class="instructions-grid">
+        <div>
+          <h2 id="missionHeading">Your mission</h2>
+          <ol class="instructions-list">
+            <li>Study each email example. Switch slides with the arrows beside the canvas.</li>
+            <li>Use the brush tool to circle suspicious clues. Aim to highlight at least three hotspots.</li>
+            <li>Submit your highlights, then decide if the email is phishing or legitimate.</li>
+          </ol>
+        </div>
+        <div class="classification-cta" aria-label="Email classification actions">
+          <p class="cta-title">Ready to classify this email?</p>
+          <div class="classification-buttons">
+            <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
+            <button class="btn cta-btn primary" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
+          </div>
+          <p class="cta-hint">You can change your choice after reviewing other examples.</p>
+        </div>
+      </div>
+    </section>
 
     <!-- Layout: left tools, right stage -->
     <section class="main-layout mt-2">
@@ -83,7 +133,12 @@
           <button class="btn ghost" id="loadBtn" type="button">Load</button>
           <button class="btn warn" id="clearBtn" type="button">Clear</button>
           <button class="btn ghost" id="selectAllBtn" type="button">Auto-place (demo)</button>
+          <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
         </div>
+
+        <p id="phishHintText" class="hint-callout" hidden>
+          Scan the sender address, call-to-action URL, and urgency cues first—phishers often betray themselves there.
+        </p>
 
         <hr class="mt-2" />
 
@@ -99,12 +154,6 @@
           </ul>
         </nav>
 
-        <h2 class="mt-2">Classify This Email</h2>
-        <div class="flex mt-1" style="gap:.5rem; flex-wrap:wrap;">
-          <button class="btn ghost" id="markLegit" type="button" aria-pressed="false">Isn't Phishing</button>
-          <button class="btn warn" id="markPhish" type="button" aria-pressed="false">Is Phishing</button>
-        </div>
-
         <p class="mt-2" id="vulnerabilityCount" aria-live="polite">You marked 0 out of 5 vulnerabilities.</p>
 
         <div class="mt-2">
@@ -115,32 +164,53 @@
 
       <!-- RIGHT: image stage -->
       <section class="card" aria-label="Email example">
-        <h2>Canvas</h2>
-
-        <!-- Stage holds the image + drawing canvas (canvas sized to image) -->
-        <div class="slideshow-wrapper mt-1">
-          <div id="imageStage" class="image-stage">
-            <img id="phishingImage"
-                 src="assets/Picture1.png"
-                 alt="Email screenshot for phishing analysis"
-                 referrerpolicy="no-referrer" />
-
-            <canvas id="drawCanvas"></canvas>
-          </div>
-
-          <div class="slideshow-controls flex mt-2">
-            <button class="btn ghost sm" id="prevImg" type="button">Previous</button>
-            <p id="slideStatus" class="muted" aria-live="polite">Example 1 of 4</p>
-            <button class="btn ghost sm" id="nextImg" type="button">Next</button>
-          </div>
+        <div class="canvas-header">
+          <h2>Canvas</h2>
+          <p class="muted">Review each example and highlight suspicious details before submitting.</p>
         </div>
 
+        <div class="canvas-carousel mt-1">
+          <button class="carousel-arrow" id="prevImg" type="button" aria-label="Previous email example">&#10094;</button>
+
+          <div class="image-container">
+            <!-- Stage holds the image + drawing canvas (canvas sized to image) -->
+            <div id="imageStage" class="image-stage">
+              <img id="phishingImage"
+                   src="assets/Picture1.png"
+                   alt="Email screenshot for phishing analysis"
+                   referrerpolicy="no-referrer" />
+
+            <canvas id="drawCanvas"
+                    width="800" height="600"></canvas>
+            </div>
+          </div>
+
+          <button class="carousel-arrow" id="nextImg" type="button" aria-label="Next email example">&#10095;</button>
+        </div>
+
+        <div class="carousel-dots" id="exampleDots" aria-label="Email example navigation" role="tablist"></div>
+        <p id="slideStatus" class="muted text-center" aria-live="polite">Example 1 of 4</p>
+
         <div id="feedbackPanel" class="mt-2">
-          <button id="submitButton" class="btn" type="button">Submit</button>
-          <p id="phishingFeedback" class="mt-1" aria-live="polite"></p>
+          <button id="submitButton" class="btn primary" type="button">Submit Highlights</button>
+          <p id="phishingFeedback" class="status-message mt-1" aria-live="polite"></p>
         </div>
       </section>
     </section>
+
+    <section class="card resources-card mt-2" aria-labelledby="phishResourcesHeading">
+      <h2 id="phishResourcesHeading">Further learning</h2>
+      <ul>
+        <li><a href="https://www.cyber.gov.au/resources-business-and-government/online-scams/avoiding-phishing-scams" target="_blank" rel="noopener">ACSC — Avoiding phishing scams</a></li>
+        <li><a href="https://www.cisa.gov/news-events/news/stop-think-connect-avoid-phishing-attacks" target="_blank" rel="noopener">CISA — Avoid phishing attacks</a></li>
+        <li><a href="https://www.proofpoint.com/us/threat-reference/phishing" target="_blank" rel="noopener">Proofpoint threat reference</a></li>
+      </ul>
+    </section>
+
+    <nav class="challenge-nav" aria-label="Puzzle navigation">
+      <a class="btn ghost" href="game.html">&larr; Mission Hub</a>
+      <a class="btn" href="password.html">Next: Password Puzzle &rarr;</a>
+    </nav>
 
     <footer class="mt-3">
       <p style="color:var(--muted)">Tip: check sender domain, links, grammar/formatting, urgency, and mismatched branding.</p>

@@ -1,6 +1,6 @@
 /* game.js — Cyber Escape Rooms (Game Hub + Vault Lock)
    - Renders overall progress and journey
-   - Handles 4-digit lock with SHA-256 hash compare
+   - Handles the 5-digit vault lock with SHA-256 hash compare
    - Requires all puzzles complete before unlocking
 */
 
@@ -64,6 +64,27 @@
   // -------------------- Progress rendering --------------------------------
 
   const PUZZLES = ['phishing','password','encryption','essential','binary'];
+  const PUZZLE_LABELS = {
+    phishing: 'Phishing Spotter',
+    password: 'Password Puzzle',
+    encryption: 'Encryption',
+    essential: 'Essential Eight',
+    binary: 'Binary Lab'
+  };
+  const PUZZLE_HINTS = {
+    phishing: 'Spot phishing clues and earn the first digit.',
+    password: 'Crack the weak password to reveal digit two.',
+    encryption: 'Dial in the Caesar shift to learn digit three.',
+    essential: 'Match the defensive controls for digit four.',
+    binary: 'Finish the binary math to capture the final digit.'
+  };
+  const PUZZLE_PATHS = {
+    phishing: 'phishing.html',
+    password: 'password.html',
+    encryption: 'encryption.html',
+    essential: 'essential.html',
+    binary: 'binary.html'
+  };
 
   function computeCompleted(p){
     return PUZZLES.reduce((n, key) => n + (p[key] ? 1 : 0), 0);
@@ -80,20 +101,16 @@
     const status = $('#progressStatus');
     if (status) status.textContent = `${done}/${PUZZLES.length} puzzles completed`;
 
-    // Bar
-    const fill = $('#progressFill');
-    if (fill) fill.style.width = `${(done/PUZZLES.length)*100}%`;
+    const overallPercent = Math.round((done / PUZZLES.length) * 100);
+    const globalFill = $('#missionProgressFill');
+    if (globalFill) globalFill.style.width = `${overallPercent}%`;
+    window.utils?.setProgressPercent?.('mission', overallPercent, { complete: done === PUZZLES.length });
 
-    const bar = $('.progress-bar');
-    if (bar) {
-      bar.setAttribute('aria-valuemin', '0');
-      bar.setAttribute('aria-valuemax', String(PUZZLES.length));
-      bar.setAttribute('aria-valuenow', String(done));
-    }
+    document.querySelectorAll('.mission-tracker__item').forEach(item => {
+      item.classList.remove('is-next');
+    });
 
-    // Journey steps
     PUZZLES.forEach(k => {
-      const el = $(`#step-${k}`);
       const btn = document.querySelector(`[data-puzzle="${k}"]`);
       const entry = meta?.[k];
       const percent = typeof entry?.percent === 'number'
@@ -101,17 +118,48 @@
         : (p[k] ? 100 : 0);
 
       if (btn) {
-        const ratio = percent / 100;
-        btn.style.setProperty('--progress-ratio', ratio.toFixed(2));
-        btn.setAttribute('data-progress', String(percent));
-        btn.classList.toggle('is-complete', !!p[k]);
-        btn.setAttribute('aria-label', `${btn.textContent.trim()} — ${percent}% complete${p[k] ? ', solved' : ''}`);
+        const fillEl = btn.querySelector('.mission-tracker__fill');
+        const progressLabel = btn.querySelector('.mission-tracker__progress');
+        if (fillEl) fillEl.style.width = `${percent}%`;
+        if (progressLabel) progressLabel.textContent = percent >= 100 ? 'Complete' : `${percent}%`;
+        btn.classList.toggle('is-complete', percent >= 100);
+        btn.setAttribute('aria-label', `${PUZZLE_LABELS[k]} — ${percent}% complete${percent >= 100 ? ', solved' : ''}`);
       }
-
-      if (!el) return;
-      if (p[k]) el.classList.add('done');
-      else el.classList.remove('done');
     });
+
+    const nextPuzzle = PUZZLES.find(k => !p[k]);
+    const nextTag = $('#nextPuzzleTag');
+    const nextHint = $('#nextPuzzleHint');
+    if (nextPuzzle) {
+      document.querySelector(`[data-puzzle="${nextPuzzle}"]`)?.classList.add('is-next');
+      if (nextTag) {
+        nextTag.textContent = PUZZLE_LABELS[nextPuzzle] || nextPuzzle;
+        nextTag.classList.remove('is-complete');
+      }
+      if (nextHint) {
+        nextHint.textContent = PUZZLE_HINTS[nextPuzzle] || 'Tackle the next puzzle to keep momentum.';
+      }
+    } else {
+      if (nextTag) {
+        nextTag.textContent = 'Vault ready';
+        nextTag.classList.add('is-complete');
+      }
+      if (nextHint) {
+        nextHint.textContent = 'All digits secured! Enter the code and open the chest.';
+      }
+    }
+
+    const startBtn = $('#startChallengesBtn');
+    if (startBtn) {
+      if (nextPuzzle) {
+        const path = PUZZLE_PATHS[nextPuzzle] || 'phishing.html';
+        startBtn.href = path;
+        startBtn.textContent = `Go to ${PUZZLE_LABELS[nextPuzzle] || nextPuzzle}`;
+      } else {
+        startBtn.href = '#lockOpenBtn';
+        startBtn.textContent = 'Open the vault';
+      }
+    }
   }
 
   // -------------------- Lock helpers --------------------------------------
@@ -218,12 +266,12 @@
 
     const h = await sha256Hex(code);
     if (h === expect) {
-      setFeedback('✅ Vault unlocked!', true);
+      setFeedback('Vault unlocked!', true);
       chest?.classList.add('open'); // your CSS animates this
       openBtn?.setAttribute('aria-label', 'Vault open');
       announce('Vault unlocked');
     } else {
-      setFeedback('❌ Incorrect code. Keep playing to confirm your digits.');
+      setFeedback('Incorrect code. Keep playing to confirm your digits.');
     }
   }
 
@@ -314,6 +362,11 @@
     ensureLogout();
     renderTeamName();
     renderProgress();
+    window.utils?.initStatusHud('mission', {
+      score: '#scoreTotal',
+      delta: '#missionPointsDelta',
+      progressFill: '#missionProgressFill'
+    });
     const metaKey = `${user.username || 'team'}_progress_meta`;
     const pKey = progressKey(user);
     window.addEventListener('storage', (ev) => {

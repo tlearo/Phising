@@ -14,7 +14,14 @@
 
   const TEAMS = ['team1', 'team2', 'team3', 'team4', 'team5'];
 
-  const PUZZLES = ['phishing', 'password', 'encryption', 'essential'];
+  const PUZZLES = ['phishing', 'password', 'encryption', 'essential', 'binary'];
+  const PUZZLE_LABELS = {
+    phishing: 'Phishing',
+    password: 'Password',
+    encryption: 'Encryption',
+    essential: 'Essential',
+    binary: 'Binary'
+  };
 
   const SCORE_BASE = 100;
   const SCORE_LOG_LIMIT = 60;
@@ -126,6 +133,28 @@
     return { total: SCORE_BASE, delta: 0, log: [entry] };
   }
 
+  function setTeamPuzzleProgress(team, puzzle, value) {
+    const key = `${team}_progress`;
+    const progress = getJSON(key, {
+      phishing: false,
+      password: false,
+      encryption: false,
+      essential: false,
+      binary: false
+    });
+    progress[puzzle] = !!value;
+    setJSON(key, progress);
+    const metaKey = `${team}_progress_meta`;
+    const meta = getJSON(metaKey, {});
+    meta[puzzle] = {
+      percent: value ? 100 : 0,
+      updatedAt: Date.now()
+    };
+    setJSON(metaKey, meta);
+    announce(`${team.toUpperCase()} ${value ? 'completed' : 'reopened'} ${PUZZLE_LABELS[puzzle] || puzzle}.`);
+    refreshAll();
+  }
+
   let teamRows = [];
   let activePointsTeam = null;
   let pointsModalChart = null;
@@ -151,7 +180,8 @@
         phishing: false,
         password: false,
         encryption: false,
-        essential: false
+        essential: false,
+        binary: false
       });
 
       const times = getJSON(`${team}_times`, []); // array of seconds per puzzle (optional)
@@ -285,9 +315,19 @@
       badges.className = 'team-card__badges';
 
       PUZZLES.forEach(p => {
-        const badge = document.createElement('span');
-        badge.className = `badge ${progress[p] ? 'ok' : 'dim'}`;
-        badge.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+        const label = PUZZLE_LABELS[p] || (p.charAt(0).toUpperCase() + p.slice(1));
+        const badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = `badge ${progress[p] ? 'ok' : 'dim'} badge--interactive`;
+        badge.textContent = label;
+        badge.dataset.team = team;
+        badge.dataset.puzzle = p;
+        badge.setAttribute('aria-pressed', progress[p] ? 'true' : 'false');
+        badge.setAttribute('aria-label', `${label} ${progress[p] ? 'complete' : 'incomplete'}. Click to toggle.`);
+        badge.addEventListener('click', () => {
+          const newValue = !progress[p];
+          setTeamPuzzleProgress(team, p, newValue);
+        });
         badges.appendChild(badge);
       });
 
@@ -305,9 +345,11 @@
     };
     const d1 = toDigit(localStorage.getItem('lock_digit_phishing_total'), '—');
     const d2 = toDigit(localStorage.getItem('lock_digit_caesar_shift'), '—');
-    const d3 = toDigit(localStorage.getItem('lock_digit_pw_clues'), '0');
+    const pwMinutes = localStorage.getItem('lock_digit_pw_minutes');
+    const d3 = toDigit(pwMinutes ?? localStorage.getItem('lock_digit_pw_clues'), '0');
     const d4 = '8';
-    lockEl.textContent = `Vault digits → 1: ${d1} phishing emails • 2: shift ${d2} • 3: clues ${d3} • 4: ${d4} (fixed)`;
+    const d5 = toDigit(localStorage.getItem('lock_digit_binary'), '—');
+    lockEl.textContent = `Vault digits → 1: ${d1} phishing emails • 2: shift ${d2} • 3: clues ${d3} • 4: ${d4} (fixed) • 5: binary product ones digit ${d5}`;
   }
 
   function renderStats(rows) {
@@ -759,6 +801,8 @@
         resetTeamScore(t, 'Reset via admin');
       });
       localStorage.removeItem('lock_digit_pw_clues');
+      localStorage.removeItem('lock_digit_pw_minutes');
+      localStorage.removeItem('lock_digit_binary');
       announce('All team progress reset.');
       renderLockDigits();
       refresh();
@@ -768,6 +812,8 @@
     const confettiLayer = qs('#confettiLayer');
     const spotlightLayer = qs('#spotlightLayer');
 
+    const podium = qs('.admin-podium');
+
     qs('#triggerConfetti')?.addEventListener('click', () => {
       if (!confettiLayer) return;
       renderPodium(teamRows);
@@ -776,8 +822,10 @@
       announce('Celebration!');
       // Auto hide after a few seconds
       setTimeout(() => {
-        confettiLayer.classList.remove('is-active');
-        confettiLayer.setAttribute('aria-hidden', 'true');
+        if (!confettiLayer.classList.contains('podium-visible')) {
+          confettiLayer.classList.remove('is-active');
+          confettiLayer.setAttribute('aria-hidden', 'true');
+        }
       }, 3600);
     });
 
@@ -786,6 +834,21 @@
       const active = spotlightLayer.classList.toggle('is-active');
       spotlightLayer.setAttribute('aria-hidden', active ? 'false' : 'true');
       announce(active ? 'Spotlight on' : 'Spotlight off');
+    });
+
+    qs('#togglePodium')?.addEventListener('click', () => {
+      if (!confettiLayer) return;
+      const showing = !confettiLayer.classList.contains('podium-visible');
+      if (showing) {
+        renderPodium(teamRows);
+        confettiLayer.classList.add('is-active', 'podium-visible');
+        confettiLayer.setAttribute('aria-hidden', 'false');
+      } else {
+        confettiLayer.classList.remove('podium-visible');
+        confettiLayer.classList.remove('is-active');
+        confettiLayer.setAttribute('aria-hidden', 'true');
+      }
+      announce(showing ? 'Podium shown' : 'Podium hidden');
     });
 
     // Notes
@@ -864,7 +927,11 @@
         const teams = TEAMS.map(team => ({
           team,
           progress: getJSON(`${team}_progress`, {
-            phishing: false, password: false, encryption: false, essential: false
+            phishing: false,
+            password: false,
+            encryption: false,
+            essential: false,
+            binary: false
           }),
           times: getJSON(`${team}_times`, [])
         }));
@@ -911,6 +978,8 @@
     refreshAll();
     wireChartTabs();
     wireControls(refreshAll);
+    const throttledRefresh = window.utils?.throttle ? window.utils.throttle(refreshAll, 300) : refreshAll;
+    window.addEventListener('storage', throttledRefresh);
   });
 
 })();

@@ -16,7 +16,7 @@
   // Normalization: trim, collapse spaces, lowercase.
 
   const HINT_COST = 5;
-  const BONUS_HINT_COST = 8;
+  const BONUS_HINT_COST = 5;
   const WRONG_COST = 5;
   const SPEED_REWARD_BANDS = [
     { threshold: 45, points: 24, label: 'Lightning solve bonus' },
@@ -24,8 +24,11 @@
     { threshold: 180, points: 14, label: 'Steady solve bonus' },
     { threshold: Infinity, points: 10, label: 'Solved' }
   ];
-  const GUESSES_PER_SECOND = 2e9; // 2 billion guesses/second for crack-time lab
-  const WEAK_SAMPLES = ['password', 'letmein', 'summer2024', 'dragon1', 'football!', 'iloveyou', 'qwerty123'];
+  const Strength = window.PasswordStrength;
+  if (!Strength) {
+    console.error('PasswordStrength helper missing. Ensure js/password-strength.js is loaded before password.js');
+    return;
+  }
 
   const SCENARIOS = [
     {
@@ -147,99 +150,11 @@
     return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  function crackSecondsToDigit(seconds) {
-    const minutes = Math.max(1, Math.round(seconds / 60));
-    return Math.min(9, minutes);
-  }
-
-  function formatCrackTime(seconds) {
-    if (!Number.isFinite(seconds) || seconds === Infinity) {
-      return 'Centuries+';
-    }
-    if (!seconds || seconds <= 0.5) return '<1 second';
-    if (seconds < 60) {
-      const s = Math.round(seconds);
-      return `${s} second${s === 1 ? '' : 's'}`;
-    }
-    const mins = seconds / 60;
-    if (mins < 60) {
-      const whole = Math.floor(mins);
-      const remainder = Math.round((mins - whole) * 60);
-      return remainder ? `${whole}m ${remainder}s` : `${whole} minutes`;
-    }
-    const hours = mins / 60;
-    if (hours < 48) {
-      const whole = Math.floor(hours);
-      const remainder = Math.round((hours - whole) * 60);
-      return remainder ? `${whole}h ${remainder}m` : `${whole} hours`;
-    }
-    const days = hours / 24;
-    if (days < 365) {
-      const whole = Math.floor(days);
-      return `${whole} day${whole === 1 ? '' : 's'}`;
-    }
-    const years = days / 365;
-    if (years < 1000) {
-      const rounded = years >= 10 ? Math.round(years) : years.toFixed(1);
-      return `${rounded} year${Number(rounded) === 1 ? '' : 's'}`;
-    }
-    const millennia = years / 1000;
-    return `${millennia.toFixed(1)} millennia`;
-  }
-
-  function strengthScale(seconds) {
-    if (seconds <= 10) return 2;
-    if (seconds <= 45) return 3;
-    if (seconds <= 90) return 4;
-    if (seconds <= 180) return 5;
-    if (seconds <= 360) return 6;
-    if (seconds <= 900) return 7;
-    if (seconds <= 1800) return 8;
-    return 9;
-  }
-
   function rewardForSolve(seconds) {
     for (const band of SPEED_REWARD_BANDS) {
       if (seconds <= band.threshold) return band;
     }
     return SPEED_REWARD_BANDS[SPEED_REWARD_BANDS.length - 1];
-  }
-
-  function estimateCrackSeconds(sample) {
-    if (!sample) return 0;
-    let pool = 0;
-    if (/[a-z]/.test(sample)) pool += 26;
-    if (/[A-Z]/.test(sample)) pool += 26;
-    if (/[0-9]/.test(sample)) pool += 10;
-    if (/[^a-zA-Z0-9]/.test(sample)) pool += 32;
-    if (pool === 0) pool = 26;
-    const length = sample.length;
-    const logSeconds = length * Math.log(pool) - Math.log(GUESSES_PER_SECOND);
-    if (logSeconds > 700) return Number.POSITIVE_INFINITY;
-    return Math.exp(logSeconds);
-  }
-
-  function generateWeakPassword() {
-    return WEAK_SAMPLES[Math.floor(Math.random() * WEAK_SAMPLES.length)];
-  }
-
-  function updateLab() {
-    if (!labCrackEl || !labDigitEl) return;
-    const sample = labInput?.value?.trim() || '';
-    if (!sample) {
-      labCrackEl.textContent = '—';
-      labDigitEl.textContent = '—';
-      labDigitEl.removeAttribute('title');
-      return;
-    }
-    const seconds = estimateCrackSeconds(sample);
-    const minutesRaw = seconds === Infinity ? Infinity : Math.round(seconds / 60);
-    const minutes = Math.max(1, Number.isFinite(minutesRaw) ? minutesRaw : 0);
-    labCrackEl.textContent = formatCrackTime(seconds);
-    const digit = crackSecondsToDigit(seconds);
-    const suffix = !Number.isFinite(minutesRaw) || minutes >= 10 ? '+' : '';
-    labDigitEl.textContent = `${digit}${suffix}`;
-    labDigitEl.setAttribute('title', `Rounded minutes: ${Number.isFinite(minutesRaw) ? minutes : 'Infinity'}`);
   }
 
   // current user + storage keys
@@ -277,6 +192,7 @@
   const crackMeterEl   = $('#pwStrengthMeter');
   const bonusHintBtn   = $('#pwHintBtn');
   const bonusHintEl    = $('#pwBonusHint');
+  const vaultCalloutDigit = $('#passwordVaultDigitDisplay');
 
   const clueList       = $('#clueList');
   const nextClueBtn    = $('#nextClueBtn');
@@ -287,12 +203,6 @@
   const clearBtn       = $('#clearGuessBtn');
 
   const feedbackEl     = $('#pwFeedback');
-  const labInput       = $('#pwLabInput');
-  const labGenerateBtn = $('#pwLabGenerate');
-  const labCrackEl     = $('#pwLabCrack');
-  const labDigitEl     = $('#pwLabDigit');
-  const embedToggleBtn = $('#pwEmbedToggle');
-  const embedContainer = $('#pwEmbedContainer');
 
   if (!clueList || !guessInput) return; // not on this page
 
@@ -317,17 +227,18 @@
   if (clueCostLabel) clueCostLabel.textContent = `Each extra clue costs ${HINT_COST} pts`;
   if (hintCostEl) hintCostEl.textContent = String(BONUS_HINT_COST);
   if (scenarioLabelEl) scenarioLabelEl.textContent = ACTIVE_SCENARIO.label;
-  const crackTimeDisplay = formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
+  const crackTimeDisplay = Strength.formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
   if (crackTimeEl) crackTimeEl.textContent = crackTimeDisplay;
   const vaultMinutes = Math.max(1, Math.round(ACTIVE_SCENARIO.crackSeconds / 60));
   if (vaultDigitEl) vaultDigitEl.textContent = String(vaultMinutes);
-  if (crackMeterEl) crackMeterEl.value = strengthScale(ACTIVE_SCENARIO.crackSeconds);
+  if (vaultCalloutDigit) vaultCalloutDigit.textContent = String(vaultMinutes);
+  if (crackMeterEl) crackMeterEl.value = Strength.strengthScale(ACTIVE_SCENARIO.crackSeconds);
   if (!ACTIVE_SCENARIO.bonusHint && bonusHintBtn) {
     bonusHintBtn.setAttribute('disabled', 'true');
     bonusHintBtn.textContent = 'No bonus hint available';
   }
 
-  const passwordDigit = crackSecondsToDigit(ACTIVE_SCENARIO.crackSeconds);
+  const passwordDigit = Strength.crackSecondsToDigit(ACTIVE_SCENARIO.crackSeconds);
   let bonusHintUsed = false;
 
   // Timer start
@@ -433,28 +344,30 @@
     const solveSeconds = markComplete(t0);
     const reward = rewardForSolve(solveSeconds);
     if (points) {
-      points.add(reward.points, `${reward.label} (${formatCrackTime(solveSeconds)})`);
+      points.add(reward.points, `${reward.label} (${Strength.formatCrackTime(solveSeconds)})`);
     }
     localStorage.setItem('lock_digit_pw_clues', String(shown)); // backwards compatibility
     localStorage.setItem('lock_digit_pw_minutes', String(passwordDigit));
     localStorage.setItem('password_crack_time_display', crackTimeDisplay);
     localStorage.removeItem(SCENARIO_KEY);
     const minutesText = vaultMinutes === 1 ? '1 minute' : `${vaultMinutes} minutes`;
-    const message = `Success! You cracked it in ${formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
+    const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
     setFeedback(message, true);
-    if (labInput) {
-      labInput.value = ACTIVE_SCENARIO.answer;
-      updateLab();
-    }
     updateProgressPercent(100, { complete: true });
     // Optional: lock inputs to avoid repeated submissions
     guessInput.setAttribute('disabled', 'true');
     submitBtn?.setAttribute('disabled', 'true');
     bonusHintBtn?.setAttribute('disabled', 'true');
+    try {
+      const testerFrame = document.querySelector('.pw-strength-frame iframe');
+      testerFrame?.contentWindow?.postMessage({ type: 'password:test', value: ACTIVE_SCENARIO.answer }, '*');
+    } catch (_) {
+      /* ignore cross-frame errors */
+    }
   }
 
   function fail() {
-    setFeedback('❌ Not quite. Try another guess or reveal another clue.');
+    setFeedback('Not quite. Try another guess or reveal another clue.');
     points?.spend(WRONG_COST, 'Password incorrect guess');
   }
 
@@ -489,51 +402,19 @@
       guessInput.focus();
     });
 
-    labInput?.addEventListener('input', updateLab);
-    labGenerateBtn?.addEventListener('click', () => {
-      if (!labInput) return;
-      labInput.value = generateWeakPassword();
-      updateLab();
-      labInput.focus();
-    });
-    updateLab();
-
-    let embedLoaded = false;
-    function ensureEmbedLoaded() {
-      if (embedLoaded || !embedContainer) return;
-      embedLoaded = true;
-      embedContainer.innerHTML = '';
-      const iframe = document.createElement('iframe');
-      iframe.src = 'https://service.vic.gov.au/find-services/personal/password-strength-tester';
-      iframe.loading = 'lazy';
-      iframe.title = 'Service Victoria password strength tester';
-      iframe.setAttribute('referrerpolicy', 'no-referrer');
-      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups');
-      embedContainer.appendChild(iframe);
-    }
-
-    embedToggleBtn?.addEventListener('click', () => {
-      if (!embedContainer || !embedToggleBtn) return;
-      const expanded = embedToggleBtn.getAttribute('aria-expanded') === 'true';
-      const nextState = !expanded;
-      embedToggleBtn.setAttribute('aria-expanded', String(nextState));
-      embedContainer.hidden = !nextState;
-      if (nextState) {
-        ensureEmbedLoaded();
-        embedToggleBtn.textContent = 'Hide password strength tester';
-        embedToggleBtn.classList.remove('ghost');
-      } else {
-        embedToggleBtn.textContent = 'Show password strength tester';
-        embedToggleBtn.classList.add('ghost');
-      }
-    });
-
     // Enter key submits
     guessInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
         handleSubmit();
       }
+    });
+
+    window.utils?.initStatusHud('password', {
+      score: '#passwordPointsTotal',
+      delta: '#passwordPointsDelta',
+      progressFill: '#passwordProgressFill',
+      progressLabel: '#passwordProgressText'
     });
   });
 

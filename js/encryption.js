@@ -76,6 +76,9 @@
   const submitBtn  = $('#submitBtn');
   const answerEl   = $('#finalAnswer');
   const feedbackEl = $('#encFeedback');
+  const hintBtn    = $('#encHintBtn');
+  const hintBox    = $('#encHintText');
+  const vaultDisplay = $('#encVaultValue');
 
   if (!cipherEl || !liveEl) return; // not on this page
 
@@ -108,6 +111,13 @@
   let currentShift = 0;
   let progressPercent = 0;
   const CIPHERTEXT = Caesar.encode(CFG.plain, CFG.shift); // what we show
+  if (vaultDisplay) {
+    vaultDisplay.textContent = String(CFG.shift);
+  }
+
+  const points = window.utils?.points;
+  points?.ensure();
+  let hintUsed = false;
 
   function updateProgressPercent(amount, opts = {}) {
     const setter = window.utils?.setProgressPercent;
@@ -190,7 +200,7 @@
 
   function success(){
     if (feedbackEl){
-      feedbackEl.textContent = '✅ Correct! You earned a digit for the vault.';
+      feedbackEl.textContent = `Correct! Shift ${CFG.shift} reveals the plaintext—record it as your vault digit.`;
       feedbackEl.classList.remove('warn');
       feedbackEl.classList.add('ok');
     }
@@ -201,7 +211,7 @@
 
   function fail(){
     if (feedbackEl){
-      feedbackEl.textContent = '❌ Not quite. Adjust the wheel or check spelling/casing.';
+      feedbackEl.textContent = 'Not quite. Adjust the wheel or check spelling/casing.';
       feedbackEl.classList.remove('ok');
       feedbackEl.classList.add('warn');
     }
@@ -217,6 +227,23 @@
     setShift(isNaN(start) ? 0 : start);
 
     submitBtn?.addEventListener('click', handleSubmit);
+    hintBtn?.addEventListener('click', () => {
+      if (hintUsed) {
+        if (feedbackEl) {
+          feedbackEl.textContent = 'Hint already revealed.';
+          feedbackEl.classList.remove('warn');
+        }
+        return;
+      }
+      hintUsed = true;
+      hintBox?.removeAttribute('hidden');
+      points?.spend(5, 'Encryption hint');
+      if (feedbackEl) {
+        feedbackEl.textContent = 'Hint revealed. Align the alphabets until real words appear.';
+        feedbackEl.classList.remove('warn');
+        feedbackEl.classList.add('ok');
+      }
+    });
 
     // Enter key in the answer box triggers submit
     answerEl?.addEventListener('keydown', (e) => {
@@ -224,6 +251,13 @@
         e.preventDefault();
         handleSubmit();
       }
+    });
+
+    window.utils?.initStatusHud('encryption', {
+      score: '#encryptionPointsTotal',
+      delta: '#encryptionPointsDelta',
+      progressFill: '#encryptionProgressFill',
+      progressLabel: '#encryptionProgressText'
     });
   });
 

@@ -48,7 +48,6 @@
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="game.html" aria-current="page">Game</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         </nav>
         <button class="nav-btn alert" type="button" id="logoutTop">Logout</button>
       </div>
@@ -61,6 +60,17 @@
       <p class="mt-1" style="color:var(--muted)">Welcome, <span id="teamName">TEAM</span>!</p>
     </header>
 
+    <section class="intro-banner mt-2" aria-labelledby="missionBriefingHeading">
+      <h2 id="missionBriefingHeading">Mission Briefing</h2>
+      <p>You are racing rival crews to crack the vault. Solve each puzzle in order, bank the digit it reveals, and keep your score high—every hint or incorrect move costs precious points.</p>
+      <ol>
+        <li><strong>Step 1:</strong> Start with the highlighted puzzle below. It represents your next objective.</li>
+        <li><strong>Step 2:</strong> Note the digit you earn and enter it on the vault lock to the right.</li>
+        <li><strong>Step 3:</strong> Repeat until all five digits are filled, then unlock the chest to win.</li>
+      </ol>
+      <p id="scoreExplainer">Teams begin with a full score. Staying accurate and avoiding unnecessary hints keeps your total at the top of the leaderboard.</p>
+    </section>
+
     <!-- Mission layout -->
     <section class="dashboard-grid mt-2" aria-label="Cyber mission layout">
       <section class="card mission-card" aria-labelledby="missionHeading">
@@ -69,62 +79,87 @@
           <p class="muted">Launch puzzles, monitor progress, and stay ahead of rival crews.</p>
         </header>
 
-        <div class="mission-card__grid">
-          <div class="mission-card__section mission-card__section--puzzles">
-            <h3>Puzzles</h3>
-            <div class="buttons mt-1">
-              <a class="btn" href="phishing.html" data-puzzle="phishing">
-                Phishing Spotter <span aria-hidden="true">→</span>
-              </a>
-              <a class="btn" href="password.html" data-puzzle="password">
-                Password Puzzle <span aria-hidden="true">→</span>
-              </a>
-              <a class="btn" href="encryption.html" data-puzzle="encryption">
-                Encryption <span aria-hidden="true">→</span>
-              </a>
-              <a class="btn" href="essential.html" data-puzzle="essential">
-                Essential Eight <span aria-hidden="true">→</span>
-              </a>
-              <a class="btn" href="binary.html" data-puzzle="binary">
-                Binary Lab <span aria-hidden="true">→</span>
-              </a>
-            </div>
+        <div class="mission-brief" aria-live="polite">
+          <p class="mission-brief__title">Current Objective</p>
+          <p class="mission-brief__next">
+            <span>Next up:</span>
+            <span class="tag" id="nextPuzzleTag">Loading…</span>
+            <span id="nextPuzzleHint">Complete the highlighted puzzle to progress.</span>
+          </p>
+          <a class="btn mt-1" href="phishing.html" id="startChallengesBtn">Start challenges</a>
+        </div>
+
+        <section class="status-hud mt-2" aria-label="Team status">
+          <div class="points-box">
+            <p class="points-box__label">Team points</p>
+            <p class="points-box__value" id="scoreTotal">000</p>
+            <button class="btn ghost sm" type="button" id="scoreLogBtn">View log</button>
+            <p class="points-box__delta" id="missionPointsDelta" aria-live="polite"></p>
           </div>
-
-          <div class="mission-card__section mission-card__section--score">
-            <h3>Team Points</h3>
-            <p class="muted mt-1">Hints and mistakes adjust your total. Keep it high for bragging rights.</p>
-            <div class="score-display">
-              <span id="scoreTotal">000</span>
-              <button class="btn ghost sm" type="button" id="scoreLogBtn">View log</button>
+          <div class="progress-mini">
+            <p class="progress-mini__label">Overall progress</p>
+            <div class="progress-mini__track">
+              <div class="progress-mini__fill" id="missionProgressFill"></div>
             </div>
-            <div id="scoreLog" class="score-log" hidden></div>
+            <p class="progress-mini__text" id="progressStatus">0/5 puzzles completed</p>
           </div>
+        </section>
 
-          <div class="mission-card__section mission-card__section--progress">
-            <h3>Progress</h3>
-            <p class="mt-1"><span id="progressStatus">0/5 puzzles completed</span></p>
+        <div id="scoreLog" class="score-log" hidden></div>
 
-            <div class="progress-bar mt-2" role="progressbar" aria-label="Overall progress"
-                 aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
-              <div id="progressFill"></div>
-            </div>
-
-            <div class="journey-map mt-2">
-              <h4 class="journey-map__title">Your Journey</h4>
-              <div class="journey-steps" aria-label="Journey progress">
-                <div class="step" id="step-phishing">1. Phishing</div>
-                <div class="arrow">➜</div>
-                <div class="step" id="step-password">2. Password</div>
-                <div class="arrow">➜</div>
-                <div class="step" id="step-encryption">3. Encryption</div>
-                <div class="arrow">➜</div>
-                <div class="step" id="step-essential">4. Essential 8</div>
-                <div class="arrow">➜</div>
-                <div class="step final" id="step-binary">5. Binary Lab</div>
-              </div>
-            </div>
-          </div>
+        <div class="mission-tracker mt-2">
+          <ul class="mission-tracker__list" id="missionTrackerList">
+            <li>
+              <a class="mission-tracker__item" href="phishing.html" data-puzzle="phishing">
+                <div class="mission-tracker__header">
+                  <span class="mission-tracker__name">Phishing Spotter</span>
+                  <span class="mission-tracker__progress">0%</span>
+                </div>
+                <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
+                <p class="mission-tracker__hint">Spot phishing clues and earn the first digit.</p>
+              </a>
+            </li>
+            <li>
+              <a class="mission-tracker__item" href="password.html" data-puzzle="password">
+                <div class="mission-tracker__header">
+                  <span class="mission-tracker__name">Password Puzzle</span>
+                  <span class="mission-tracker__progress">0%</span>
+                </div>
+                <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
+                <p class="mission-tracker__hint">Crack the weak password to reveal digit two.</p>
+              </a>
+            </li>
+            <li>
+              <a class="mission-tracker__item" href="encryption.html" data-puzzle="encryption">
+                <div class="mission-tracker__header">
+                  <span class="mission-tracker__name">Encryption</span>
+                  <span class="mission-tracker__progress">0%</span>
+                </div>
+                <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
+                <p class="mission-tracker__hint">Dial in the Caesar shift to learn digit three.</p>
+              </a>
+            </li>
+            <li>
+              <a class="mission-tracker__item" href="essential.html" data-puzzle="essential">
+                <div class="mission-tracker__header">
+                  <span class="mission-tracker__name">Essential Eight</span>
+                  <span class="mission-tracker__progress">0%</span>
+                </div>
+                <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
+                <p class="mission-tracker__hint">Match the defensive controls for digit four.</p>
+              </a>
+            </li>
+            <li>
+              <a class="mission-tracker__item" href="binary.html" data-puzzle="binary">
+                <div class="mission-tracker__header">
+                  <span class="mission-tracker__name">Binary Lab</span>
+                  <span class="mission-tracker__progress">0%</span>
+                </div>
+                <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
+                <p class="mission-tracker__hint">Finish the binary math to capture the final digit.</p>
+              </a>
+            </li>
+          </ul>
         </div>
 
         <footer class="mission-card__footer">
@@ -147,11 +182,11 @@
 
           <div class="lock-panel mt-2">
             <div class="lock-box">
-              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1 (Phishing)">
-              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2 (Encryption)">
-              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3 (Password)">
-              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4 (Essential)">
-              <input class="lock-digit" type="number" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5 (Binary)">
+              <input class="lock-digit" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 1 (Phishing)">
+              <input class="lock-digit" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2 (Encryption)">
+              <input class="lock-digit" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3 (Password)">
+              <input class="lock-digit" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4 (Essential)">
+              <input class="lock-digit" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5 (Binary)">
             </div>
 
             <div class="flex mt-2">

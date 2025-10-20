@@ -38,12 +38,18 @@
   const progressEl = $('#essProgressText');          // "x/8 correct"
   const fillEl     = $('#progressFill');             // visual fill
   const feedbackEl = $('#essFeedback');
+  const btnHint    = $('#essHintBtn');
+  const hintBox    = $('#essHintText');
 
   const btnCheck   = $('#checkAnswersBtn');
   const btnShuffle = $('#shuffleBtn');
   const btnReset   = $('#resetBoardBtn');
 
   if (!dragList || !dropList) return; // not on this page
+
+  const points = window.utils?.points;
+  points?.ensure();
+  let hintUsed = false;
 
   // Each draggable card has data-key; each drop-slot has data-slot and contains .slot-bay
   function allCards(){ return $$('#dragList .drag-card'); }
@@ -160,6 +166,8 @@
     src.forEach(el => dragList.appendChild(el));
 
     setFeedback('');
+    hintUsed = false;
+    hintBox?.setAttribute('hidden', 'hidden');
     updateProgress(false);
     announce('Board reset');
   }
@@ -254,9 +262,25 @@
     btnShuffle?.addEventListener('click', shuffle);
     btnReset  ?.addEventListener('click', resetBoard);
     btnCheck  ?.addEventListener('click', handleCheck);
+    btnHint   ?.addEventListener('click', () => {
+      if (hintUsed) {
+        setFeedback('Hint already revealed. Group the controls by purpose.', true);
+        return;
+      }
+      hintUsed = true;
+      hintBox?.removeAttribute('hidden');
+      points?.spend(5, 'Essential Eight hint');
+      setFeedback('Hint revealed: relate each description to prevent / limit / detect / recover categories.', true);
+    });
 
     // First render
     updateProgress(false);
+    window.utils?.initStatusHud('essential', {
+      score: '#essentialPointsTotal',
+      delta: '#essentialPointsDelta',
+      progressFill: '#essentialProgressFill',
+      progressLabel: '#essentialProgressText'
+    });
   });
 
 })();

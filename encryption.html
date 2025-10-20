@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/caesar.js" defer></script>
   <script src="js/encryption.js" defer></script>
 </head>
 
@@ -48,7 +49,6 @@
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="game.html">Game</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         </nav>
       </div>
     </div>
@@ -59,6 +59,36 @@
       <h1 class="glow">Encryption</h1>
       <p class="mt-1" style="color:var(--muted)">Use the Caesar wheel to decode the message. Submit the plaintext to earn your digit.</p>
     </header>
+
+    <section class="intro-banner mt-2" aria-labelledby="encryptionBriefHeading">
+      <h2 id="encryptionBriefHeading">Points intel</h2>
+      <p>Fast, accurate decoding keeps your crew on top. Spamming guesses or ignoring the wheel wastes time and costs score. Align the rings, verify your plaintext, then lock in the digit.</p>
+      <ul>
+        <li>Watch the live output—when the message reads clearly, note the shift for the scoreboard.</li>
+        <li>Submit once; repeated wrong answers signal rushed work and lower points.</li>
+        <li>Need a nudge? The hint button costs points, so use it sparingly.</li>
+        <li>Record the shift number in the vault as soon as you earn confirmation.</li>
+      </ul>
+      <div class="vault-callout" role="status">
+        <span class="tag">Vault digit</span>
+        <p>Record the <strong id="encVaultValue">—</strong> position shift that reveals the plaintext.</p>
+      </div>
+    </section>
+
+    <section class="status-hud" aria-label="Team status">
+      <div class="points-box">
+        <p class="points-box__label">Team points</p>
+        <p class="points-box__value" id="encryptionPointsTotal">000</p>
+        <p class="points-box__delta" id="encryptionPointsDelta" aria-live="polite"></p>
+      </div>
+      <div class="progress-mini">
+        <p class="progress-mini__label">Puzzle progress</p>
+        <div class="progress-mini__track">
+          <div class="progress-mini__fill" id="encryptionProgressFill"></div>
+        </div>
+        <p class="progress-mini__text" id="encryptionProgressText">0% complete</p>
+      </div>
+    </section>
 
     <!-- Two-column responsive layout -->
     <section class="enc-layout mt-2">
@@ -87,6 +117,10 @@
       <section class="enc-panel card" aria-label="Decryption workspace">
         <h2>Decrypt This</h2>
 
+        <p id="encHintText" class="hint-callout" hidden>
+          The correct shift realigns the cipher alphabet with the original. Look for obvious words forming in the live output.
+        </p>
+
         <div class="mt-1">
           <p class="muted">Ciphertext:</p>
           <div class="card sm mt-1" style="overflow:auto">
@@ -108,6 +142,7 @@
 
         <div class="flex mt-2">
           <button id="submitBtn" class="btn" type="button">Submit</button>
+          <button class="btn ghost" id="encHintBtn" type="button">Hint (−5 pts)</button>
           <a href="game.html" class="btn ghost">Back to Vault</a>
           <a href="index.html" class="btn">Home</a>
         </div>
@@ -115,6 +150,20 @@
         <p id="encFeedback" class="mt-2" aria-live="polite"></p>
       </section>
     </section>
+
+    <section class="card resources-card mt-2" aria-labelledby="encryptionResourcesHeading">
+      <h2 id="encryptionResourcesHeading">Further learning</h2>
+      <ul>
+        <li><a href="https://www.khanacademy.org/computing/computer-science/cryptography" target="_blank" rel="noopener">Khan Academy — Cryptography</a></li>
+        <li><a href="https://www.nsa.gov/visit/cryptologic-heritage/what-we-do/cryptanalysis/caesar-shift/" target="_blank" rel="noopener">NSA — Caesar shift background</a></li>
+        <li><a href="https://www.crypto101.io/" target="_blank" rel="noopener">Crypto 101 (free book)</a></li>
+      </ul>
+    </section>
+
+    <nav class="challenge-nav" aria-label="Puzzle navigation">
+      <a class="btn ghost" href="password.html">&larr; Previous: Password Puzzle</a>
+      <a class="btn" href="essential.html">Next: Essential Eight &rarr;</a>
+    </nav>
 
     <footer class="mt-3">
       <p style="color:var(--muted)">Tip: the inner ring rotates; align letters to reveal the plaintext.</p>

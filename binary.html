@@ -48,7 +48,6 @@
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="index.html">Home</a>
           <a class="nav-link" href="game.html">Game</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link">Admin</a>
         </nav>
       </div>
     </div>
@@ -59,6 +58,36 @@
       <h1 class="glow">Binary Operations Lab</h1>
       <p class="mt-1" style="color:var(--muted)">Compare bits with XOR, multiply the values, and capture the vault digit from the decimal result.</p>
     </header>
+
+    <section class="intro-banner mt-2" aria-labelledby="binaryBriefHeading">
+      <h2 id="binaryBriefHeading">Points reminder</h2>
+      <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check place values, then submit once.</p>
+      <ul>
+        <li>The final digit is the ones place of the multiplication result—earn it by verifying both XOR and product rows.</li>
+        <li>Status pills update as you confirm each step; don’t move on until they glow green.</li>
+        <li>Use the crack-time calculator or scratch space before entering answers to avoid point hits.</li>
+        <li>Hints are available, but they cost points—save them for when you are truly stuck.</li>
+      </ul>
+      <div class="vault-callout" role="status">
+        <span class="tag">Vault digit</span>
+        <p>The ones place of the decimal product. When you multiply Binary A × Binary B correctly, record <strong id="binaryVaultDigit">—</strong>.</p>
+      </div>
+    </section>
+
+    <section class="status-hud" aria-label="Team status">
+      <div class="points-box">
+        <p class="points-box__label">Team points</p>
+        <p class="points-box__value" id="binaryPointsTotal">000</p>
+        <p class="points-box__delta" id="binaryPointsDelta" aria-live="polite"></p>
+      </div>
+      <div class="progress-mini">
+        <p class="progress-mini__label">Puzzle progress</p>
+        <div class="progress-mini__track">
+          <div class="progress-mini__fill" id="binaryProgressFill"></div>
+        </div>
+        <p class="progress-mini__text" id="binaryProgressText">0% complete</p>
+      </div>
+    </section>
 
     <section class="binary-layout mt-2">
       <section class="card binary-challenge" aria-labelledby="binaryChallengeHeading">
@@ -129,13 +158,21 @@
 
         <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. Multiplication works just like in decimal—add the shifted partial products.</p>
 
-        <div class="row g-1 mt-2">
+        <div class="flex mt-2" style="gap:.75rem; flex-wrap:wrap;">
           <button class="btn" type="button" id="binaryCheck">Check answers</button>
           <button class="btn ghost" type="button" id="binaryReset">Reset</button>
+          <button class="btn ghost" type="button" id="binaryHintBtn">Hint (−5 pts)</button>
         </div>
 
         <p class="feedback mt-2" id="binaryFeedback" aria-live="polite"></p>
         <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit is the ones place of the decimal product.</p>
+        <p id="binaryHintText" class="hint-callout" hidden>Line up the digits under matching place values. Multiply like long multiplication: each 1 in the lower number means a shifted copy of the top number that you add together.</p>
+      </section>
+
+      <section class="card binary-place" aria-labelledby="binaryPlaceHeading">
+        <h2 id="binaryPlaceHeading">Place Values</h2>
+        <p class="muted">1 means the value is <strong>on</strong> (include it); 0 means it is <strong>off</strong> (ignore it). Use this map to convert binary to decimal.</p>
+        <table class="binary-place-table" id="binaryPlaceTable"></table>
       </section>
 
       <section class="card binary-xor" aria-labelledby="xorHeading">
@@ -149,6 +186,20 @@
         <p class="mt-1">In this lab, XOR warms you up before the multiplication so you understand how the numbers interact. Once you nail the product, convert it to decimal and capture the ones digit for the vault.</p>
       </section>
     </section>
+
+    <section class="card resources-card mt-2" aria-labelledby="binaryResourcesHeading">
+      <h2 id="binaryResourcesHeading">Further learning</h2>
+      <ul>
+        <li><a href="https://www.khanacademy.org/computing/computer-science/cryptography/ciphers/a/binary-number-system" target="_blank" rel="noopener">Khan Academy — Binary number system</a></li>
+        <li><a href="https://www.csfieldguide.org.nz/en/chapters/representing-data/binary-numbers/" target="_blank" rel="noopener">CS Field Guide — Binary numbers</a></li>
+        <li><a href="https://www.geeksforgeeks.org/binary-multiplication/" target="_blank" rel="noopener">GeeksforGeeks — Binary multiplication</a></li>
+      </ul>
+    </section>
+
+    <nav class="challenge-nav" aria-label="Puzzle navigation">
+      <a class="btn ghost" href="essential.html">&larr; Previous: Essential Eight</a>
+      <a class="btn" href="game.html">Next: Mission Hub &rarr;</a>
+    </nav>
   </main>
 
   <!-- Global Footer -->

@@ -104,6 +104,18 @@
     if (typeof opts.complete === 'boolean') {
       setProgressFlag(flag, opts.complete, u);
     }
+    try {
+      window.dispatchEvent(new CustomEvent('progress:change', {
+        detail: {
+          flag,
+          percent: clamped,
+          complete: !!opts.complete,
+          user: u?.username || 'team'
+        }
+      }));
+    } catch (_) {
+      // ignore dispatch issues
+    }
     return meta[flag];
   }
   function getProgressPercent(flag, u = getUser()) {
@@ -304,6 +316,54 @@
     }
   };
 
+  function initStatusHud(flag, selectors = {}) {
+    const scoreEl = document.querySelector(selectors.score || selectors.scoreSelector);
+    const deltaEl = document.querySelector(selectors.delta || selectors.deltaSelector);
+    const progressFillEl = document.querySelector(selectors.progressFill || selectors.progressFillSelector);
+    const progressLabelEl = document.querySelector(selectors.progressLabel || selectors.progressLabelSelector);
+
+    if (scoreEl && typeof scoreEl.textContent !== 'string') return; // basic guard
+
+    const renderScore = (total, delta = 0, reason = '') => {
+      if (scoreEl) scoreEl.textContent = String(total ?? 0).padStart(3, '0');
+      if (deltaEl) {
+        if (!delta) deltaEl.textContent = '';
+        else {
+          const sign = delta > 0 ? '+' : '−';
+          const abs = Math.abs(delta);
+          deltaEl.textContent = `${sign}${abs} pts${reason ? ` — ${reason}` : ''}`;
+        }
+        deltaEl.classList.toggle('positive', delta > 0);
+        deltaEl.classList.toggle('negative', delta < 0);
+        if (!delta) {
+          deltaEl.classList.remove('positive', 'negative');
+        }
+      }
+    };
+
+    const renderProgress = (percent) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(percent || 0)));
+      if (progressFillEl) progressFillEl.style.width = `${clamped}%`;
+      if (progressLabelEl) progressLabelEl.textContent = clamped >= 100 ? 'Complete' : `${clamped}% complete`;
+    };
+
+    if (typeof pointsApi.get === 'function') {
+      renderScore(pointsApi.get(), 0);
+    }
+    renderProgress(getProgressPercent(flag));
+
+    window.addEventListener('score:change', (ev) => {
+      const detail = ev?.detail || {};
+      renderScore(detail.total, detail.delta, detail.reason);
+    });
+
+    window.addEventListener('progress:change', (ev) => {
+      const detail = ev?.detail;
+      if (!detail || detail.flag !== flag) return;
+      renderProgress(detail.percent);
+    });
+  }
+
   // ---------- Back link / nav helpers -------------------------------------
   function backOrHome(href = 'index.html') {
     try {
@@ -349,6 +409,7 @@
     readProgressMeta, setProgressPercent, getProgressPercent, pushTime,
     fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus,
     points: pointsApi,
-    backOrHome
+    backOrHome,
+    initStatusHud
   };
 })();
