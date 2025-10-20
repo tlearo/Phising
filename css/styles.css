@@ -98,6 +98,56 @@ main.container-xl {
     color: var(--muted);
 }
 
+.status-message {
+    border: 1px solid var(--border);
+    border-left-width: 4px;
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    background: rgba(88, 166, 255, .08);
+    font-weight: 500;
+    line-height: 1.5;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.status-message:empty {
+    display: none;
+}
+
+.status-message.ok {
+    border-color: var(--accent);
+    background: rgba(9, 255, 136, .12);
+}
+
+.status-message.warn {
+    border-color: var(--warn);
+    background: rgba(255, 166, 87, .12);
+}
+
+.status-message[data-tone]:not(:empty)::before {
+    content: attr(data-tone);
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-right: .6rem;
+    color: var(--brand);
+}
+
+.status-message[data-tone="success"]::before {
+    content: "Success";
+    color: var(--accent);
+}
+
+.status-message[data-tone="warn"]::before {
+    content: "Check";
+    color: var(--warn);
+}
+
+.status-message[data-tone="info"]::before {
+    content: "Note";
+}
+
 .status-ok {
     color: var(--accent);
 }
@@ -869,21 +919,26 @@ form .row {
     align-items: center;
 }
 
-/* The viewport for the email image + canvas.
-   Height capped to viewport so it never overflows the screen. */
+/* Wrapper keeps the stage + controls centered under the canvas */
+.slideshow-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.slideshow-wrapper > *:first-child {
+    width: 100%;
+}
+
+/* Stage matches the rendered image dimensions so the overlay tracks perfectly */
 .image-stage {
     position: relative;
     width: 100%;
     max-width: 1100px;
-    /* fit area: between 420px tall and ~72% of viewport height */
-    min-height: 420px;
-    max-height: min(72vh, 820px);
-    display: grid;
-    place-items: center;
-    overflow: hidden;
     background: #0b0f14;
     border: 1px solid var(--border);
     border-radius: 10px;
+    overflow: hidden;
 }
 
 /* These sizes are set dynamically in JS, but defaults help first paint */
@@ -899,6 +954,8 @@ form .row {
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: auto;
     z-index: 10;
 }
@@ -1162,6 +1219,36 @@ form .row {
     margin: 0;
 }
 
+.pw-embed {
+    background: rgba(11, 17, 26, .6);
+    border: 1px solid rgba(88,166,255,.16);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.pw-embed .pw-card-head {
+    margin-bottom: .5rem;
+}
+
+.pw-embed__frame {
+    width: 100%;
+    max-width: 100%;
+    min-height: 420px;
+    border: 1px solid rgba(88,166,255,.24);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(8, 12, 18, .85);
+    display: grid;
+    place-items: center;
+}
+
+.pw-embed__frame iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+}
+
 @media (max-width: 900px) {
     .pw-grid {
         grid-template-columns: 1fr;
@@ -1181,6 +1268,8 @@ form .row {
     color: var(--ink);
     text-decoration: none;
     transition: color .2s ease;
+    position: relative;
+    padding-left: 1.3rem;
 }
 
 .thumb-nav a:hover {
@@ -1192,15 +1281,35 @@ form .row {
     font-weight: 600;
 }
 
+.thumb-nav a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: .65rem;
+    height: .65rem;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    transform: translateY(-50%);
+    transition: background-color .2s ease, border-color .2s ease;
+}
+
+.thumb-nav a.is-complete::before {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
 .slideshow-controls {
-    justify-content: space-between;
+    justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
-    gap: .5rem;
+    gap: .75rem;
 }
 
 .slideshow-controls p {
     margin: 0;
-    flex: 1 1 160px;
+    flex: 0 0 auto;
     text-align: center;
     font-size: .92rem;
 }

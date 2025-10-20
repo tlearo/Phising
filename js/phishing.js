@@ -107,10 +107,25 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     return slideshow.current();
   }
 
+  function isImageComplete(name) {
+    if (!name) return false;
+    return localStorage.getItem(`phish_done_${name}`) === '1';
+  }
+
+  function countCompleted() {
+    return slideshow.order.reduce((count, name) => count + (isImageComplete(name) ? 1 : 0), 0);
+  }
+
   function updateSlideUi() {
     const current = currentName();
+    const total = Math.max(slideshow.total, 1);
+    const doneCount = countCompleted();
     if (slideStatus) {
-      slideStatus.textContent = `Example ${slideshow.index + 1} of ${Math.max(slideshow.total, 1)}`;
+      if (!slideshow.total) {
+        slideStatus.textContent = 'No examples available.';
+      } else {
+        slideStatus.textContent = `Example ${slideshow.index + 1} of ${total} | ${doneCount} complete`;
+      }
     }
     if (prevBtn) prevBtn.disabled = slideshow.index <= 0;
     if (nextBtn) nextBtn.disabled = slideshow.index >= slideshow.total - 1;
@@ -119,9 +134,18 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
     $$('.thumb-nav a').forEach((link, i) => {
       if (slideshow.order[i]) {
         const isCurrent = slideshow.order[i] === current;
+        const isDone = isImageComplete(slideshow.order[i]);
         link.classList.toggle('is-active', isCurrent);
         if (isCurrent) link.setAttribute('aria-current', 'page');
         else link.removeAttribute('aria-current');
+        link.classList.toggle('is-complete', isDone);
+        link.setAttribute('data-complete', isDone ? 'true' : 'false');
+        const label = link.textContent?.trim() || '';
+        if (isDone) {
+          link.setAttribute('aria-label', `${label} (complete)`);
+        } else {
+          if (link.getAttribute('aria-label')) link.removeAttribute('aria-label');
+        }
       }
     });
   }
@@ -605,6 +629,8 @@ localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTrut
       if (allDone) {
         markCompleteIfReady(); // also sets phishing flag
       }
+
+      updateSlideUi();
 
       // Move to next image (cycle once)
       if (slideshow.index < slideshow.total - 1) next();

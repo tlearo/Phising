@@ -291,6 +291,8 @@
   const labGenerateBtn = $('#pwLabGenerate');
   const labCrackEl     = $('#pwLabCrack');
   const labDigitEl     = $('#pwLabDigit');
+  const embedToggleBtn = $('#pwEmbedToggle');
+  const embedContainer = $('#pwEmbedContainer');
 
   if (!clueList || !guessInput) return; // not on this page
 
@@ -495,6 +497,36 @@
       labInput.focus();
     });
     updateLab();
+
+    let embedLoaded = false;
+    function ensureEmbedLoaded() {
+      if (embedLoaded || !embedContainer) return;
+      embedLoaded = true;
+      embedContainer.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://service.vic.gov.au/find-services/personal/password-strength-tester';
+      iframe.loading = 'lazy';
+      iframe.title = 'Service Victoria password strength tester';
+      iframe.setAttribute('referrerpolicy', 'no-referrer');
+      iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups');
+      embedContainer.appendChild(iframe);
+    }
+
+    embedToggleBtn?.addEventListener('click', () => {
+      if (!embedContainer || !embedToggleBtn) return;
+      const expanded = embedToggleBtn.getAttribute('aria-expanded') === 'true';
+      const nextState = !expanded;
+      embedToggleBtn.setAttribute('aria-expanded', String(nextState));
+      embedContainer.hidden = !nextState;
+      if (nextState) {
+        ensureEmbedLoaded();
+        embedToggleBtn.textContent = 'Hide password strength tester';
+        embedToggleBtn.classList.remove('ghost');
+      } else {
+        embedToggleBtn.textContent = 'Show password strength tester';
+        embedToggleBtn.classList.add('ghost');
+      }
+    });
 
     // Enter key submits
     guessInput?.addEventListener('keydown', (e) => {

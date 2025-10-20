@@ -99,12 +99,6 @@
           </ul>
         </nav>
 
-        <div class="slideshow-controls flex mt-1" style="gap:.5rem; align-items:center;">
-          <button class="btn ghost sm" id="prevImg" type="button">Previous</button>
-          <p id="slideStatus" class="muted" aria-live="polite">Example 1 of 4</p>
-          <button class="btn ghost sm" id="nextImg" type="button">Next</button>
-        </div>
-
         <h2 class="mt-2">Classify This Email</h2>
         <div class="flex mt-1" style="gap:.5rem; flex-wrap:wrap;">
           <button class="btn ghost" id="markLegit" type="button" aria-pressed="false">Isn't Phishing</button>
@@ -124,15 +118,21 @@
         <h2>Canvas</h2>
 
         <!-- Stage holds the image + drawing canvas (canvas sized to image) -->
-        <div id="imageStage" class="image-stage mt-1" style="position:relative; overflow:auto;">
-          <img id="phishingImage"
-               src="assets/Picture1.png"
-               alt="Email screenshot for phishing analysis"
-               referrerpolicy="no-referrer" />
+        <div class="slideshow-wrapper mt-1">
+          <div id="imageStage" class="image-stage">
+            <img id="phishingImage"
+                 src="assets/Picture1.png"
+                 alt="Email screenshot for phishing analysis"
+                 referrerpolicy="no-referrer" />
 
-          <canvas id="drawCanvas"
-                  width="800" height="600"
-                  style="position:absolute; left:0; top:0; pointer-events:auto;"></canvas>
+            <canvas id="drawCanvas"></canvas>
+          </div>
+
+          <div class="slideshow-controls flex mt-2">
+            <button class="btn ghost sm" id="prevImg" type="button">Previous</button>
+            <p id="slideStatus" class="muted" aria-live="polite">Example 1 of 4</p>
+            <button class="btn ghost sm" id="nextImg" type="button">Next</button>
+          </div>
         </div>
 
         <div id="feedbackPanel" class="mt-2">
