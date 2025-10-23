@@ -23,33 +23,48 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/vault.js" defer></script>
   <script src="js/game.js" defer></script>
 </head>
 
-<body>
+<body data-session="team">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
-      <a class="brand" href="index.html">
-        <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-copy">
-          <span class="brand-name">Cyber Escape Rooms</span>
-          <span class="brand-tagline">Team-based security missions</span>
-        </span>
-      </a>
-
-      <div class="header-actions">
-        <button class="nav-btn ghost" type="button" data-back="index.html">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="index.html" data-tooltip="Back to previous page">
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="game.html" aria-current="page">Game</a>
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
         </nav>
-        <button class="nav-btn alert" type="button" id="logoutTop">Logout</button>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
   </header>
@@ -57,7 +72,7 @@
   <main class="game-wrapper container" id="main" role="main" tabindex="-1">
     <header class="game-header">
       <h1 class="glow">Cyber Escape Rooms</h1>
-      <p class="mt-1" style="color:var(--muted)">Welcome, <span id="teamName">TEAM</span>!</p>
+      <p class="game-header__welcome">Welcome, <span id="teamName" data-user-name>TEAM</span>!</p>
     </header>
 
     <section class="intro-banner mt-2" aria-labelledby="missionBriefingHeading">
@@ -112,7 +127,7 @@
             <li>
               <a class="mission-tracker__item" href="phishing.html" data-puzzle="phishing">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">Phishing Spotter</span>
+                  <span class="mission-tracker__name">🐟 Phishing Spotter</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
@@ -122,7 +137,7 @@
             <li>
               <a class="mission-tracker__item" href="password.html" data-puzzle="password">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">Password Puzzle</span>
+                  <span class="mission-tracker__name">🔐 Password Puzzle</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
@@ -132,7 +147,7 @@
             <li>
               <a class="mission-tracker__item" href="encryption.html" data-puzzle="encryption">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">Encryption</span>
+                  <span class="mission-tracker__name">🌀 Encryption</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
@@ -142,7 +157,7 @@
             <li>
               <a class="mission-tracker__item" href="essential.html" data-puzzle="essential">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">Essential Eight</span>
+                  <span class="mission-tracker__name">🛡 Essential Eight</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
@@ -152,7 +167,7 @@
             <li>
               <a class="mission-tracker__item" href="binary.html" data-puzzle="binary">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">Binary Lab</span>
+                  <span class="mission-tracker__name">🧮 Binary Lab</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
@@ -164,7 +179,7 @@
 
         <footer class="mission-card__footer">
           <button class="btn ghost" type="button" data-back="index.html">Back</button>
-          <button class="btn" type="button" id="logoutSide">Logout</button>
+          <button class="btn" type="button" data-action="logout">Logout</button>
         </footer>
       </section>
 
@@ -190,8 +205,8 @@
             </div>
 
             <div class="flex mt-2">
-              <button class="btn" id="unlockBtn" type="button">Unlock</button>
-              <button class="btn ghost" id="clearCodeBtn" type="button">Clear</button>
+              <button class="btn" id="unlockBtn" type="button" data-tooltip="Check the vault code">Unlock</button>
+              <button class="btn ghost" id="clearCodeBtn" type="button" data-tooltip="Clear entered digits">Clear</button>
             </div>
 
             <p id="lockFeedback" class="mt-2" aria-live="polite"></p>
@@ -211,12 +226,12 @@
       </section>
 
       <section class="card quick-tips" aria-labelledby="tipsHeading">
-        <h2 id="tipsHeading">Speed Boost</h2>
-        <p class="muted mt-1">Answer puzzles fast to secure bonus points before the timer cools off.</p>
+        <h2 id="tipsHeading">Mission Tips</h2>
+        <p class="muted mt-1">Keep these reminders in mind before launching the next puzzle.</p>
         <ul class="tip-list mt-1">
-          <li>Precision beats volume — mark specific phishing clues.</li>
-          <li>Password rewards scale with how quickly you solve.</li>
-          <li>Celebrate to reveal a live podium of top teams.</li>
+          <li>Phishing: circle precise clues and submit each example to lock it in.</li>
+          <li>Password: finish Step 1, then run the answer through Step 2 for digit three.</li>
+          <li>Binary: enter both binary and decimal answers so the vault digit registers.</li>
         </ul>
       </section>
     </section>
@@ -232,20 +247,13 @@
       <nav class="footer-nav" aria-label="Footer">
         <a href="index.html">Home</a>
         <span aria-hidden="true">•</span>
-        <a href="game.html" aria-current="page">Game</a>
+        <a href="game.html" aria-current="page">Mission Hub</a>
         <span aria-hidden="true">•</span>
-        <a href="admin.html">Admin</a>
+        <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
       <p class="footer-note">Unlock the vault by cracking five cyber puzzles as a team.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
     </div>
   </footer>
-
-  <!-- Minimal inline glue (no logic) to call your existing logout() if present -->
-  <script defer>
-    const _logout = () => (typeof logout === 'function' ? logout() : (localStorage.clear(), location.href='index.html'));
-    document.getElementById('logoutTop')?.addEventListener('click', e => { e.preventDefault(); _logout(); });
-    document.getElementById('logoutSide')?.addEventListener('click', _logout);
-  </script>
 </body>
 </html>

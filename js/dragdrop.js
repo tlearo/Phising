@@ -229,14 +229,20 @@
   }
 
   function handleCheck(){
+    const alreadyComplete = window.utils?.readProgress?.()?.essential;
     const correct = score();
     const total = allSlots().length;
     updateProgress(true);
 
     if (correct === total){
-      setFeedback('Perfect! You earned a digit for the vault.', true);
+      setFeedback('Perfect! Digit 8 unlocked for the vault.', true);
       setEssentialDone();
       announce('All correct. Essential Eight complete.');
+      if (!alreadyComplete) {
+        window.vault?.unlock('essential', 8, {
+          message: 'Essential Eight digit 8 unlocked. Vault is one step closer.'
+        });
+      }
     } else if (correct >= Math.ceil(total*0.75)) {
       setFeedback(`Close! ${correct}/${total} correct. Tweak a few and check again.`);
       announce('Almost there');

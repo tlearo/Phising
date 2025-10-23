@@ -207,6 +207,9 @@
     announce('Encryption puzzle solved');
     markComplete();
     updateProgressPercent(100, { complete: true });
+    window.vault?.unlock('encryption', CFG.shift, {
+      message: `Encryption digit ${CFG.shift} unlocked. Add it to the vault.`
+    });
   }
 
   function fail(){

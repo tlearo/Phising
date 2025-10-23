@@ -354,6 +354,9 @@
     const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
     setFeedback(message, true);
     updateProgressPercent(100, { complete: true });
+    window.vault?.unlock('password', passwordDigit, {
+      message: `Password digit ${passwordDigit} unlocked. Note the rounded minutes for the vault.`
+    });
     // Optional: lock inputs to avoid repeated submissions
     guessInput.setAttribute('disabled', 'true');
     submitBtn?.setAttribute('disabled', 'true');

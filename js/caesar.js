@@ -171,6 +171,48 @@
     updateRotation();
   }
 
+  const dragState = {
+    active: false,
+    startAngle: 0,
+    startShift: 0,
+    pointerId: null
+  };
+
+  function pointerAngle(event) {
+    const rect = (els.wheelWrap || els.inner).getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const angle = Math.atan2(event.clientY - cy, event.clientX - cx) * 180 / Math.PI;
+    return angle;
+  }
+
+  function startDrag(event) {
+    if (event.button !== undefined && event.button !== 0) return;
+    dragState.active = true;
+    dragState.pointerId = event.pointerId;
+    dragState.startAngle = pointerAngle(event);
+    dragState.startShift = state.shift;
+    els.inner.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  }
+
+  function moveDrag(event) {
+    if (!dragState.active || (dragState.pointerId != null && event.pointerId !== dragState.pointerId)) return;
+    const currentAngle = pointerAngle(event);
+    let delta = currentAngle - dragState.startAngle;
+    // normalize to [-180,180]
+    delta = ((delta + 540) % 360) - 180;
+    const steps = Math.round(delta / state.degPer);
+    setShift(dragState.startShift - steps);
+  }
+
+  function endDrag(event) {
+    if (!dragState.active || (dragState.pointerId != null && event.pointerId !== dragState.pointerId)) return;
+    dragState.active = false;
+    dragState.pointerId = null;
+    els.inner.releasePointerCapture?.(event.pointerId);
+  }
+
   // ---------- Controls wiring ---------------------------------------------
 
   function initControls() {
@@ -195,6 +237,12 @@
       if (e.key === 'Home') { e.preventDefault(); setShift(0); }
       if (e.key === 'End') { e.preventDefault(); setShift(25); }
     });
+
+    els.inner.style.touchAction = 'none';
+    els.inner.addEventListener('pointerdown', startDrag);
+    window.addEventListener('pointermove', moveDrag);
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
 
     // Mouse wheel over wheel to change shift
     (els.wheelWrap || els.inner).addEventListener('wheel', (e) => {

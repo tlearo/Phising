@@ -23,33 +23,50 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/vault.js" defer></script>
+  <script src="js/onboarding.js" defer></script>
   <script src="js/caesar.js" defer></script>
   <script src="js/encryption.js" defer></script>
 </head>
 
-<body>
+<body data-session="team">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
-      <a class="brand" href="index.html">
-        <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-copy">
-          <span class="brand-name">Cyber Escape Rooms</span>
-          <span class="brand-tagline">Team-based security missions</span>
-        </span>
-      </a>
-
-      <div class="header-actions">
-        <button class="nav-btn ghost" type="button" data-back="index.html">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="game.html">Game</a>
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
         </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
   </header>
@@ -69,6 +86,7 @@
         <li>Need a nudge? The hint button costs points, so use it sparingly.</li>
         <li>Record the shift number in the vault as soon as you earn confirmation.</li>
       </ul>
+      <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-encryption">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p>Record the <strong id="encVaultValue">—</strong> position shift that reveals the plaintext.</p>
@@ -141,7 +159,7 @@
         </div>
 
         <div class="flex mt-2">
-          <button id="submitBtn" class="btn" type="button">Submit</button>
+          <button id="submitBtn" class="btn" type="button" data-tooltip="Submit decoded plaintext">Submit</button>
           <button class="btn ghost" id="encHintBtn" type="button">Hint (−5 pts)</button>
           <a href="game.html" class="btn ghost">Back to Vault</a>
           <a href="index.html" class="btn">Home</a>
@@ -170,15 +188,29 @@
     </footer>
   </main>
 
+  <div class="onboard" id="onboard-encryption" hidden data-onboard-key="encryption" data-onboard-auto="true" aria-labelledby="onboardEncryptionTitle">
+    <div class="onboard__backdrop" data-onboard-close></div>
+    <div class="onboard__dialog">
+      <button class="onboard__close" type="button" aria-label="Close tutorial" data-onboard-close>&times;</button>
+      <h2 id="onboardEncryptionTitle" data-onboard-focus>Encryption — Quick Guide</h2>
+      <p>Digit two equals the shift that uncovers the plaintext message.</p>
+      <ol class="onboard__list">
+        <li>Drag the inner ring or use the slider until the ciphertext forms natural language.</li>
+        <li>Watch the live output area to confirm the plaintext before you submit.</li>
+        <li>Submit the decoded phrase and record the displayed shift as your vault digit.</li>
+      </ol>
+    </div>
+  </div>
+
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <div class="footer-inner">
       <nav class="footer-nav" aria-label="Footer">
         <a href="index.html">Home</a>
         <span aria-hidden="true">•</span>
-        <a href="game.html">Game</a>
+        <a href="game.html">Mission Hub</a>
         <span aria-hidden="true">•</span>
-        <a href="admin.html">Admin</a>
+        <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
       <p class="footer-note">Turn the Caesar wheel, decode the message, and earn your cipher digit.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>

@@ -360,6 +360,7 @@
     }
 
     ensureLogout();
+    window.vault?.refresh();
     renderTeamName();
     renderProgress();
     window.utils?.initStatusHud('mission', {

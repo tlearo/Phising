@@ -346,6 +346,18 @@ form .row {
     margin-bottom: .25rem
 }
 
+.game-header__welcome {
+    margin-top: .35rem;
+    font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: #e2e8f0;
+}
+
+.game-header__welcome span {
+    color: var(--accent);
+}
+
 .main-layout {
     display: grid;
     grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
@@ -902,8 +914,10 @@ form .row {
 }
 
 .points-box .btn {
-    justify-self: start;
-    margin-top: .35rem;
+    justify-self: stretch;
+    align-self: end;
+    margin-top: .6rem;
+    text-align: center;
 }
 
 .mission-tracker__list {
@@ -1131,6 +1145,50 @@ form .row {
 .badge.badge--interactive {
     cursor: pointer;
     transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .2rem .6rem;
+    margin-right: .5rem;
+    border-radius: 999px;
+    background: rgba(59,130,246,.2);
+    color: var(--ink);
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    font-weight: 600;
+}
+
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + .45rem);
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(15, 23, 42, .92);
+    color: #f8fafc;
+    padding: .35rem .55rem;
+    border-radius: .5rem;
+    font-size: .75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+    box-shadow: 0 12px 28px rgba(2, 6, 23, .45);
+    z-index: 10;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 .badge.badge--interactive:hover,
@@ -2408,11 +2466,88 @@ footer {
   opacity: .85;
 }
 
+.site-header .header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: .8rem;
+}
+
 .site-header .header-actions {
   display: flex;
   gap: .75rem;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
+}
+
+.nav-btn--back {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.nav-btn--logout {
+  min-width: 0;
+}
+
+.vault-status {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(30, 41, 59, .35);
+  backdrop-filter: blur(4px);
+  font-size: .85rem;
+  line-height: 1;
+}
+
+.vault-status__label {
+  text-transform: uppercase;
+  font-size: .7rem;
+  letter-spacing: .18em;
+  color: var(--muted);
+}
+
+.vault-status__digits {
+  display: inline-flex;
+  gap: .35rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.vault-status__digits li {
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(59, 130, 246, .14);
+  font-weight: 600;
+  font-size: .95rem;
+  border: 1px solid rgba(148, 163, 184, .45);
+  color: var(--muted);
+  transition: transform .2s ease, background .2s ease, color .2s ease;
+}
+
+.vault-status__digits li.is-found {
+  background: rgba(16, 185, 129, .22);
+  border-color: rgba(45, 212, 191, .4);
+  color: var(--ink);
+  transform: scale(1.05);
+}
+
+.vault-status__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.vault-status.is-complete {
+  background: rgba(22, 163, 74, .25);
+  border-color: rgba(34, 197, 94, .5);
 }
 
 @media (max-width: 720px) {
@@ -2420,6 +2555,9 @@ footer {
     flex-direction: column;
     align-items: stretch;
     gap: .75rem;
+  }
+  .site-header .header-left {
+    justify-content: space-between;
   }
   .site-header .header-actions {
     width: 100%;
@@ -2437,6 +2575,10 @@ footer {
     flex-basis: 100%;
   }
   .header-actions .main-nav {
+    width: 100%;
+  }
+  .vault-status {
+    justify-content: center;
     width: 100%;
   }
 }
@@ -2521,6 +2663,118 @@ h1.glow {
   height: clamp(28px, 4vw, 46px);
   object-fit: contain;
   display: block;
+}
+
+.toast-stack {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: 220px;
+  max-width: clamp(220px, 28vw, 320px);
+  padding: .65rem .85rem;
+  border-radius: .75rem;
+  background: rgba(2, 6, 23, .9);
+  border: 1px solid rgba(148, 163, 184, .35);
+  color: var(--muted);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, .45);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: auto;
+}
+
+.toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+    .toast-stack {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        top: 1rem;
+        width: min(92vw, 320px);
+    }
+    .toast {
+        max-width: 100%;
+    }
+}
+
+.onboard {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 260;
+}
+
+.onboard.is-open {
+    display: flex;
+}
+
+.onboard__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, .72);
+    backdrop-filter: blur(8px);
+}
+
+.onboard__dialog {
+    position: relative;
+    background: linear-gradient(160deg, rgba(30, 41, 59, .95), rgba(15, 23, 42, .92));
+    border: 1px solid rgba(88, 166, 255, .4);
+    border-radius: 18px;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    width: min(520px, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(2, 6, 23, .6);
+    color: #f8fafc;
+    display: grid;
+    gap: .85rem;
+}
+
+.onboard__dialog h2 {
+    margin: 0;
+    font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+}
+
+.onboard__dialog p {
+    margin: 0;
+    color: rgba(226, 232, 240, .82);
+}
+
+.onboard__list {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: .45rem;
+}
+
+.onboard__close {
+    position: absolute;
+    top: .5rem;
+    right: .75rem;
+    background: none;
+    border: none;
+    color: rgba(226, 232, 240, .65);
+    font-size: 1.75rem;
+    cursor: pointer;
+}
+
+.onboard__close:hover,
+.onboard__close:focus-visible {
+    color: #fff;
 }
 .site-header .brand-name {
   font-weight: 700;

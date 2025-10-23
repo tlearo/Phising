@@ -184,6 +184,7 @@
   }
 
   function handleCheck() {
+    const alreadyComplete = window.utils?.readProgress?.()?.binary;
     const xorOk = checkXor();
     const productOk = checkProduct();
     updateProgressState();
@@ -192,6 +193,11 @@
       setFeedback(`Success! Decimal product is ${PRODUCT_DEC}. Vault digit captured: ${LOCK_DIGIT}.`, true);
       chestHint?.removeAttribute('hidden');
       markBinaryComplete();
+      if (!alreadyComplete) {
+        window.vault?.unlock('binary', LOCK_DIGIT, {
+          message: `Binary digit ${LOCK_DIGIT} recorded. Enter it on the vault panel.`
+        });
+      }
     } else if (xorOk || productOk) {
       setFeedback('Almost there—double-check the remaining row.', false);
       chestHint?.setAttribute('hidden', 'hidden');

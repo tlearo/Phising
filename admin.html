@@ -23,35 +23,49 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/vault.js" defer></script>
   <script src="js/Chart.min.js" defer></script>
   <script src="js/admin.js" defer></script>
 </head>
 
-<body>
+<body data-session="admin">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
-      <a class="brand" href="index.html">
-        <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-copy">
-          <span class="brand-name">Cyber Escape Rooms</span>
-          <span class="brand-tagline">Team-based security missions</span>
-        </span>
-      </a>
-
-      <div class="header-actions">
-        <button class="nav-btn ghost" type="button" data-back="index.html">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="index.html" data-tooltip="Back to previous page">
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
+        <a class="brand" href="admin.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="game.html">Game</a>
-          <a class="nav-link" href="admin.html" aria-current="page">Admin</a>
+          <a class="nav-link" href="game.html" data-visible="team">Mission Hub</a>
+          <a class="nav-link" href="admin.html">Admin</a>
         </nav>
-        <button class="nav-btn alert" type="button" id="logoutTop">Logout</button>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team" hidden aria-hidden="true">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
   </header>
@@ -140,7 +154,7 @@
             </div>
             <div class="flex mt-1 control-row">
               <a class="btn ghost" id="backToLogin" href="index.html">Back to Login</a>
-              <button class="btn" id="logoutBottom" type="button">Logout</button>
+              <button class="btn" type="button" data-action="logout">Logout</button>
             </div>
           </section>
         </div>
@@ -173,7 +187,7 @@
       <nav class="footer-nav" aria-label="Footer">
         <a href="index.html">Home</a>
         <span aria-hidden="true">•</span>
-        <a href="game.html">Game</a>
+        <a href="game.html">Mission Hub</a>
         <span aria-hidden="true">•</span>
         <a href="admin.html" aria-current="page">Admin</a>
       </nav>
@@ -183,17 +197,6 @@
   </footer>
 
   <!-- Minimal inline handlers (no logic) -->
-  <script defer>
-    // wire header/footer logout to existing logout() if present
-    document.getElementById('logoutTop')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (typeof logout === 'function') logout(); else { localStorage.clear(); location.href='index.html'; }
-    });
-    document.getElementById('logoutBottom')?.addEventListener('click', () => {
-      if (typeof logout === 'function') logout(); else { localStorage.clear(); location.href='index.html'; }
-    });
-  </script>
-
   <!-- Points Log Modal -->
   <div id="pointsModal" class="admin-modal" aria-hidden="true">
     <div class="admin-modal__overlay" data-close-modal></div>

@@ -23,32 +23,49 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/vault.js" defer></script>
+  <script src="js/onboarding.js" defer></script>
   <script src="js/dragdrop.js" defer></script>
 </head>
 
-<body>
+<body data-session="team">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
-      <a class="brand" href="index.html">
-        <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-copy">
-          <span class="brand-name">Cyber Escape Rooms</span>
-          <span class="brand-tagline">Team-based security missions</span>
-        </span>
-      </a>
-
-      <div class="header-actions">
-        <button class="nav-btn ghost" type="button" data-back="index.html">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="game.html">Game</a>
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
         </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
   </header>
@@ -68,6 +85,7 @@
         <li>Need help? The hint button costs points, so time it wisely.</li>
         <li>Digit four is always the number of Essential Eight strategies—make sure you’ve earned it first!</li>
       </ul>
+      <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-essential">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p><strong>8</strong> Essential Eight strategies — complete the set before claiming the digit.</p>
@@ -132,9 +150,9 @@
         <p id="dragHelp" class="mt-1" style="color:var(--muted)">Drag a card to a matching slot on the right.</p>
 
         <div class="flex mt-2">
-          <button class="btn" id="checkAnswersBtn">Check</button>
+          <button class="btn" id="checkAnswersBtn" data-tooltip="Check current placements">Check</button>
           <button class="btn ghost" id="shuffleBtn">Shuffle</button>
-          <button class="btn warn" id="resetBoardBtn">Reset</button>
+          <button class="btn warn" id="resetBoardBtn" data-tooltip="Reset the board">Reset</button>
           <button class="btn ghost" id="essHintBtn" type="button">Hint (−5 pts)</button>
         </div>
 
@@ -260,15 +278,29 @@
     </footer>
   </main>
 
+  <div class="onboard" id="onboard-essential" hidden data-onboard-key="essential" data-onboard-auto="true" aria-labelledby="onboardEssentialTitle">
+    <div class="onboard__backdrop" data-onboard-close></div>
+    <div class="onboard__dialog">
+      <button class="onboard__close" type="button" aria-label="Close tutorial" data-onboard-close>&times;</button>
+      <h2 id="onboardEssentialTitle" data-onboard-focus>Essential Eight — Quick Guide</h2>
+      <p>Digit four is locked at eight, but you still need a perfect board to earn it.</p>
+      <ol class="onboard__list">
+        <li>Drag each control to the matching description or use keyboard focus with Enter/Space.</li>
+        <li>Use the progress bar to see how many placements are correct before checking.</li>
+        <li>Press Check to confirm, then note digit eight for the vault once the board is perfect.</li>
+      </ol>
+    </div>
+  </div>
+
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <div class="footer-inner">
       <nav class="footer-nav" aria-label="Footer">
         <a href="index.html">Home</a>
         <span aria-hidden="true">•</span>
-        <a href="game.html">Game</a>
+        <a href="game.html">Mission Hub</a>
         <span aria-hidden="true">•</span>
-        <a href="admin.html">Admin</a>
+        <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
       <p class="footer-note">Match every Essential Eight control to lock in your fourth digit.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>

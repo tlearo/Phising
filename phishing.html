@@ -23,32 +23,49 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/vault.js" defer></script>
+  <script src="js/onboarding.js" defer></script>
   <script src="js/phishing.js" defer></script>
 </head>
 
-<body>
+<body data-session="team">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Global Header -->
   <header class="site-header site-header--bar" aria-label="Global">
     <div class="site-header__inner">
-      <a class="brand" href="index.html">
-        <img src="assets/logo.png" alt="" class="logo" />
-        <span class="brand-copy">
-          <span class="brand-name">Cyber Escape Rooms</span>
-          <span class="brand-tagline">Team-based security missions</span>
-        </span>
-      </a>
-
-      <div class="header-actions">
-        <button class="nav-btn ghost" type="button" data-back="index.html">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
           <span aria-hidden="true">←</span>
           <span>Back</span>
         </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
-          <a class="nav-link" href="index.html">Home</a>
-          <a class="nav-link" href="game.html">Game</a>
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
         </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
   </header>
@@ -100,6 +117,7 @@
             <li>Use the brush tool to circle suspicious clues. Aim to highlight at least three hotspots.</li>
             <li>Submit your highlights, then decide if the email is phishing or legitimate.</li>
           </ol>
+          <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-phishing">How to play</button>
         </div>
         <div class="classification-cta" aria-label="Email classification actions">
           <p class="cta-title">Ready to classify this email?</p>
@@ -131,7 +149,7 @@
         <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
           <button class="btn" id="saveBtn" type="button">Save</button>
           <button class="btn ghost" id="loadBtn" type="button">Load</button>
-          <button class="btn warn" id="clearBtn" type="button">Clear</button>
+          <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
           <button class="btn ghost" id="selectAllBtn" type="button">Auto-place (demo)</button>
           <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
         </div>
@@ -192,7 +210,7 @@
         <p id="slideStatus" class="muted text-center" aria-live="polite">Example 1 of 4</p>
 
         <div id="feedbackPanel" class="mt-2">
-          <button id="submitButton" class="btn primary" type="button">Submit Highlights</button>
+          <button id="submitButton" class="btn primary" type="button" data-tooltip="Submit highlights for review">Submit Highlights</button>
           <p id="phishingFeedback" class="status-message mt-1" aria-live="polite"></p>
         </div>
       </section>
@@ -217,15 +235,29 @@
     </footer>
   </main>
 
+  <div class="onboard" id="onboard-phishing" hidden data-onboard-key="phishing" data-onboard-auto="true" aria-labelledby="onboardPhishingTitle">
+    <div class="onboard__backdrop" data-onboard-close></div>
+    <div class="onboard__dialog">
+      <button class="onboard__close" type="button" aria-label="Close tutorial" data-onboard-close>&times;</button>
+      <h2 id="onboardPhishingTitle" data-onboard-focus>Phishing Spotter — Quick Guide</h2>
+      <p>Earn vault digit one by clearing each email example with precise highlights.</p>
+      <ol class="onboard__list">
+        <li>Highlight at least three hotspots on every email before you submit anything.</li>
+        <li>Choose whether the example is phishing or legitimate, then press Submit Highlights to lock that slide.</li>
+        <li>Work through all four examples; the number of true phishing emails becomes your vault digit.</li>
+      </ol>
+    </div>
+  </div>
+
   <!-- Global Footer -->
   <footer class="site-footer header-bleed">
     <div class="footer-inner">
       <nav class="footer-nav" aria-label="Footer">
         <a href="index.html">Home</a>
         <span aria-hidden="true">•</span>
-        <a href="game.html">Game</a>
+        <a href="game.html">Mission Hub</a>
         <span aria-hidden="true">•</span>
-        <a href="admin.html">Admin</a>
+        <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
       <p class="footer-note">Spot every phishing tell to earn the first vault digit.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>

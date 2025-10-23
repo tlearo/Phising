@@ -79,9 +79,10 @@ const IS_PHISHING = {
 function countPhishingGroundTruth() {
   return IMAGES.reduce((n, name) => n + (IS_PHISHING[name] ? 1 : 0), 0);
 }
-localStorage.setItem('lock_digit_phishing_total', String(countPhishingGroundTruth()));
+const PHISHING_DIGIT = countPhishingGroundTruth();
+localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
 if (vaultDisplay) {
-  vaultDisplay.textContent = String(countPhishingGroundTruth());
+  vaultDisplay.textContent = String(PHISHING_DIGIT);
 }
 
   const points = window.utils?.points;
@@ -269,7 +270,12 @@ if (vaultDisplay) {
 
   function markCompleteIfReady() {
     const required = Math.ceil(state.hotspots.length * REQUIRED_PCT);
-    if (state.found.size >= required) {
+    const highlightReady = state.found.size >= required;
+    const totalSlides = IMAGES.length || 1;
+    const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
+    const allSlidesDone = doneSlides === totalSlides;
+
+    if (highlightReady && allSlidesDone) {
       const u = readUser();
       const key = progressKey(u);
       let p;
@@ -277,8 +283,11 @@ if (vaultDisplay) {
       if (!p.phishing) {
         p.phishing = true;
         localStorage.setItem(key, JSON.stringify(p));
-        setFeedback('Great work! You spotted enough phishing indicators. Digit earned.', 'success');
+        setFeedback(`Full gallery cleared! Digit ${PHISHING_DIGIT} locked in.`, 'success');
         announce('Phishing puzzle complete');
+        window.vault?.unlock('phishing', PHISHING_DIGIT, {
+          message: `Phishing digit ${PHISHING_DIGIT} secured. Add it to the vault.`
+        });
       }
     }
     updateVulnText();
@@ -412,15 +421,11 @@ if (vaultDisplay) {
   function broadcastProgress() {
     const setPercent = window.utils?.setProgressPercent;
     if (typeof setPercent !== 'function') return;
-    const total = state.hotspots.length;
-    if (!total) {
-      setPercent('phishing', 0, { complete: false });
-      return;
-    }
-    const found = state.found.size;
-    const required = Math.ceil(total * REQUIRED_PCT);
-    const percent = Math.round((found / total) * 100);
-    setPercent('phishing', percent, { complete: found >= required });
+    const totalSlides = IMAGES.length || 1;
+    const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
+    const percent = Math.round((doneSlides / totalSlides) * 100);
+    const complete = doneSlides === totalSlides;
+    setPercent('phishing', complete ? 100 : percent, { complete });
   }
 
   function updateVulnText() {
@@ -443,7 +448,10 @@ if (vaultDisplay) {
       } else {
         extra = ' All clues are marked—excellent coverage!';
       }
-      vulnCountEl.textContent = `You marked ${found} out of ${total} vulnerabilities.${extra}`;
+      const totalSlides = IMAGES.length || 0;
+      const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
+      const slideSummary = totalSlides ? ` Examples cleared: ${doneSlides}/${totalSlides}.` : '';
+      vulnCountEl.textContent = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
     } else {
       vulnCountEl.textContent = 'No hotspots defined for this image.';
     }
