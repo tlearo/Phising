@@ -2233,16 +2233,16 @@ input[type="range"]::-moz-range-thumb {
 
 /* Outlines only; letters render above these */
 .wheel.outer {
-    border: 3px solid var(--border);
+    border: 2px solid var(--border);
     /* grey */
     z-index: 1;
 }
 
 .wheel.inner {
-    width: 72%;
+    width: 76%;
     /* inner ring sits neatly inside */
-    height: 72%;
-    border: 3px solid var(--brand);
+    height: 76%;
+    border: 2px solid var(--brand);
     /* blue */
     cursor: grab;
     transition: transform .15s linear;
@@ -2335,7 +2335,7 @@ input[type="range"]::-moz-range-thumb {
 .ess-layout {
     position: relative;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
     gap: 2rem;
 }
 
@@ -2355,7 +2355,7 @@ input[type="range"]::-moz-range-thumb {
 
 .drop-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 1.25rem;
 }
 
