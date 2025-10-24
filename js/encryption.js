@@ -61,7 +61,8 @@
 
   // ---------- Elements ----------
   const cipherEl   = $('#cipherText');
-  const liveEl     = $('#liveOutput');
+  const exampleCipherEl = $('#encExampleCipher');
+  const examplePlainEl  = $('#encExamplePlain');
   const sliderEl   = $('#shiftSlider');
   const shiftDown  = $('#shiftDown');
   const shiftUp    = $('#shiftUp');
@@ -97,7 +98,7 @@
   }
   updateVaultDigit();
 
-  if (!cipherEl || !liveEl) return; // not on this page
+  if (!cipherEl) return; // not on this page
 
   // ---------- Timer ----------
   const t0 = Date.now();
@@ -128,9 +129,6 @@
   let currentShift = 0;
   let progressPercent = 0;
   const CIPHERTEXT = Caesar.encode(CFG.plain, CFG.shift); // what we show
-  if (vaultDisplay) {
-    vaultDisplay.textContent = String(CFG.shift);
-  }
 
   const points = window.utils?.points;
   points?.ensure();
@@ -164,7 +162,7 @@
       // simple visual fallback if caesar.js not loaded: rotate inner ring numerically (no letters)
       innerRing.setAttribute('aria-valuenow', String(currentShift));
     }
-    updateLive();
+    updateExample();
     if (currentShift !== 0) {
       updateProgressPercent(20);
     }
@@ -174,10 +172,13 @@
     }
   }
 
-  function updateLive(){
-    // Live preview = decoding CIPHERTEXT with *current* shift (not fixed CFG.shift)
-    const decoded = Caesar.decode(CIPHERTEXT, currentShift);
-    liveEl.textContent = decoded;
+  function updateExample(){
+    if (!exampleCipherEl || !examplePlainEl) return;
+    const match = CIPHERTEXT.match(/[A-Z]/i);
+    const cipherLetter = (match ? match[0] : 'A').toUpperCase();
+    const decoded = Caesar.decode(cipherLetter, currentShift);
+    exampleCipherEl.textContent = cipherLetter;
+    examplePlainEl.textContent = decoded.charAt(0) || cipherLetter;
   }
 
   // When caesar.js emits a shift change, mirror it here
@@ -249,6 +250,7 @@
     // Initialize shift from slider if present; else start at 0
     const start = sliderEl ? Number(sliderEl.value) : 0;
     setShift(isNaN(start) ? 0 : start);
+    updateExample();
 
     submitBtn?.addEventListener('click', handleSubmit);
     hintBtn?.addEventListener('click', () => {

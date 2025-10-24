@@ -614,6 +614,17 @@ form .row {
     box-shadow: 0 0 0 2px rgba(9, 255, 136, .35);
 }
 
+.feedback-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.feedback-actions .classification-cta {
+    min-width: 240px;
+}
+
 .classification-buttons .btn.is-selected {
     transform: translateY(-2px);
     box-shadow: 0 12px 28px rgba(9, 255, 136, .35);
@@ -1444,6 +1455,23 @@ body.phish-overlay-open {
 .binary-input-table input {
     text-align: center;
     font-size: 1.05rem;
+    width: 70%;
+    margin: 0 auto;
+}
+
+.binary-divider-row td {
+    padding: .3rem 0 .6rem;
+}
+
+.binary-divider-line {
+    height: 1px;
+    background: rgba(88, 166, 255, .35);
+    width: 100%;
+}
+
+.binary-guides-row td {
+    font-size: .8rem;
+    color: var(--muted);
 }
 
 .answer-row {
@@ -2032,21 +2060,62 @@ input[type="range"]::-moz-range-thumb {
     margin: .35rem 0;
 }
 
-.pw-strength-frame {
-    width: 100%;
-    max-width: 100%;
+.pw-strength-runner {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
     border: 1px solid rgba(88,166,255,.22);
-    border-radius: 12px;
-    overflow: hidden;
+    border-radius: 14px;
     background: rgba(8, 12, 18, .85);
 }
 
-.pw-strength-frame iframe {
+.pw-strength-summary {
+    margin: 0;
+    color: var(--muted);
+    font-size: .95rem;
+}
+
+.pw-strength-meter {
+    position: relative;
     width: 100%;
-    min-height: 420px;
-    border: none;
-    background: transparent;
-    display: block;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(88,166,255,.18);
+    overflow: hidden;
+}
+
+.pw-strength-meter__bar {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    background: linear-gradient(90deg, #ff4d4f, #22d3ee);
+    border-radius: inherit;
+    transition: width .2s ease, background .2s ease;
+}
+
+.pw-strength-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .75rem 1.25rem;
+    margin: 0;
+}
+
+.pw-strength-metrics > div {
+    display: grid;
+    gap: .15rem;
+}
+
+.pw-strength-metrics dt {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: rgba(226, 232, 240, .6);
+}
+
+.pw-strength-metrics dd {
+    margin: 0;
+    font-size: .95rem;
+    color: var(--ink);
 }
 
 .binary-place {
@@ -2112,6 +2181,43 @@ input[type="range"]::-moz-range-thumb {
     }
     .pw-guess {
         grid-column: auto;
+    }
+}
+
+@media (min-width: 1600px) {
+    .container {
+        max-width: min(1720px, 95vw);
+    }
+    .container-xl {
+        max-width: min(1760px, 95vw);
+    }
+    .dashboard-grid {
+        grid-template-columns: minmax(420px, 2.1fr) minmax(340px, 1.2fr) minmax(300px, 1fr);
+        align-items: start;
+    }
+    .dashboard-grid > .mission-card {
+        grid-column: 1 / span 2;
+    }
+    .dashboard-grid > .chest-section {
+        grid-column: 3 / 4;
+        height: 100%;
+    }
+    .dashboard-grid > .quick-tips {
+        grid-column: 3 / 4;
+    }
+    .pw-grid {
+        grid-template-columns: minmax(320px, 360px) minmax(520px, 1fr);
+    }
+    .enc-layout {
+        grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+        gap: 2.25rem;
+    }
+    .ess-layout {
+        grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    }
+    .binary-layout {
+        grid-template-columns: minmax(420px, 1.35fr) minmax(0, 1fr);
+        gap: 2.25rem;
     }
 }
 
@@ -2209,6 +2315,33 @@ input[type="range"]::-moz-range-thumb {
     letter-spacing: .16em;
     font-size: .65rem;
     color: var(--accent);
+}
+
+.enc-note {
+    margin-top: .75rem;
+    font-size: .85rem;
+}
+
+.enc-example {
+    border: 1px solid rgba(88,166,255,.18);
+    border-radius: 10px;
+    padding: .6rem .8rem;
+    background: rgba(15, 23, 42, .6);
+    color: var(--muted);
+    display: grid;
+    gap: .35rem;
+}
+
+.enc-example .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .1rem .6rem;
+    border-radius: 999px;
+    background: rgba(88,166,255,.18);
+    color: var(--brand);
+    font-size: .7rem;
+    letter-spacing: .14em;
 }
 
 /* Fixed wheel size so it never fills the page */

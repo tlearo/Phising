@@ -89,7 +89,7 @@
       <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-encryption">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
-        <p>Record the <strong id="encVaultValue">—</strong> position shift that reveals the plaintext.</p>
+        <p>The shift value will appear here after you submit the correct plaintext: <strong id="encVaultValue">—</strong>.</p>
       </div>
     </section>
 
@@ -129,6 +129,11 @@
           <button id="shiftUp" class="btn sm" type="button" aria-label="Increase shift">+</button>
           <span class="shift-readout" aria-live="polite">Shift: <strong id="shiftValue">0</strong><small>vault digit</small></span>
         </div>
+        <p class="muted enc-note">Outer ring = cipher text (what you read). Inner ring = plaintext (rotate until it looks right).</p>
+        <div class="enc-example mt-1">
+          <p>Example mapping:</p>
+          <p><span class="tag">Cipher</span> <span id="encExampleCipher">A</span> → <span class="tag">Plain</span> <span id="encExamplePlain">A</span></p>
+        </div>
       </aside>
 
       <!-- RIGHT: Cipher, live output, submit -->
@@ -136,20 +141,13 @@
         <h2>Decrypt This</h2>
 
         <p id="encHintText" class="hint-callout" hidden>
-          The correct shift realigns the cipher alphabet with the original. Look for obvious words forming in the live output.
+          Rotate the inner ring until common words line up beneath their cipher letters. When everything reads clearly, record that shift.
         </p>
 
         <div class="mt-1">
           <p class="muted">Ciphertext:</p>
           <div class="card sm mt-1" style="overflow:auto">
             <code id="cipherText">—</code>
-          </div>
-        </div>
-
-        <div class="mt-2">
-          <p class="muted">Live output (based on current shift):</p>
-          <div class="card sm mt-1" style="overflow:auto">
-            <div id="liveOutput" aria-live="polite">Rotate the inner ring or use the slider.</div>
           </div>
         </div>
 

@@ -119,14 +119,6 @@
           </ol>
           <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-phishing">How to play</button>
         </div>
-        <div class="classification-cta" aria-label="Email classification actions">
-          <p class="cta-title">Ready to classify this email?</p>
-          <div class="classification-buttons">
-            <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
-            <button class="btn cta-btn primary" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
-          </div>
-          <p class="cta-hint">You can change your choice after reviewing other examples.</p>
-        </div>
       </div>
     </section>
 
@@ -150,7 +142,6 @@
           <button class="btn" id="saveBtn" type="button">Save</button>
           <button class="btn ghost" id="loadBtn" type="button">Load</button>
           <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
-          <button class="btn ghost" id="selectAllBtn" type="button">Auto-place (demo)</button>
           <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
         </div>
 
@@ -217,7 +208,17 @@
         <p id="slideStatus" class="muted text-center" aria-live="polite">Example 1 of 4</p>
 
         <div id="feedbackPanel" class="mt-2">
-          <button id="submitButton" class="btn primary" type="button" data-tooltip="Submit highlights for review">Submit Highlights</button>
+          <div class="feedback-actions">
+            <button id="submitButton" class="btn primary" type="button" data-tooltip="Submit highlights for review">Submit Highlights</button>
+            <div class="classification-cta" aria-label="Email classification actions">
+              <p class="cta-title">Ready to classify?</p>
+              <div class="classification-buttons">
+                <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
+                <button class="btn cta-btn primary" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
+              </div>
+              <p class="cta-hint">You can change your choice after reviewing other examples.</p>
+            </div>
+          </div>
           <p id="phishingFeedback" class="status-message mt-1" aria-live="polite"></p>
         </div>
       </section>

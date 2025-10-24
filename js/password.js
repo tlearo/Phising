@@ -24,11 +24,15 @@
     { threshold: 180, points: 14, label: 'Steady solve bonus' },
     { threshold: Infinity, points: 10, label: 'Solved' }
   ];
+  const SCORE_COLORS = ['#ef4444', '#f97316', '#facc15', '#34d399', '#38bdf8'];
   const Strength = window.PasswordStrength;
   if (!Strength) {
     console.error('PasswordStrength helper missing. Ensure js/password-strength.js is loaded before password.js');
     return;
   }
+
+  let pendingVaultDigit = null;
+  let labDigitUnlocked = false;
 
   const SCENARIOS = [
     {
@@ -104,6 +108,7 @@
   ];
 
   const SCENARIO_KEY = 'password_scenario_index';
+  let currentScenarioIndex = 0;
 
   function pickScenario() {
     if (window.PASSWORD_CONFIG) {
@@ -119,10 +124,10 @@
     }
 
     let idx = Number(localStorage.getItem(SCENARIO_KEY));
-    if (!Number.isInteger(idx) || !SCENARIOS[idx]) {
-      idx = Math.floor(Math.random() * SCENARIOS.length);
-      localStorage.setItem(SCENARIO_KEY, String(idx));
+    if (!Number.isInteger(idx) || idx < 0 || idx >= SCENARIOS.length) {
+      idx = 0;
     }
+    currentScenarioIndex = idx;
     return SCENARIOS[idx];
   }
 
@@ -134,6 +139,12 @@
   };
 
   const EXPECTED_HASH = window.PASSWORD_HASH || null;
+
+  const scenarioAnalysis = Strength.analyze(ACTIVE_SCENARIO.answer, [ACTIVE_SCENARIO.answer]);
+  const scenarioSeconds = Number.isFinite(scenarioAnalysis.seconds)
+    ? scenarioAnalysis.seconds
+    : Number(ACTIVE_SCENARIO.crackSeconds) || 120;
+  ACTIVE_SCENARIO.crackSeconds = scenarioSeconds;
 
   // ---------------- Helpers ----------------
   const $  = (sel, root = document) => root.querySelector(sel);
@@ -194,6 +205,14 @@
   const bonusHintEl    = $('#pwBonusHint');
   const vaultCalloutDigit = $('#passwordVaultDigitDisplay');
 
+  const strengthTestInput    = $('#pwTestInput');
+  const strengthSummaryEl    = $('#pwStrengthSummary');
+  const strengthBarEl        = $('#pwStrengthBar');
+  const strengthScoreEl      = $('#pwStrengthScore');
+  const strengthGuessesEl    = $('#pwStrengthGuesses');
+  const strengthTimeEl       = $('#pwStrengthTime');
+  const strengthSuggestionsEl= $('#pwStrengthSuggestions');
+
   const clueList       = $('#clueList');
   const nextClueBtn    = $('#nextClueBtn');
   const resetCluesBtn  = $('#resetCluesBtn');
@@ -227,7 +246,7 @@
   if (clueCostLabel) clueCostLabel.textContent = `Each extra clue costs ${HINT_COST} pts`;
   if (hintCostEl) hintCostEl.textContent = String(BONUS_HINT_COST);
   if (scenarioLabelEl) scenarioLabelEl.textContent = ACTIVE_SCENARIO.label;
-  const crackTimeDisplay = Strength.formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
+  const crackTimeDisplay = scenarioAnalysis.crackTime || Strength.formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
   if (crackTimeEl) crackTimeEl.textContent = crackTimeDisplay;
   const vaultMinutes = Math.max(1, Math.round(ACTIVE_SCENARIO.crackSeconds / 60));
   if (crackMeterEl) crackMeterEl.value = Strength.strengthScale(ACTIVE_SCENARIO.crackSeconds);
@@ -254,7 +273,83 @@
       setVaultDigitDisplayInternal('—');
     }
   }
+
+  function setStrengthMeter(score, hasInput) {
+    if (!strengthBarEl) return;
+    if (!hasInput) {
+      strengthBarEl.style.width = '0%';
+      strengthBarEl.style.background = SCORE_COLORS[0];
+      return;
+    }
+    const clamped = Math.max(0, Math.min(4, Number(score) || 0));
+    const width = Math.min(100, Math.max(18, (clamped + 1) * 20));
+    strengthBarEl.style.width = `${width}%`;
+    strengthBarEl.style.background = SCORE_COLORS[clamped];
+  }
+
+  function commitLabDigit(analysis) {
+    const digit = analysis?.digit ?? Strength.crackSecondsToDigit(analysis?.seconds);
+    pendingVaultDigit = null;
+    labDigitUnlocked = true;
+    try {
+      localStorage.setItem('lock_digit_pw_minutes', String(digit));
+      localStorage.setItem('password_crack_time_display', analysis?.crackTime || '');
+    } catch (_) {}
+    updateVaultDigitDisplay(String(digit));
+    window.vault?.unlock('password', digit, {
+      message: `Password digit ${digit} confirmed via Crack Time Lab.`
+    });
+    if (strengthSummaryEl) {
+      const label = Strength.scoreLabel ? Strength.scoreLabel(analysis.score) : `Score ${analysis.score}`;
+      const displayTime = analysis.crackTimesDisplay?.offline_slow_hashing_1e4_per_second || analysis.crackTime;
+      strengthSummaryEl.textContent = `${label} — ${displayTime} • Vault digit ${digit} saved.`;
+    }
+    setFeedback(`Crack Time Lab confirms your password. Vault digit ${digit} recorded.`, true);
+  }
+
+  function renderStrengthTest(sample) {
+    if (!strengthSummaryEl) return;
+    if (!sample) {
+      strengthSummaryEl.textContent = 'Start typing to see strength, estimated crack times, and suggestions.';
+      if (strengthScoreEl) strengthScoreEl.textContent = '—';
+      if (strengthGuessesEl) strengthGuessesEl.textContent = '—';
+      if (strengthTimeEl) strengthTimeEl.textContent = '—';
+      if (strengthSuggestionsEl) strengthSuggestionsEl.textContent = '—';
+      setStrengthMeter(0, false);
+      return;
+    }
+    const analysis = Strength.analyze(sample, [ACTIVE_SCENARIO.answer]);
+    const displayTime = analysis.crackTimesDisplay?.offline_slow_hashing_1e4_per_second || analysis.crackTime;
+    const label = Strength.scoreLabel ? Strength.scoreLabel(analysis.score) : `Score ${analysis.score}`;
+    strengthSummaryEl.textContent = `${label} — ${displayTime}`;
+    if (strengthScoreEl) strengthScoreEl.textContent = label;
+    if (strengthGuessesEl) strengthGuessesEl.textContent = Number.isFinite(analysis.guesses) ? analysis.guesses.toLocaleString() : '∞';
+    if (strengthTimeEl) strengthTimeEl.textContent = displayTime;
+    const feedbackMessages = [];
+    if (analysis.feedback?.warning) feedbackMessages.push(analysis.feedback.warning);
+    if (analysis.feedback?.suggestions?.length) {
+      feedbackMessages.push(...analysis.feedback.suggestions);
+    } else if (analysis.suggestions?.length) {
+      feedbackMessages.push(...analysis.suggestions);
+    }
+    if (strengthSuggestionsEl) {
+      strengthSuggestionsEl.textContent = feedbackMessages.length
+        ? feedbackMessages.join(' ')
+        : 'Looking good — keep it unique, long, and unrelated to you.';
+    }
+    setStrengthMeter(analysis.score, true);
+    const matchesAnswer = normalize(sample) === normalize(CFG.answer);
+    if (matchesAnswer && pendingVaultDigit !== null && !labDigitUnlocked) {
+      commitLabDigit(analysis);
+    }
+  }
   updateVaultDigitDisplay();
+  try {
+    const progressData = window.utils?.readProgress?.() || {};
+    if (progressData.password && localStorage.getItem('lock_digit_pw_minutes')) {
+      labDigitUnlocked = true;
+    }
+  } catch (_) {}
   if (!ACTIVE_SCENARIO.bonusHint && bonusHintBtn) {
     bonusHintBtn.setAttribute('disabled', 'true');
     bonusHintBtn.textContent = 'No bonus hint available';
@@ -369,17 +464,15 @@
       points.add(reward.points, `${reward.label} (${Strength.formatCrackTime(solveSeconds)})`);
     }
     localStorage.setItem('lock_digit_pw_clues', String(shown)); // backwards compatibility
-    localStorage.setItem('lock_digit_pw_minutes', String(passwordDigit));
+    localStorage.removeItem('lock_digit_pw_minutes');
     localStorage.setItem('password_crack_time_display', crackTimeDisplay);
-    localStorage.removeItem(SCENARIO_KEY);
-    const minutesText = vaultMinutes === 1 ? '1 minute' : `${vaultMinutes} minutes`;
-    const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
+    localStorage.setItem(SCENARIO_KEY, String((currentScenarioIndex + 1) % SCENARIOS.length));
+    const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Jump to Step 3 and enter the solved password to capture the vault digit.`;
     setFeedback(message, true);
     updateProgressPercent(100, { complete: true });
-    updateVaultDigitDisplay(String(passwordDigit));
-    window.vault?.unlock('password', passwordDigit, {
-      message: `Password digit ${passwordDigit} unlocked. Note the rounded minutes for the vault.`
-    });
+    updateVaultDigitDisplay();
+    pendingVaultDigit = passwordDigit;
+    labDigitUnlocked = false;
     // Optional: lock inputs to avoid repeated submissions
     guessInput.setAttribute('disabled', 'true');
     submitBtn?.setAttribute('disabled', 'true');
@@ -400,6 +493,12 @@
   // ---------------- Wiring ----------------
   document.addEventListener('DOMContentLoaded', () => {
     renderClues(shown);
+
+    renderStrengthTest(strengthTestInput?.value || '');
+
+    strengthTestInput?.addEventListener('input', (e) => {
+      renderStrengthTest(e.target.value);
+    });
 
     nextClueBtn?.addEventListener('click', revealNextClue);
     resetCluesBtn?.addEventListener('click', resetClues);

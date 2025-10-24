@@ -394,8 +394,11 @@
       { key: 'xor', label: 'A XOR B' }
     ];
 
+    let xorRowRef = null;
+
     rows.forEach(row => {
       if (!bitInputs[row.key]) bitInputs[row.key] = [];
+      bitInputs[row.key].length = 0;
       const tr = document.createElement('tr');
       const th = document.createElement('th');
       th.scope = 'row';
@@ -425,11 +428,42 @@
           const digit = digits[i];
           td.textContent = digit;
           td.classList.add(digit === '1' ? 'is-on' : 'is-off');
+          bitInputs[row.key].push({ value: digit });
         }
         tr.appendChild(td);
       }
+      if (row.key === 'xor') xorRowRef = tr;
       tbody.appendChild(tr);
     });
+
+    if (xorRowRef) {
+      const dividerRow = document.createElement('tr');
+      dividerRow.className = 'binary-divider-row';
+      const th = document.createElement('th');
+      th.textContent = '';
+      dividerRow.appendChild(th);
+      for (let i = 0; i < BIT_LENGTH; i += 1) {
+        const td = document.createElement('td');
+        const line = document.createElement('div');
+        line.className = 'binary-divider-line';
+        td.appendChild(line);
+        dividerRow.appendChild(td);
+      }
+      tbody.insertBefore(dividerRow, xorRowRef);
+    }
+
+    const valueGuideRow = document.createElement('tr');
+    valueGuideRow.className = 'binary-guides-row';
+    const guideTh = document.createElement('th');
+    guideTh.textContent = 'Value if column = 1';
+    valueGuideRow.appendChild(guideTh);
+    PLACE_VALUES.forEach(value => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      td.className = 'binary-guide-cell';
+      valueGuideRow.appendChild(td);
+    });
+    tbody.appendChild(valueGuideRow);
 
     table.appendChild(tbody);
     updateSums();

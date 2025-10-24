@@ -60,6 +60,14 @@
     'mnbvcxz'
   ];
 
+  const SCORE_LABELS = [
+    'Very weak',
+    'Weak',
+    'Fair',
+    'Strong',
+    'Very strong'
+  ];
+
   function isSequential(sample) {
     if (!sample || sample.length < 4) return false;
     const lower = sample.toLowerCase();
@@ -114,9 +122,15 @@
     return null;
   }
 
-  function estimateSeconds(sample) {
+  function normalizeInputs(inputs) {
+    if (!Array.isArray(inputs)) return [];
+    return inputs.map(item => String(item || '').toLowerCase()).filter(Boolean);
+  }
+
+  function estimateSeconds(sample, userInputs = []) {
     if (!sample) return { seconds: 0.05, method: 'empty' };
     const normalized = sample.toLowerCase();
+    const loweredInputs = normalizeInputs(userInputs);
 
     const dictionary = dictionarySeconds(normalized);
     if (dictionary !== null) {
@@ -144,6 +158,11 @@
     if (/^\d+$/.test(sample)) {
       const seconds = Math.pow(10, sample.length) / FAST_RATE;
       return { seconds: Math.max(seconds, 0.4), method: 'numeric only' };
+    }
+
+    if (loweredInputs.length && loweredInputs.some(token => token.length >= 3 && normalized.includes(token))) {
+      const penalty = Math.max(0.25, sample.length * 0.3);
+      return { seconds: penalty, method: 'contains personal data' };
     }
 
     if (/^[a-z]+$/.test(normalized)) {
@@ -194,6 +213,10 @@
 
   function crackSecondsToDigit(seconds) {
     if (!Number.isFinite(seconds) || seconds === Infinity) return 9;
+    if (seconds < 60) {
+      const secs = Math.max(1, Math.round(seconds));
+      return Math.min(9, secs);
+    }
     const minutes = Math.max(1, Math.round(seconds / 60));
     return Math.min(9, minutes);
   }
@@ -266,21 +289,86 @@
     return list;
   }
 
-  function analyze(sample) {
-    const { seconds, method } = estimateSeconds(sample);
-    const digit = crackSecondsToDigit(seconds);
-    const score = strengthScore(seconds);
-    const level = strengthScale(seconds);
-    const suggestions = suggestionsFor(sample, seconds, method);
+  function safeMultiply(value, multiplier) {
+    if (!Number.isFinite(value)) return Infinity;
+    return value * multiplier;
+  }
+
+  function safeDivide(value, divisor) {
+    if (!Number.isFinite(value)) return Infinity;
+    return value / divisor;
+  }
+
+  function buildCrackTimes(guesses) {
     return {
-      seconds,
-      method,
-      crackTime: formatCrackTime(seconds),
-      digit,
-      score,
-      scale: level,
-      suggestions
+      online_throttling_100_per_hour: safeMultiply(guesses, 36),
+      online_no_throttling_10_per_second: safeDivide(guesses, 10),
+      offline_slow_hashing_1e4_per_second: safeDivide(guesses, 1e4),
+      offline_fast_hashing_1e10_per_second: safeDivide(guesses, 1e10)
     };
+  }
+
+  function buildCrackDisplays(secondsMap) {
+    return {
+      online_throttling_100_per_hour: formatCrackTime(secondsMap.online_throttling_100_per_hour),
+      online_no_throttling_10_per_second: formatCrackTime(secondsMap.online_no_throttling_10_per_second),
+      offline_slow_hashing_1e4_per_second: formatCrackTime(secondsMap.offline_slow_hashing_1e4_per_second),
+      offline_fast_hashing_1e10_per_second: formatCrackTime(secondsMap.offline_fast_hashing_1e10_per_second)
+    };
+  }
+
+  function scoreLabel(score) {
+    return SCORE_LABELS[Math.max(0, Math.min(SCORE_LABELS.length - 1, Number(score) || 0))];
+  }
+
+  function runAnalysis(sample, userInputs = []) {
+    const { seconds, method } = estimateSeconds(sample, userInputs);
+    const stableSeconds = Number.isFinite(seconds) ? Math.max(seconds, 0.0001) : Infinity;
+    const guesses = Number.isFinite(stableSeconds) ? Math.max(1, stableSeconds * 1e4) : Infinity;
+    const crackTimesSeconds = buildCrackTimes(guesses);
+    const crackTimesDisplay = buildCrackDisplays(crackTimesSeconds);
+    const suggestions = suggestionsFor(sample, stableSeconds, method);
+    const feedback = {
+      warning: suggestions.length > 0 ? suggestions[0] : '',
+      suggestions: suggestions.slice(1)
+    };
+    return {
+      password: sample,
+      seconds: stableSeconds,
+      method,
+      digit: crackSecondsToDigit(stableSeconds),
+      score: strengthScore(stableSeconds),
+      scale: strengthScale(stableSeconds),
+      scoreLabel: scoreLabel(strengthScore(stableSeconds)),
+      guesses,
+      crackTimesSeconds,
+      crackTimesDisplay,
+      feedback,
+      suggestions,
+      crackTime: crackTimesDisplay.offline_slow_hashing_1e4_per_second
+    };
+  }
+
+  function zxcvbnLocal(password, userInputs = []) {
+    const result = runAnalysis(password || '', userInputs);
+    return {
+      password,
+      guesses: result.guesses,
+      guesses_log10: Number.isFinite(result.guesses) ? Math.log10(result.guesses) : Infinity,
+      score: result.score,
+      feedback: result.feedback,
+      crack_times_seconds: result.crackTimesSeconds,
+      crack_times_display: result.crackTimesDisplay,
+      sequence: []
+    };
+  }
+
+  if (typeof window.zxcvbn !== 'function') {
+    window.zxcvbn = zxcvbnLocal;
+  }
+
+  function analyze(sample, userInputs) {
+    return runAnalysis(sample, userInputs);
   }
 
   window.PasswordStrength = {
@@ -288,6 +376,7 @@
     crackSecondsToDigit,
     formatCrackTime,
     strengthScale,
+    scoreLabel,
     FAST_RATE
   };
 })();
