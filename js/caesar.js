@@ -105,9 +105,12 @@
     state.sizePx = size;
 
     const outerRect = els.outer.getBoundingClientRect();
+    const outerWidth = outerRect.width || size;
+    const radiusOuter = (outerWidth / 2) - 6; // subtract stroke/padding
+
     const innerRect = els.inner.getBoundingClientRect();
-    const radiusOuter = Math.max(0, (outerRect.width || size) / 2 - 14);
-    const radiusInner = Math.max(0, (innerRect.width || size * 0.76) / 2 - 12);
+    const innerWidth = innerRect.width || (size * 0.72);
+    const radiusInner = (innerWidth / 2) - 8; // keep glyphs inside ring
 
     const outerLetters = Array.from(els.outer.children);
     const innerLetters = Array.from(els.inner.children);
@@ -117,7 +120,7 @@
       const rad = angle * Math.PI / 180;
       const x = Math.cos(rad) * radiusOuter;
       const y = Math.sin(rad) * radiusOuter;
-      placeLetter(el, x, y, angle + 90, size);
+      placeLetter(el, x, y, angle + 90, outerWidth);
     });
 
     innerLetters.forEach((el, i) => {
@@ -126,7 +129,7 @@
       const x = Math.cos(rad) * radiusInner;
       const y = Math.sin(rad) * radiusInner;
       // inner letters rotate with the ring but stay upright -> same upright transform
-      placeLetter(el, x, y, angle + 90, size);
+      placeLetter(el, x, y, angle + 90, innerWidth);
     });
   }
 

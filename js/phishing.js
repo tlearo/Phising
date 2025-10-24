@@ -90,7 +90,26 @@ function setVaultCallout(value) {
   if (!vaultDisplay) return;
   vaultDisplay.textContent = value ?? '—';
 }
-setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
+
+function updateVaultCallout(forceValue) {
+  if (typeof forceValue === 'string') {
+    setVaultCallout(forceValue);
+    return;
+  }
+  try {
+    const progress = window.utils?.readProgress?.() || {};
+    const stored = localStorage.getItem('lock_digit_phishing_total');
+    if (progress.phishing && stored) {
+      setVaultCallout(stored);
+    } else {
+      setVaultCallout('—');
+    }
+  } catch (_) {
+    setVaultCallout('—');
+  }
+}
+
+updateVaultCallout();
 
   const points = window.utils?.points;
   points?.ensure();
@@ -129,6 +148,9 @@ setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 2.5;
   const ZOOM_STEP = 0.2;
+  let overlayEl = null;
+  let workspacePlaceholder = null;
+  let workspaceParent = null;
 
   function updateZoomControls() {
     const atMin = state.zoom <= ZOOM_MIN + 0.001;
@@ -158,19 +180,47 @@ setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
     applyZoom();
   }
 
+  function ensureOverlay() {
+    if (!overlayEl) {
+      overlayEl = document.createElement('div');
+      overlayEl.id = 'phishOverlay';
+      overlayEl.className = 'phish-overlay';
+    }
+    return overlayEl;
+  }
+
+  function enterFullscreen() {
+    if (!workspaceEl || workspaceEl.classList.contains('is-fullscreen')) return;
+    const overlay = ensureOverlay();
+    workspaceParent = workspaceEl.parentElement;
+    workspacePlaceholder = document.createComment('phish-workspace');
+    workspaceParent?.insertBefore(workspacePlaceholder, workspaceEl);
+    overlay.appendChild(workspaceEl);
+    workspaceEl.classList.add('is-fullscreen');
+    document.body.appendChild(overlay);
+    document.body.classList.add('phish-overlay-open');
+    fullscreenBtn.textContent = 'Exit Fullscreen';
+  }
+
+  function exitFullscreen() {
+    if (!workspaceEl || !workspaceEl.classList.contains('is-fullscreen')) return;
+    workspaceEl.classList.remove('is-fullscreen');
+    if (workspaceParent && workspacePlaceholder) {
+      workspaceParent.insertBefore(workspaceEl, workspacePlaceholder);
+      workspacePlaceholder.remove();
+    }
+    workspaceParent = null;
+    workspacePlaceholder = null;
+    overlayEl?.remove();
+    document.body.classList.remove('phish-overlay-open');
+    fullscreenBtn.textContent = 'Fullscreen';
+  }
+
   function toggleFullscreen() {
-    const target = workspaceEl || stageEl;
-    if (!target) return;
-    if (!document.fullscreenElement) {
-      if (target.requestFullscreen) {
-        target.requestFullscreen().catch(() => {
-          setZoom(state.zoom >= 1.8 ? ZOOM_MIN : Math.min(ZOOM_MAX, state.zoom + 0.8));
-        });
-      } else {
-        setZoom(state.zoom >= 1.8 ? ZOOM_MIN : Math.min(ZOOM_MAX, state.zoom + 0.8));
-      }
+    if (workspaceEl?.classList.contains('is-fullscreen')) {
+      exitFullscreen();
     } else {
-      document.exitFullscreen?.();
+      enterFullscreen();
     }
   }
 
@@ -344,10 +394,10 @@ setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
         localStorage.setItem(key, JSON.stringify(p));
         setFeedback(`Full gallery cleared! Digit ${PHISHING_DIGIT} locked in.`, 'success');
         announce('Phishing puzzle complete');
-        try {
-          localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
-        } catch (_) {}
-        setVaultCallout(String(PHISHING_DIGIT));
+      try {
+        localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
+      } catch (_) {}
+      updateVaultCallout(String(PHISHING_DIGIT));
         window.vault?.unlock('phishing', PHISHING_DIGIT, {
           message: `Phishing digit ${PHISHING_DIGIT} secured. Add it to the vault.`
         });
@@ -726,9 +776,9 @@ setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
   zoomInBtn?.addEventListener('click', () => setZoom(state.zoom + ZOOM_STEP));
   zoomOutBtn?.addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP));
   fullscreenBtn?.addEventListener('click', () => toggleFullscreen());
-  document.addEventListener('fullscreenchange', () => {
-    if (fullscreenBtn) {
-      fullscreenBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && workspaceEl?.classList.contains('is-fullscreen')) {
+      exitFullscreen();
     }
   });
 

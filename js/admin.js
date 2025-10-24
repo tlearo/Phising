@@ -339,17 +339,7 @@
   function renderLockDigits() {
     const lockEl = qs('#lockHow');
     if (!lockEl) return;
-    const toDigit = (val, fallback = '—') => {
-      const num = Number(val);
-      return Number.isFinite(num) && num >= 0 ? String(num) : fallback;
-    };
-    const d1 = toDigit(localStorage.getItem('lock_digit_phishing_total'), '—');
-    const d2 = toDigit(localStorage.getItem('lock_digit_caesar_shift'), '—');
-    const pwMinutes = localStorage.getItem('lock_digit_pw_minutes');
-    const d3 = toDigit(pwMinutes ?? localStorage.getItem('lock_digit_pw_clues'), '0');
-    const d4 = '8';
-    const d5 = toDigit(localStorage.getItem('lock_digit_binary'), '—');
-    lockEl.textContent = `Vault digits → 1: ${d1} phishing emails • 2: shift ${d2} • 3: clues ${d3} • 4: ${d4} (fixed) • 5: binary product ones digit ${d5}`;
+    lockEl.textContent = 'Vault digits hidden in admin view. Switch to a team session to see their progress.';
   }
 
   function renderStats(rows) {
@@ -800,9 +790,13 @@
         localStorage.removeItem(`${t}_times`);
         resetTeamScore(t, 'Reset via admin');
       });
-      localStorage.removeItem('lock_digit_pw_clues');
-      localStorage.removeItem('lock_digit_pw_minutes');
-      localStorage.removeItem('lock_digit_binary');
+      ['lock_digit_phishing_total',
+       'lock_digit_caesar_shift',
+       'lock_digit_pw_clues',
+       'lock_digit_pw_minutes',
+       'lock_digit_essential',
+       'lock_digit_binary'
+      ].forEach(key => localStorage.removeItem(key));
       announce('All team progress reset.');
       renderLockDigits();
       refresh();
@@ -882,39 +876,8 @@
 
     // Neon sync hooks (optional Netlify Functions)
     qs('#pullNeonBtn')?.addEventListener('click', async () => {
-      const status = qs('#syncStatus');
-      try {
-        if (status) {
-          status.textContent = 'Pulling from Neon…';
-          status.classList.remove('status-ok', 'status-warn');
-        }
-        const res = await fetch('/.netlify/functions/pull', { method: 'GET' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json(); // expected: { teams: [{team, progress, times}] }
-        if (Array.isArray(data.teams)) {
-          data.teams.forEach(row => {
-            if (!row || !row.team) return;
-            if (row.progress) setJSON(`${row.team}_progress`, row.progress);
-            if (row.times) setJSON(`${row.team}_times`, row.times);
-          });
-          if (status) {
-            status.textContent = 'Pulled latest stats from Neon.';
-            status.classList.add('status-ok');
-          }
-          announce('Pulled latest stats from Neon.');
-          refresh();
-        } else {
-          if (status) {
-            status.textContent = 'No data returned.';
-            status.classList.add('status-warn');
-          }
-        }
-      } catch (e) {
-        if (status) {
-          status.textContent = `Pull failed: ${e.message}`;
-          status.classList.add('status-warn');
-        }
-      }
+      await syncFromNeon(qs('#syncStatus'));
+      refresh();
     });
 
     qs('#pushNeonBtn')?.addEventListener('click', async () => {
@@ -955,11 +918,44 @@
     });
   }
 
+  async function syncFromNeon(statusEl) {
+    try {
+      if (statusEl) {
+        statusEl.textContent = 'Pulling from Neon…';
+        statusEl.classList.remove('status-ok', 'status-warn');
+      }
+      const res = await fetch('/.netlify/functions/pull', { method: 'GET' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.teams)) {
+        throw new Error('No teams returned');
+      }
+      data.teams.forEach(row => {
+        if (!row || !row.team) return;
+        if (row.progress) setJSON(`${row.team}_progress`, row.progress);
+        if (row.times) setJSON(`${row.team}_times`, row.times);
+      });
+      if (statusEl) {
+        statusEl.textContent = 'Pulled latest stats from Neon.';
+        statusEl.classList.add('status-ok');
+      }
+      return true;
+    } catch (e) {
+      if (statusEl) {
+        statusEl.textContent = `Pull failed: ${e.message}`;
+        statusEl.classList.add('status-warn');
+      }
+      console.error('Neon sync failed:', e);
+      return false;
+    }
+  }
+
   // ---------- Boot ---------------------------------------------------------
 
   function refreshAll() {
     const rows = loadTeamData();
     teamRows = rows;
+    renderLockDigits();
     renderTeamCards(rows);
     renderStats(rows);
     drawCharts(rows);
@@ -975,11 +971,15 @@
 
     renderWelcome(user);
     setupPointsModal();
-    refreshAll();
+    syncFromNeon().finally(refreshAll);
     wireChartTabs();
     wireControls(refreshAll);
     const throttledRefresh = window.utils?.throttle ? window.utils.throttle(refreshAll, 300) : refreshAll;
     window.addEventListener('storage', throttledRefresh);
+    const AUTO_REFRESH_MS = 10000;
+    setInterval(() => {
+      syncFromNeon().finally(refreshAll);
+    }, AUTO_REFRESH_MS);
   });
 
 })();

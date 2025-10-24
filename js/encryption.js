@@ -77,7 +77,25 @@
     if (!vaultDisplay) return;
     vaultDisplay.textContent = value ?? '—';
   }
-  setVaultDigit(localStorage.getItem('lock_digit_caesar_shift') || '—');
+
+  function updateVaultDigit(forceValue) {
+    if (typeof forceValue === 'string') {
+      setVaultDigit(forceValue);
+      return;
+    }
+    try {
+      const progress = window.utils?.readProgress?.() || {};
+      const stored = localStorage.getItem('lock_digit_caesar_shift');
+      if (progress.encryption && stored) {
+        setVaultDigit(stored);
+      } else {
+        setVaultDigit('—');
+      }
+    } catch (_) {
+      setVaultDigit('—');
+    }
+  }
+  updateVaultDigit();
 
   if (!cipherEl || !liveEl) return; // not on this page
 
@@ -209,7 +227,7 @@
     try {
       localStorage.setItem('lock_digit_caesar_shift', String(CFG.shift));
     } catch (_) {}
-    setVaultDigit(String(CFG.shift));
+    updateVaultDigit(String(CFG.shift));
     window.vault?.unlock('encryption', CFG.shift, {
       message: `Encryption digit ${CFG.shift} unlocked. Add it to the vault.`
     });

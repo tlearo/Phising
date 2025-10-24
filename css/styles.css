@@ -686,6 +686,40 @@ form .row {
     min-width: 0;
 }
 
+body.phish-overlay-open {
+    overflow: hidden;
+}
+
+.phish-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 320;
+    background: rgba(3, 10, 20, .92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 5vw, 2.5rem);
+}
+
+#phishWorkspace.is-fullscreen {
+    width: min(1100px, 100%);
+    max-height: 100vh;
+    overflow: auto;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
+    background: rgba(6, 12, 20, .92);
+    border-radius: 18px;
+    padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+#phishWorkspace.is-fullscreen .card {
+    max-width: 100%;
+}
+
+#phishWorkspace.is-fullscreen .main-layout,
+#phishWorkspace.is-fullscreen {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+}
+
 .canvas-carousel {
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -2205,9 +2239,9 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .wheel.inner {
-    width: 76%;
-    /* inner ring sits well inside */
-    height: 76%;
+    width: 72%;
+    /* inner ring sits neatly inside */
+    height: 72%;
     border: 3px solid var(--brand);
     /* blue */
     cursor: grab;
@@ -2321,7 +2355,7 @@ input[type="range"]::-moz-range-thumb {
 
 .drop-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.25rem;
 }
 

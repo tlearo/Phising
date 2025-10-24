@@ -42,10 +42,22 @@
   const hintBox    = $('#essHintText');
   const vaultValueEl = $('#essentialVaultValue');
 
-  if (vaultValueEl) {
-    const existing = localStorage.getItem('lock_digit_essential');
-    vaultValueEl.textContent = existing || '—';
+  function updateVaultValue(forceValue) {
+    if (!vaultValueEl) return;
+    if (forceValue) {
+      vaultValueEl.textContent = forceValue;
+      return;
+    }
+    try {
+      const progress = window.utils?.readProgress?.() || {};
+      const stored = localStorage.getItem('lock_digit_essential');
+      vaultValueEl.textContent = progress.essential && stored ? stored : '—';
+    } catch (_) {
+      vaultValueEl.textContent = '—';
+    }
   }
+
+  updateVaultValue();
 
   const btnCheck   = $('#checkAnswersBtn');
   const btnShuffle = $('#shuffleBtn');
@@ -244,7 +256,7 @@
       setFeedback('Perfect! Digit 8 unlocked for the vault.', true);
       setEssentialDone();
       announce('All correct. Essential Eight complete.');
-      if (vaultValueEl) vaultValueEl.textContent = '8';
+      updateVaultValue('8');
       try {
         localStorage.setItem('lock_digit_essential', '8');
       } catch (_) {}

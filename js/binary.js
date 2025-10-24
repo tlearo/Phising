@@ -58,10 +58,26 @@
     product: false
   };
 
-  if (vaultDigitDisplay) {
-    const stored = localStorage.getItem('lock_digit_binary');
-    vaultDigitDisplay.textContent = stored ? stored : '—';
+  function updateVaultDigitDisplay(forceValue) {
+    if (!vaultDigitDisplay) return;
+    if (forceValue) {
+      vaultDigitDisplay.textContent = forceValue;
+      return;
+    }
+    try {
+      const progress = window.utils?.readProgress?.() || {};
+      const stored = localStorage.getItem('lock_digit_binary');
+      if (progress.binary && stored) {
+        vaultDigitDisplay.textContent = stored;
+      } else {
+        vaultDigitDisplay.textContent = '—';
+      }
+    } catch (_) {
+      vaultDigitDisplay.textContent = '—';
+    }
   }
+
+  updateVaultDigitDisplay();
 
   function xorStrings(a, b) {
     const len = Math.max(a.length, b.length);
@@ -183,20 +199,6 @@
     }
   }
 
-  function validateBitsRow(row, expected, label) {
-    const bits = readBits(row);
-    if (bits.length !== BIT_LENGTH) {
-      return { ok: false, reason: `Fill every column for ${label}.` };
-    }
-    if (/[^01]/.test(bits)) {
-      return { ok: false, reason: `${label} must use only 0 or 1.` };
-    }
-    if (bits !== expected) {
-      return { ok: false, reason: `${label} should equal ${expected} (decimal ${row === 'a' ? DEC_A : DEC_B}).` };
-    }
-    return { ok: true };
-  }
-
   function validateBits() {
     setStatus('bits', true, 'Binary rows provided.');
     progress.bits = true;
@@ -272,9 +274,7 @@
     } catch (_) {
       /* ignore */
     }
-    if (vaultDigitDisplay) {
-      vaultDigitDisplay.textContent = String(XOR_DEC);
-    }
+    updateVaultDigitDisplay(String(XOR_DEC));
   }
 
   function markBinaryComplete() {
@@ -423,8 +423,6 @@
         } else {
           const digits = row.key === 'a' ? BINARY_A.padStart(BIT_LENGTH, '0') : BINARY_B.padStart(BIT_LENGTH, '0');
           const digit = digits[i];
-          const span = document.createElement('span');
-          span.textContent = digit;
           td.textContent = digit;
           td.classList.add(digit === '1' ? 'is-on' : 'is-off');
         }
