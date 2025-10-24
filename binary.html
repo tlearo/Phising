@@ -80,7 +80,7 @@
       <h2 id="binaryBriefHeading">Points reminder</h2>
       <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check place values, then submit once.</p>
       <ul>
-        <li>The final digit is the ones place of the multiplication result—earn it by verifying both XOR and product rows.</li>
+        <li>The final digit is the decimal value of the XOR row—convert it correctly to unlock the vault.</li>
         <li>Status pills update as you confirm each step; don’t move on until they glow green.</li>
         <li>Use the crack-time calculator or scratch space before entering answers to avoid point hits.</li>
         <li>Hints are available, but they cost points—save them for when you are truly stuck.</li>
@@ -88,7 +88,7 @@
       <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-binary">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
-        <p>The ones place of the decimal product. When you multiply Binary A × Binary B correctly, record <strong id="binaryVaultDigit">—</strong>.</p>
+        <p>The decimal value of the XOR row. When you finish the table, record <strong id="binaryVaultDigit">—</strong>.</p>
       </div>
     </section>
 
@@ -112,78 +112,57 @@
         <h2 id="binaryChallengeHeading">Compute &amp; Combine</h2>
         <p class="mt-1">Two binary strings power this lock. Complete the table to prove you understand both XOR and binary multiplication.</p>
 
-        <div class="binary-meta mt-2" role="group" aria-label="Given values">
+        <div class="binary-meta mt-2" role="group" aria-label="Given binary values">
           <div class="meta-item">
             <h3>Binary A</h3>
             <code id="binaryA">1101</code>
-            <p class="meta-caption">decimal <strong id="decimalA">13</strong></p>
           </div>
           <div class="meta-item">
             <h3>Binary B</h3>
             <code id="binaryB">1011</code>
-            <p class="meta-caption">decimal <strong id="decimalB">11</strong></p>
           </div>
         </div>
 
-        <table class="binary-table mt-2" aria-describedby="binaryHint">
-          <thead>
-            <tr>
-              <th scope="col">Step</th>
-              <th scope="col">Binary Result</th>
-              <th scope="col">Decimal Result</th>
-              <th scope="col">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">Binary A</th>
-              <td><code data-label="Binary A">1101</code></td>
-              <td><span data-label="Decimal A">13</span></td>
-              <td aria-hidden="true">Given</td>
-            </tr>
-            <tr>
-              <th scope="row">Binary B</th>
-              <td><code data-label="Binary B">1011</code></td>
-              <td><span data-label="Decimal B">11</span></td>
-              <td aria-hidden="true">Given</td>
-            </tr>
-            <tr class="answer-row" data-step="xor">
-              <th scope="row">A XOR B</th>
-              <td>
-                <input id="xorBin" name="xorBin" type="text" inputmode="numeric" autocomplete="off"
-                       placeholder="0000" aria-label="Binary XOR of A and B" />
-              </td>
-              <td>
-                <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off"
-                       placeholder="0" aria-label="Decimal XOR of A and B" />
-              </td>
-              <td><span class="status-pill" id="xorStatus" aria-live="polite">Pending</span></td>
-            </tr>
-            <tr class="answer-row" data-step="product">
-              <th scope="row">A × B</th>
-              <td>
-                <input id="productBin" name="productBin" type="text" inputmode="numeric" autocomplete="off"
-                       placeholder="00000000" aria-label="Binary product of A multiplied by B" />
-              </td>
-              <td>
-                <input id="productDec" name="productDec" type="number" inputmode="numeric" autocomplete="off"
-                       placeholder="0" aria-label="Decimal product of A multiplied by B" />
-              </td>
-              <td><span class="status-pill" id="productStatus" aria-live="polite">Pending</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <table id="binaryInputTable" class="binary-table binary-input-table mt-2" aria-describedby="binaryHint"></table>
 
-        <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. Multiplication works just like in decimal—add the shifted partial products.</p>
+        <div class="binary-sum-grid mt-2" aria-live="polite">
+          <p class="binary-sum" id="binarySumA">Binary A contributions: —</p>
+          <p class="binary-sum" id="binarySumB">Binary B contributions: —</p>
+          <p class="binary-sum" id="binarySumXor">XOR contributions: —</p>
+        </div>
+        <p class="muted mt-1">Example: 1101 means 1×8 + 1×4 + 0×2 + 1×1 = 13.</p>
+
+        <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. 1 ⊕ 1 = 0, 1 ⊕ 0 = 1, 0 ⊕ 0 = 0.</p>
+
+        <div class="binary-status mt-2" aria-live="polite">
+          <span class="status-pill" id="bitsStatus">Bits pending</span>
+          <span class="status-pill" id="xorStatus">XOR pending</span>
+          <span class="status-pill" id="productStatus">Product pending</span>
+        </div>
+
+        <div class="binary-result-grid mt-2">
+          <label class="result-field" for="xorDec">
+            <span>Decimal XOR (vault digit)</span>
+            <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Decimal XOR of A and B" />
+          </label>
+          <label class="result-field" for="productBin">
+            <span>Binary product</span>
+            <input id="productBin" name="productBin" type="text" inputmode="numeric" autocomplete="off" placeholder="00000000" aria-label="Binary product of A multiplied by B" />
+          </label>
+          <label class="result-field" for="productDec">
+            <span>Decimal product</span>
+            <input id="productDec" name="productDec" type="number" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Decimal product of A multiplied by B" />
+          </label>
+        </div>
 
         <div class="flex mt-2" style="gap:.75rem; flex-wrap:wrap;">
-          <button class="btn" type="button" id="binaryCheck" data-tooltip="Check both rows">Check answers</button>
+          <button class="btn" type="button" id="binaryCheck" data-tooltip="Check your entries">Check answers</button>
           <button class="btn ghost" type="button" id="binaryReset" data-tooltip="Clear inputs">Reset</button>
           <button class="btn ghost" type="button" id="binaryHintBtn">Hint (−5 pts)</button>
         </div>
 
         <p class="feedback mt-2" id="binaryFeedback" aria-live="polite"></p>
-        <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit is the ones place of the decimal product.</p>
+        <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit equals the decimal XOR result.</p>
         <p id="binaryHintText" class="hint-callout" hidden>Line up the digits under matching place values. Multiply like long multiplication: each 1 in the lower number means a shifted copy of the top number that you add together.</p>
       </section>
 

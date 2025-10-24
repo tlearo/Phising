@@ -131,7 +131,7 @@
     </section>
 
     <!-- Layout: left tools, right stage -->
-    <section class="main-layout mt-2">
+    <section class="main-layout mt-2" id="phishWorkspace">
       <!-- LEFT: toolbox -->
       <aside class="card" aria-label="Toolbox">
         <h2>Tools</h2>
@@ -183,8 +183,15 @@
       <!-- RIGHT: image stage -->
       <section class="card" aria-label="Email example">
         <div class="canvas-header">
-          <h2>Canvas</h2>
-          <p class="muted">Review each example and highlight suspicious details before submitting.</p>
+          <div>
+            <h2>Canvas</h2>
+            <p class="muted">Review each example and highlight suspicious details before submitting.</p>
+          </div>
+          <div class="canvas-actions">
+            <button class="btn ghost sm" id="phishZoomOutBtn" type="button" data-tooltip="Zoom out">−</button>
+            <button class="btn ghost sm" id="phishZoomInBtn" type="button" data-tooltip="Zoom in">+</button>
+            <button class="btn ghost sm" id="phishFullscreenBtn" type="button" data-tooltip="Toggle fullscreen view">Fullscreen</button>
+          </div>
         </div>
 
         <div class="canvas-carousel mt-1">

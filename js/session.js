@@ -123,6 +123,14 @@
 
     attachLogout();
     toggleVisibility(user);
+
+    if (user?.role === 'admin') {
+      document.querySelectorAll('.vault-status').forEach(el => {
+        el.setAttribute('hidden', 'hidden');
+        el.setAttribute('aria-hidden', 'true');
+      });
+    }
+
     markActiveNav();
     populateName(user);
 

@@ -21,12 +21,18 @@
 
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  function readDigit(key) {
+    const raw = localStorage.getItem(key);
+    if (raw == null || raw === '') return '';
+    return raw;
+  }
+
   function computeLockDigits(){
-    const d1 = Number(localStorage.getItem('lock_digit_phishing_total') || 0);
-    const d2 = Number(localStorage.getItem('lock_digit_caesar_shift') || 0);
-    const d3 = Number(localStorage.getItem('lock_digit_pw_minutes') || localStorage.getItem('lock_digit_pw_clues') || 0);
-    const d4 = 8;
-    const d5 = Number(localStorage.getItem('lock_digit_binary') || 0);
+    const d1 = readDigit('lock_digit_phishing_total');
+    const d2 = readDigit('lock_digit_caesar_shift');
+    const d3 = readDigit('lock_digit_pw_minutes') || readDigit('lock_digit_pw_clues');
+    const d4 = readDigit('lock_digit_essential');
+    const d5 = readDigit('lock_digit_binary');
     return [d1, d2, d3, d4, d5];
   }
 
@@ -378,9 +384,9 @@
     });
     const how = document.getElementById('lockHow');
     if (how){
-        const [a,b,c,d,e] = computeLockDigits();
-        how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary product ones digit = ${e}`;
-     }
+      const [a,b,c,d,e] = computeLockDigits().map(v => v || '?');
+      how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary product ones digit = ${e}`;
+    }
 
     autoAdvanceWire();
     initScoreboard();

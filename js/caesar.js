@@ -104,8 +104,10 @@
     const size = Math.max(180, Math.min(rect.width, rect.height));
     state.sizePx = size;
 
-    const radiusOuter = size * 0.45;
-    const radiusInner = size * 0.33;
+    const outerRect = els.outer.getBoundingClientRect();
+    const innerRect = els.inner.getBoundingClientRect();
+    const radiusOuter = Math.max(0, (outerRect.width || size) / 2 - 14);
+    const radiusInner = Math.max(0, (innerRect.width || size * 0.76) / 2 - 12);
 
     const outerLetters = Array.from(els.outer.children);
     const innerLetters = Array.from(els.inner.children);

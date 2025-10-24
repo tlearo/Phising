@@ -5,46 +5,62 @@
 
   const BINARY_A = '1101';
   const BINARY_B = '1011';
-
   const DEC_A = parseInt(BINARY_A, 2);
   const DEC_B = parseInt(BINARY_B, 2);
-
   const XOR_BIN = xorStrings(BINARY_A, BINARY_B);
   const XOR_DEC = parseInt(XOR_BIN, 2);
   const PRODUCT_DEC = DEC_A * DEC_B;
   const PRODUCT_BIN = PRODUCT_DEC.toString(2);
-  const LOCK_DIGIT = PRODUCT_DEC % 10;
+
+  const BIT_LENGTH = Math.max(BINARY_A.length, BINARY_B.length);
+  const POSITIONS = Array.from({ length: BIT_LENGTH }, (_, i) => BIT_LENGTH - 1 - i);
+  const PLACE_VALUES = POSITIONS.map(exp => 2 ** exp);
 
   const inputs = {
-    xorBin: $('#xorBin'),
     xorDec: $('#xorDec'),
     productBin: $('#productBin'),
     productDec: $('#productDec')
   };
 
   const status = {
+    bits: $('#bitsStatus'),
     xor: $('#xorStatus'),
     product: $('#productStatus')
   };
 
+  const sumLabels = {
+    a: $('#binarySumA'),
+    b: $('#binarySumB'),
+    xor: $('#binarySumXor')
+  };
+
+  const bitInputs = {
+    a: [],
+    b: [],
+    xor: []
+  };
+
   const feedbackEl = $('#binaryFeedback');
   const chestHint = $('#binaryChestHint');
-  const placeTable = $('#binaryPlaceTable');
-  const vaultDigitDisplay = $('#binaryVaultDigit');
   const hintBtn = $('#binaryHintBtn');
   const hintBox = $('#binaryHintText');
+  const vaultDigitDisplay = $('#binaryVaultDigit');
+  const placeTable = $('#binaryPlaceTable');
+
+  const points = window.utils?.points;
+  points?.ensure();
+
+  let hintUsed = false;
 
   const progress = {
+    bits: false,
     xor: false,
     product: false
   };
 
-  const points = window.utils?.points;
-  points?.ensure();
-  let hintUsed = false;
-
   if (vaultDigitDisplay) {
-    vaultDigitDisplay.textContent = String(LOCK_DIGIT);
+    const stored = localStorage.getItem('lock_digit_binary');
+    vaultDigitDisplay.textContent = stored ? stored : '—';
   }
 
   function xorStrings(a, b) {
@@ -58,22 +74,29 @@
     return out;
   }
 
-  function normalizeBinaryInput(value) {
-    return (value || '').toString().replace(/[^01]/g, '');
+  function sanitizeBitInput(el) {
+    if (!el) return;
+    const clean = el.value.replace(/[^01]/g, '');
+    el.value = clean.slice(-1);
   }
 
-  function parseBinary(value) {
-    if (!value || /[^01]/.test(value)) return NaN;
-    return parseInt(value, 2);
+  function readBits(row) {
+    return bitInputs[row].map(input => (input.value || '').trim()).join('');
   }
 
-  function setStatus(key, ok, message) {
+  function setStatus(key, state, message) {
     const pill = status[key];
     if (!pill) return;
-    pill.textContent = message;
-    pill.classList.toggle('ok', !!ok);
-    pill.classList.toggle('warn', ok === false);
-    pill.classList.toggle('pending', ok == null);
+    pill.classList.remove('ok', 'warn', 'pending');
+    if (state === true) pill.classList.add('ok');
+    else if (state === false) pill.classList.add('warn');
+    else pill.classList.add('pending');
+
+    let text = message;
+    if (!text) {
+      text = state === true ? 'Complete' : state === false ? 'Check again' : 'Pending';
+    }
+    pill.textContent = text;
   }
 
   function setFeedback(msg, ok = false) {
@@ -86,71 +109,147 @@
   function updateProgressState() {
     const setter = window.utils?.setProgressPercent;
     if (typeof setter !== 'function') return;
-    const percent = progress.product ? 100 : (progress.xor ? 60 : 0);
+    let percent = 0;
+    if (progress.bits) percent = 40;
+    if (progress.bits && progress.xor) percent = 70;
+    if (progress.product) percent = 100;
     setter('binary', percent, { complete: progress.product });
   }
 
   function resetProgress() {
+    progress.bits = false;
     progress.xor = false;
     progress.product = false;
     updateProgressState();
   }
 
   function populateDefaults() {
-    $('#binaryA')?.replaceChildren(document.createTextNode(BINARY_A));
-    $('#binaryB')?.replaceChildren(document.createTextNode(BINARY_B));
-    $('#decimalA')?.replaceChildren(document.createTextNode(String(DEC_A)));
-    $('#decimalB')?.replaceChildren(document.createTextNode(String(DEC_B)));
+    $('#binaryA')?.replaceChildren(document.createTextNode(BINARY_A.padStart(BIT_LENGTH, '0')));
+    $('#binaryB')?.replaceChildren(document.createTextNode(BINARY_B.padStart(BIT_LENGTH, '0')));
   }
 
   function clearInputs() {
-    Object.values(inputs).forEach(input => {
-      if (input) input.value = '';
+    ['a', 'b', 'xor'].forEach(row => {
+      bitInputs[row].forEach(input => { input.value = ''; });
     });
+    Object.values(inputs).forEach(input => { if (input) input.value = ''; });
+    setStatus('bits', true, 'Binary rows provided.');
     setStatus('xor', null, 'Pending');
     setStatus('product', null, 'Pending');
     setFeedback('');
     chestHint?.setAttribute('hidden', 'hidden');
-    resetProgress();
-    hintUsed = false;
     hintBox?.setAttribute('hidden', 'hidden');
+    hintUsed = false;
+    progress.bits = true;
+    progress.xor = false;
+    progress.product = false;
+    updateProgressState();
+    updateSums();
   }
 
-  function checkXor() {
-    const binInput = normalizeBinaryInput(inputs.xorBin?.value || '');
-    const decInput = Number(inputs.xorDec?.value || NaN);
+  function describeBits(bits) {
+    if (!bits || bits.length !== BIT_LENGTH) return 'Enter 0s and 1s above each column.';
+    if (/[^01]/.test(bits)) return 'Use only 0 or 1 in every slot.';
+    const contributions = [];
+    let total = 0;
+    bits.split('').forEach((bit, idx) => {
+      if (bit === '1') {
+        const value = PLACE_VALUES[idx];
+        contributions.push(value);
+        total += value;
+      }
+    });
+    if (!contributions.length) return 'All zeros so far.';
+    return `${contributions.join(' + ')} = ${total}`;
+  }
 
-    if (!binInput) {
-      setStatus('xor', false, 'Enter XOR in binary.');
+  function updateSums() {
+    const aBits = BINARY_A.padStart(BIT_LENGTH, '0');
+    const bBits = BINARY_B.padStart(BIT_LENGTH, '0');
+    if (sumLabels.a) {
+      sumLabels.a.textContent = `Binary A contributions: ${describeBits(aBits)} (decimal ${DEC_A})`;
+    }
+    if (sumLabels.b) {
+      sumLabels.b.textContent = `Binary B contributions: ${describeBits(bBits)} (decimal ${DEC_B})`;
+    }
+    if (sumLabels.xor) {
+      const xorBits = readBits('xor');
+      if (xorBits && xorBits.length === BIT_LENGTH && !/[^01]/.test(xorBits)) {
+        const total = parseInt(xorBits, 2);
+        sumLabels.xor.textContent = `XOR contributions: ${describeBits(xorBits)} (decimal ${total})`;
+      } else {
+        sumLabels.xor.textContent = 'XOR contributions: Enter 0/1 values for each column.';
+      }
+    }
+  }
+
+  function validateBitsRow(row, expected, label) {
+    const bits = readBits(row);
+    if (bits.length !== BIT_LENGTH) {
+      return { ok: false, reason: `Fill every column for ${label}.` };
+    }
+    if (/[^01]/.test(bits)) {
+      return { ok: false, reason: `${label} must use only 0 or 1.` };
+    }
+    if (bits !== expected) {
+      return { ok: false, reason: `${label} should equal ${expected} (decimal ${row === 'a' ? DEC_A : DEC_B}).` };
+    }
+    return { ok: true };
+  }
+
+  function validateBits() {
+    setStatus('bits', true, 'Binary rows provided.');
+    progress.bits = true;
+    return true;
+  }
+
+  function checkXor(bitsOk) {
+    if (!bitsOk) {
+      setStatus('xor', false, 'Complete Binary A and B first.');
       progress.xor = false;
       return false;
     }
-    if (parseBinary(binInput) !== XOR_DEC || binInput.length !== XOR_BIN.length) {
-      setStatus('xor', false, 'Binary XOR is incorrect.');
+
+    const xorBits = readBits('xor');
+    if (xorBits.length !== BIT_LENGTH) {
+      setStatus('xor', false, 'Fill the XOR row with 0s and 1s.');
       progress.xor = false;
       return false;
     }
+    if (/[^01]/.test(xorBits)) {
+      setStatus('xor', false, 'Use only 0 or 1 in the XOR row.');
+      progress.xor = false;
+      return false;
+    }
+    if (xorBits !== XOR_BIN) {
+      setStatus('xor', false, 'Revisit the XOR bits (remember: 1 ⊕ 1 = 0, 1 ⊕ 0 = 1).');
+      progress.xor = false;
+      return false;
+    }
+
+    const decInput = Number(inputs.xorDec?.value || NaN);
     if (!Number.isInteger(decInput) || decInput !== XOR_DEC) {
-      setStatus('xor', false, 'Decimal XOR is incorrect.');
+      setStatus('xor', false, 'Decimal XOR does not match the binary row.');
       progress.xor = false;
       return false;
     }
-    setStatus('xor', true, 'Great! XOR solved.');
+
+    setStatus('xor', true, 'XOR confirmed.');
     progress.xor = true;
     return true;
   }
 
   function checkProduct() {
-    const binInput = normalizeBinaryInput(inputs.productBin?.value || '');
+    const binInput = (inputs.productBin?.value || '').replace(/[^01]/g, '');
     const decInput = Number(inputs.productDec?.value || NaN);
 
     if (!binInput) {
-      setStatus('product', false, 'Enter product in binary.');
+      setStatus('product', false, 'Enter the product in binary.');
       progress.product = false;
       return false;
     }
 
-    if (parseBinary(binInput) !== PRODUCT_DEC || binInput.length !== PRODUCT_BIN.length) {
+    if (parseInt(binInput, 2) !== PRODUCT_DEC || binInput.length !== PRODUCT_BIN.length) {
       setStatus('product', false, 'Binary product is incorrect.');
       progress.product = false;
       return false;
@@ -162,16 +261,19 @@
       return false;
     }
 
-    setStatus('product', true, 'Excellent! Product confirmed.');
+    setStatus('product', true, 'Product confirmed.');
     progress.product = true;
     return true;
   }
 
   function storeLockDigit() {
     try {
-      localStorage.setItem('lock_digit_binary', String(LOCK_DIGIT));
+      localStorage.setItem('lock_digit_binary', String(XOR_DEC));
     } catch (_) {
       /* ignore */
+    }
+    if (vaultDigitDisplay) {
+      vaultDigitDisplay.textContent = String(XOR_DEC);
     }
   }
 
@@ -185,39 +287,40 @@
 
   function handleCheck() {
     const alreadyComplete = window.utils?.readProgress?.()?.binary;
-    const xorOk = checkXor();
+    const bitsOk = validateBits();
+    const xorOk = checkXor(bitsOk);
     const productOk = checkProduct();
     updateProgressState();
 
-    if (xorOk && productOk) {
-      setFeedback(`Success! Decimal product is ${PRODUCT_DEC}. Vault digit captured: ${LOCK_DIGIT}.`, true);
+    if (bitsOk && xorOk && productOk) {
+      setFeedback(`Success! Decimal product is ${PRODUCT_DEC}. Vault digit captured: ${XOR_DEC}.`, true);
       chestHint?.removeAttribute('hidden');
       markBinaryComplete();
       if (!alreadyComplete) {
-        window.vault?.unlock('binary', LOCK_DIGIT, {
-          message: `Binary digit ${LOCK_DIGIT} recorded. Enter it on the vault panel.`
+        window.vault?.unlock('binary', XOR_DEC, {
+          message: `Binary digit ${XOR_DEC} recorded. Enter it on the vault panel.`
         });
       }
-    } else if (xorOk || productOk) {
-      setFeedback('Almost there—double-check the remaining row.', false);
+    } else if (bitsOk && xorOk) {
+      setFeedback('Almost there—confirm the multiplication to finish.', false);
+      chestHint?.setAttribute('hidden', 'hidden');
+    } else if (bitsOk) {
+      setFeedback('Binary rows look good. Solve the XOR and product next.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     } else {
-      setFeedback('Not yet. Review your XOR logic and binary multiplication.', false);
+      setFeedback('Not yet. Double-check the binary rows from the place-value table.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     }
   }
 
   function renderPlaceTable() {
     if (!placeTable) return;
-    const len = Math.max(BINARY_A.length, BINARY_B.length);
-    const positions = Array.from({ length: len }, (_, i) => len - 1 - i);
-
     placeTable.innerHTML = '';
     const thead = document.createElement('thead');
     const headerRows = [
-      { label: 'Position', values: positions.map(String) },
-      { label: 'Exponent', values: positions.map(exp => `2^${exp}`) },
-      { label: 'Value', values: positions.map(exp => String(2 ** exp)) }
+      { label: 'Position', values: POSITIONS.map(String) },
+      { label: 'Exponent', values: POSITIONS.map(exp => `2^${exp}`) },
+      { label: 'Value', values: PLACE_VALUES.map(String) }
     ];
 
     headerRows.forEach(row => {
@@ -236,8 +339,8 @@
 
     const tbody = document.createElement('tbody');
     const rows = [
-      { label: 'Binary A', digits: BINARY_A.padStart(len, '0') },
-      { label: 'Binary B', digits: BINARY_B.padStart(len, '0') }
+      { label: 'Binary A', digits: BINARY_A.padStart(BIT_LENGTH, '0') },
+      { label: 'Binary B', digits: BINARY_B.padStart(BIT_LENGTH, '0') }
     ];
 
     rows.forEach(row => {
@@ -249,12 +352,91 @@
         const td = document.createElement('td');
         td.textContent = digit;
         td.classList.add(digit === '1' ? 'is-on' : 'is-off');
-        td.setAttribute('data-position', String(positions[idx]));
+        td.setAttribute('data-position', String(POSITIONS[idx]));
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
     });
     placeTable.appendChild(tbody);
+  }
+
+  function renderInputTable() {
+    const table = $('#binaryInputTable');
+    if (!table) return;
+
+    table.innerHTML = '';
+    const thead = document.createElement('thead');
+    const headerRows = [
+      { label: 'Position', values: POSITIONS.map(String) },
+      { label: 'Exponent', values: POSITIONS.map(exp => `2^${exp}`) },
+      { label: 'Value', values: PLACE_VALUES.map(String) }
+    ];
+
+    headerRows.forEach(row => {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.textContent = row.label;
+      tr.appendChild(th);
+      row.values.forEach(value => {
+        const thCol = document.createElement('th');
+        thCol.scope = 'col';
+        thCol.textContent = value;
+        tr.appendChild(thCol);
+      });
+      thead.appendChild(tr);
+    });
+    table.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const rows = [
+      { key: 'a', label: 'Binary A' },
+      { key: 'b', label: 'Binary B' },
+      { key: 'xor', label: 'A XOR B' }
+    ];
+
+    rows.forEach(row => {
+      if (!bitInputs[row.key]) bitInputs[row.key] = [];
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.scope = 'row';
+      th.textContent = row.label;
+      tr.appendChild(th);
+      for (let i = 0; i < BIT_LENGTH; i += 1) {
+        const td = document.createElement('td');
+        if (row.key === 'xor') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.inputMode = 'numeric';
+          input.autocomplete = 'off';
+          input.placeholder = '0';
+          input.maxLength = 1;
+          input.dataset.row = row.key;
+          input.dataset.index = String(i);
+          input.addEventListener('input', () => {
+            sanitizeBitInput(input);
+            progress.xor = false;
+            setStatus('xor', null, 'Pending');
+            updateSums();
+          });
+          td.appendChild(input);
+          bitInputs[row.key].push(input);
+        } else {
+          const digits = row.key === 'a' ? BINARY_A.padStart(BIT_LENGTH, '0') : BINARY_B.padStart(BIT_LENGTH, '0');
+          const digit = digits[i];
+          const span = document.createElement('span');
+          span.textContent = digit;
+          td.textContent = digit;
+          td.classList.add(digit === '1' ? 'is-on' : 'is-off');
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    updateSums();
+    setStatus('bits', true, 'Binary rows provided.');
+    progress.bits = true;
   }
 
   function initEvents() {
@@ -277,8 +459,13 @@
 
     Object.values(inputs).forEach(input => {
       input?.addEventListener('input', () => {
-        if (!input.value) {
-          setFeedback('');
+        setFeedback('');
+        if (input === inputs.productBin || input === inputs.productDec) {
+          progress.product = false;
+          setStatus('product', null, 'Pending');
+        } else if (input === inputs.xorDec) {
+          progress.xor = false;
+          setStatus('xor', null, 'Pending');
         }
       });
       input?.addEventListener('keydown', (ev) => {
@@ -293,6 +480,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     populateDefaults();
     renderPlaceTable();
+    renderInputTable();
     clearInputs();
     initEvents();
     window.utils?.initStatusHud('binary', {

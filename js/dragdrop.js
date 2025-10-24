@@ -40,6 +40,12 @@
   const feedbackEl = $('#essFeedback');
   const btnHint    = $('#essHintBtn');
   const hintBox    = $('#essHintText');
+  const vaultValueEl = $('#essentialVaultValue');
+
+  if (vaultValueEl) {
+    const existing = localStorage.getItem('lock_digit_essential');
+    vaultValueEl.textContent = existing || '—';
+  }
 
   const btnCheck   = $('#checkAnswersBtn');
   const btnShuffle = $('#shuffleBtn');
@@ -238,6 +244,10 @@
       setFeedback('Perfect! Digit 8 unlocked for the vault.', true);
       setEssentialDone();
       announce('All correct. Essential Eight complete.');
+      if (vaultValueEl) vaultValueEl.textContent = '8';
+      try {
+        localStorage.setItem('lock_digit_essential', '8');
+      } catch (_) {}
       if (!alreadyComplete) {
         window.vault?.unlock('essential', 8, {
           message: 'Essential Eight digit 8 unlocked. Vault is one step closer.'

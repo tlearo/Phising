@@ -5,7 +5,7 @@
     { key: 'phishing', label: 'Phishing', storage: ['lock_digit_phishing_total'] },
     { key: 'encryption', label: 'Encryption', storage: ['lock_digit_caesar_shift'] },
     { key: 'password', label: 'Password', storage: ['lock_digit_pw_minutes', 'lock_digit_pw_clues'] },
-    { key: 'essential', label: 'Essential Eight', storage: [], constant: 8 },
+    { key: 'essential', label: 'Essential Eight', storage: ['lock_digit_essential'] },
     { key: 'binary', label: 'Binary', storage: ['lock_digit_binary'] }
   ];
 
@@ -23,10 +23,6 @@
   function readDigits() {
     const result = {};
     PUZZLES.forEach(item => {
-      if (typeof item.constant === 'number') {
-        result[item.key] = item.constant;
-        return;
-      }
       result[item.key] = readStorageValue(item.storage);
     });
     return result;

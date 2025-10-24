@@ -37,6 +37,11 @@
   const hintBtn      = $('#phishHintBtn');
   const hintText     = $('#phishHintText');
   const vaultDisplay = $('#phishVaultValue');
+  const workspaceEl  = $('#phishWorkspace');
+  const imageContainer = stageEl?.parentElement;
+  const zoomInBtn    = $('#phishZoomInBtn');
+  const zoomOutBtn   = $('#phishZoomOutBtn');
+  const fullscreenBtn= $('#phishFullscreenBtn');
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
@@ -80,10 +85,12 @@ function countPhishingGroundTruth() {
   return IMAGES.reduce((n, name) => n + (IS_PHISHING[name] ? 1 : 0), 0);
 }
 const PHISHING_DIGIT = countPhishingGroundTruth();
-localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
-if (vaultDisplay) {
-  vaultDisplay.textContent = String(PHISHING_DIGIT);
+
+function setVaultCallout(value) {
+  if (!vaultDisplay) return;
+  vaultDisplay.textContent = value ?? '—';
 }
+setVaultCallout(localStorage.getItem('lock_digit_phishing_total') || '—');
 
   const points = window.utils?.points;
   points?.ensure();
@@ -114,8 +121,60 @@ if (vaultDisplay) {
     scaleY: 1,
     hotspots: [],
     found: new Set(), // indexes of hotspots found
-    imgName: DEFAULT_IMAGE
+    imgName: DEFAULT_IMAGE,
+    zoom: 1,
+    classification: null
   };
+
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 2.5;
+  const ZOOM_STEP = 0.2;
+
+  function updateZoomControls() {
+    const atMin = state.zoom <= ZOOM_MIN + 0.001;
+    const atMax = state.zoom >= ZOOM_MAX - 0.001;
+    if (zoomOutBtn) {
+      zoomOutBtn.disabled = atMin;
+      zoomOutBtn.setAttribute('aria-disabled', atMin ? 'true' : 'false');
+    }
+    if (zoomInBtn) {
+      zoomInBtn.disabled = atMax;
+      zoomInBtn.setAttribute('aria-disabled', atMax ? 'true' : 'false');
+    }
+  }
+
+  function applyZoom() {
+    if (!stageEl) return;
+    stageEl.style.transform = `scale(${state.zoom})`;
+    if (imageContainer) {
+      imageContainer.classList.toggle('is-zoomed', state.zoom > ZOOM_MIN + 0.05);
+    }
+    updateZoomControls();
+  }
+
+  function setZoom(value) {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, value));
+    state.zoom = Number(clamped.toFixed(2));
+    applyZoom();
+  }
+
+  function toggleFullscreen() {
+    const target = workspaceEl || stageEl;
+    if (!target) return;
+    if (!document.fullscreenElement) {
+      if (target.requestFullscreen) {
+        target.requestFullscreen().catch(() => {
+          setZoom(state.zoom >= 1.8 ? ZOOM_MIN : Math.min(ZOOM_MAX, state.zoom + 0.8));
+        });
+      } else {
+        setZoom(state.zoom >= 1.8 ? ZOOM_MIN : Math.min(ZOOM_MAX, state.zoom + 0.8));
+      }
+    } else {
+      document.exitFullscreen?.();
+    }
+  }
+
+  updateZoomControls();
 
   // Add slideshow state + helpers (keeps track of current email example)
   const slideshow = {
@@ -285,6 +344,10 @@ if (vaultDisplay) {
         localStorage.setItem(key, JSON.stringify(p));
         setFeedback(`Full gallery cleared! Digit ${PHISHING_DIGIT} locked in.`, 'success');
         announce('Phishing puzzle complete');
+        try {
+          localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
+        } catch (_) {}
+        setVaultCallout(String(PHISHING_DIGIT));
         window.vault?.unlock('phishing', PHISHING_DIGIT, {
           message: `Phishing digit ${PHISHING_DIGIT} secured. Add it to the vault.`
         });
@@ -394,6 +457,7 @@ if (vaultDisplay) {
     // Reset visible overlay (we keep mask separately)
     resetStrokeState();
     ctx.clearRect(0, 0, w, h);
+    applyZoom();
   }
 
   function loadHotspotsForImage() {
@@ -403,6 +467,7 @@ if (vaultDisplay) {
       xPct: Number(h.xPct), yPct: Number(h.yPct), label: h.label || 'Indicator'
     }));
     state.found.clear();
+    state.classification = localStorage.getItem(`class_${state.imgName}`) || null;
     updateVulnText();
     syncClassificationUi();
   }
@@ -462,6 +527,7 @@ if (vaultDisplay) {
     const saved = localStorage.getItem(`class_${currentName()}`);
     const isPhish = saved === 'phish';
     const isLegit = saved === 'legit';
+    state.classification = saved || null;
     if (markPhishBtn) {
       markPhishBtn.setAttribute('aria-pressed', isPhish ? 'true' : 'false');
       markPhishBtn.classList.toggle('is-selected', isPhish);
@@ -514,11 +580,12 @@ if (vaultDisplay) {
   // ---------- Drawing (mouse + touch) ----------
   function getPos(evt) {
     const r = drawCanvas.getBoundingClientRect();
+    const zoom = state.zoom || 1;
     if (evt.touches && evt.touches[0]) {
       const t = evt.touches[0];
-      return { x: t.clientX - r.left, y: t.clientY - r.top };
+      return { x: (t.clientX - r.left) / zoom, y: (t.clientY - r.top) / zoom };
     }
-    return { x: evt.clientX - r.left, y: evt.clientY - r.top };
+    return { x: (evt.clientX - r.left) / zoom, y: (evt.clientY - r.top) / zoom };
   }
 
   function resetStrokeState() {
@@ -543,6 +610,11 @@ if (vaultDisplay) {
   }
 
   function beginDraw(x, y) {
+    if (state.classification === 'legit') {
+      setFeedback('You marked this example as legitimate. Switch to "This is Phishing" before highlighting clues.', 'warn');
+      announce('Highlighting disabled while marked legitimate');
+      return;
+    }
     state.drawing = true;
     state.lastX = x;
     state.lastY = y;
@@ -650,6 +722,15 @@ if (vaultDisplay) {
   drawCanvas.addEventListener('touchmove',  (e) => { const p = getPos(e); moveDraw(p.x, p.y);  e.preventDefault(); }, { passive:false });
   drawCanvas.addEventListener('touchend',   (e) => { finishStroke(); e.preventDefault(); }, { passive:false });
   drawCanvas.addEventListener('touchcancel',(e) => { finishStroke(); e.preventDefault(); }, { passive:false });
+
+  zoomInBtn?.addEventListener('click', () => setZoom(state.zoom + ZOOM_STEP));
+  zoomOutBtn?.addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP));
+  fullscreenBtn?.addEventListener('click', () => toggleFullscreen());
+  document.addEventListener('fullscreenchange', () => {
+    if (fullscreenBtn) {
+      fullscreenBtn.textContent = document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen';
+    }
+  });
 
   // ---------- Scoring ----------
   function recomputeFoundFromMask() {
@@ -772,12 +853,17 @@ if (vaultDisplay) {
 
 function classify(isPhish){
   const name = currentName();
-  localStorage.setItem(`class_${name}`, isPhish ? 'phish' : 'legit');
+  const value = isPhish ? 'phish' : 'legit';
 
   if (isPhish && !maskHasAnyInk()){
     setFeedback('Mark at least one suspicious indicator before submitting.', 'warn');
     return;
   }
+
+  try {
+    localStorage.setItem(`class_${name}`, value);
+  } catch (_) {}
+  state.classification = value;
   setFeedback(isPhish ? 'Marked as phishing.' : 'Marked as not phishing.', 'success');
   syncClassificationUi();
 }

@@ -40,12 +40,6 @@
     plain:  "KNOWLEDGE IS POWER",
     shift:  5  // the wheel needs to be turned to this to reveal the plaintext
   };
-  try {
-    localStorage.setItem('lock_digit_caesar_shift', String(CFG.shift));
-  } catch (_) {
-    // ignore storage issues (e.g., private browsing)
-  }
-
   // Optional: provide a hash of the expected plaintext for stricter checking
   // Set EXPECTED_HASH to SHA-256(hex) of the normalized plaintext (normalizePlain()).
   const EXPECTED_HASH = window.ENCRYPTION_HASH || null;
@@ -79,6 +73,11 @@
   const hintBtn    = $('#encHintBtn');
   const hintBox    = $('#encHintText');
   const vaultDisplay = $('#encVaultValue');
+  function setVaultDigit(value) {
+    if (!vaultDisplay) return;
+    vaultDisplay.textContent = value ?? '—';
+  }
+  setVaultDigit(localStorage.getItem('lock_digit_caesar_shift') || '—');
 
   if (!cipherEl || !liveEl) return; // not on this page
 
@@ -207,6 +206,10 @@
     announce('Encryption puzzle solved');
     markComplete();
     updateProgressPercent(100, { complete: true });
+    try {
+      localStorage.setItem('lock_digit_caesar_shift', String(CFG.shift));
+    } catch (_) {}
+    setVaultDigit(String(CFG.shift));
     window.vault?.unlock('encryption', CFG.shift, {
       message: `Encryption digit ${CFG.shift} unlocked. Add it to the vault.`
     });

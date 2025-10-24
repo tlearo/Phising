@@ -230,9 +230,13 @@
   const crackTimeDisplay = Strength.formatCrackTime(ACTIVE_SCENARIO.crackSeconds);
   if (crackTimeEl) crackTimeEl.textContent = crackTimeDisplay;
   const vaultMinutes = Math.max(1, Math.round(ACTIVE_SCENARIO.crackSeconds / 60));
-  if (vaultDigitEl) vaultDigitEl.textContent = String(vaultMinutes);
-  if (vaultCalloutDigit) vaultCalloutDigit.textContent = String(vaultMinutes);
   if (crackMeterEl) crackMeterEl.value = Strength.strengthScale(ACTIVE_SCENARIO.crackSeconds);
+  function setVaultDigitDisplay(value) {
+    const finalValue = value ? String(value) : '—';
+    if (vaultDigitEl) vaultDigitEl.textContent = finalValue;
+    if (vaultCalloutDigit) vaultCalloutDigit.textContent = finalValue;
+  }
+  setVaultDigitDisplay(localStorage.getItem('lock_digit_pw_minutes'));
   if (!ACTIVE_SCENARIO.bonusHint && bonusHintBtn) {
     bonusHintBtn.setAttribute('disabled', 'true');
     bonusHintBtn.textContent = 'No bonus hint available';
@@ -354,6 +358,7 @@
     const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Record ${minutesText} (vault digit ${passwordDigit}) for the chest. +${reward.points} pts.`;
     setFeedback(message, true);
     updateProgressPercent(100, { complete: true });
+    setVaultDigitDisplay(String(passwordDigit));
     window.vault?.unlock('password', passwordDigit, {
       message: `Password digit ${passwordDigit} unlocked. Note the rounded minutes for the vault.`
     });
