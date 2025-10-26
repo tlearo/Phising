@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   if (!url)   return json(500, { ok:false, error:'NEON_DATABASE_URL not set' });
   if (!plain) return json(500, { ok:false, error:'ADMIN_SEED_PASSWORD not set' });
 
-  const client = new Client({ connectionString: url }); // use ?sslmode=require on your URL
+  const client = new Client({ connectionString: url }); // ensure ?sslmode=require on the URL
   await client.connect();
   try {
     await client.query(`
@@ -25,7 +25,7 @@ exports.handler = async (event) => {
       )
     `);
 
-    // refuse overwrite if admin exists (safer)
+    // safer: don’t overwrite if admin exists
     const existing = await client.query('select 1 from users where username=$1', ['admin']);
     if (existing.rowCount) return json(409, { ok:false, error:'admin already exists; refusing to overwrite' });
 
@@ -49,3 +49,4 @@ function json(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
