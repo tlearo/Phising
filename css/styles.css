@@ -623,15 +623,16 @@ form .row {
 
 .feedback-actions .classification-cta {
     min-width: 240px;
+    padding: .75rem 1rem;
+    border: 1px solid rgba(59, 130, 246, .25);
+    border-radius: 12px;
+    background: rgba(9, 16, 29, .6);
 }
 
 .classification-buttons .btn.is-selected {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(9, 255, 136, .35);
-}
-
-.classification-buttons #markLegit.is-selected {
-    box-shadow: 0 12px 28px rgba(88, 166, 255, .35);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, .55), 0 18px 22px rgba(8, 12, 24, .4);
+    border-color: rgba(88, 166, 255, .8);
 }
 
 #markPhish {

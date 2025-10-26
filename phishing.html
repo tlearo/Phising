@@ -152,8 +152,6 @@
         <hr class="mt-2" />
 
         <h2 class="mt-2">Examples</h2>
-        <!-- Plain links change the image source via the query string (phishing.js reads img.src for save keys).
-             You can switch examples by clicking a link; the page will reload with that image. -->
         <nav class="thumb-nav mt-1" aria-label="Examples">
           <ul class="link-list">
             <li><a href="phishing.html?img=Picture1.png">Apple – “sound played”</a></li>
@@ -189,15 +187,13 @@
           <button class="carousel-arrow" id="prevImg" type="button" aria-label="Previous email example">&#10094;</button>
 
           <div class="image-container">
-            <!-- Stage holds the image + drawing canvas (canvas sized to image) -->
             <div id="imageStage" class="image-stage">
               <img id="phishingImage"
                    src="assets/Picture1.png"
                    alt="Email screenshot for phishing analysis"
                    referrerpolicy="no-referrer" />
 
-            <canvas id="drawCanvas"
-                    width="800" height="600"></canvas>
+              <canvas id="drawCanvas" width="800" height="600"></canvas>
             </div>
           </div>
 
@@ -272,43 +268,32 @@
     </div>
   </footer>
 
-  <!-- Hotspot map (percentages) for future strict marking.
-       This is inert JSON (no executable JS) and won’t run with CSP. -->
+  <!-- Hotspot map (percentages) for strict marking. Inert JSON. -->
   <script type="application/json" id="phishingHotspots">
   {
     "Picture1.png": [
       { "xPct": 0.16, "yPct": 0.17, "label": "Sender address (lookalike domain appl3.co)" },
-      { "xPct": 0.50, "yPct": 0.44, "label": "Suspicious link region" },
-      { "xPct": 0.50, "yPct": 0.58, "label": "Branding inconsistency / spacing" },
-      { "xPct": 0.50, "yPct": 0.70, "label": "Footer fine print / spoofable" },
-      { "xPct": 0.08, "yPct": 0.14, "label": "Avatar/sender details panel" }
+      { "xPct": 0.08, "yPct": 0.14, "label": "Avatar / sender details panel (generic/unverified)" },
+      { "xPct": 0.50, "yPct": 0.44, "label": "Main body / time-callout area (suspicious wording/placement)" }
     ],
     "Picture2.png": [
-      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (icloudsecure.co)" },
-      { "xPct": 0.38, "yPct": 0.36, "label": "Grammar errors / inconsistent casing" },
-      { "xPct": 0.36, "yPct": 0.46, "label": "Urgency / scare wording" },
-      { "xPct": 0.33, "yPct": 0.56, "label": "Upgrade link (hover domain)" },
-      { "xPct": 0.52, "yPct": 0.82, "label": "Fake footer branding" }
+      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (icloudsecure.co) — domain mismatch" },
+      { "xPct": 0.38, "yPct": 0.36, "label": "Grammar & phrasing errors in body (poor English)" },
+      { "xPct": 0.36, "yPct": 0.46, "label": "Urgent / scare wording (storage full message)" }
     ],
     "Picture3.png": [
-      { "xPct": 0.18, "yPct": 0.18, "label": "Display name looks legit; verify domain" },
-      { "xPct": 0.46, "yPct": 0.30, "label": "Order details link (hover target)" },
-      { "xPct": 0.45, "yPct": 0.44, "label": "View/manage button (link domain)" },
-      { "xPct": 0.46, "yPct": 0.78, "label": "Image ad/CTA region (tracking link)" },
-      { "xPct": 0.10, "yPct": 0.90, "label": "Footer small print (spoof indicators)" }
+      { "xPct": 0.18, "yPct": 0.18, "label": "Display name / sender area (verify domain)" },
+      { "xPct": 0.46, "yPct": 0.30, "label": "Order details / order number block" },
+      { "xPct": 0.45, "yPct": 0.44, "label": "Primary CTA / View or manage order region" }
     ],
     "Picture4.png": [
-      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (sharep0int.com with zero)" },
-      { "xPct": 0.48, "yPct": 0.44, "label": "Document name (generic bait)" },
-      { "xPct": 0.50, "yPct": 0.52, "label": "Green 'anyone with link' icon" },
-      { "xPct": 0.50, "yPct": 0.62, "label": "Big Open button (hover domain)" },
-      { "xPct": 0.12, "yPct": 0.90, "label": "Footer brand misspelling" }
+      { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (sharep0int.com with zero) — look-alike" },
+      { "xPct": 0.48, "yPct": 0.44, "label": "Document title / file area (targets financial / high-stress content)" }
     ]
   }
   </script>
 
-  <!-- Fallback: set image from query string (?img=Picture2.png). Small inline script; if CSP blocks inline,
-       you can instead pre-generate separate pages per image or allow 'unsafe-inline' just for this page. -->
+  <!-- Fallback: set image from query string (?img=Picture2.png). -->
   <script>
     (function () {
       try {
@@ -323,3 +308,4 @@
   </script>
 </body>
 </html>
+

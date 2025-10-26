@@ -116,15 +116,23 @@ updateVaultCallout();
   let hintUsed = false;
 
   hintBtn?.addEventListener('click', () => {
-    if (hintUsed) {
-      announce('Hint already revealed.');
-      return;
-    }
-    hintUsed = true;
-    hintText?.removeAttribute('hidden');
-    points?.spend(5, 'Phishing hint');
-    announce('Hint revealed. Focus on suspicious sender, link, and urgency cues.');
-  });
+  if (hintUsed) {
+    announce('Hint already revealed.');
+    return;
+  }
+  hintUsed = true;
+
+  const key = window.PHISHING_INSTRUCTOR_KEY?.[state.imgName];
+  const text = key?.hint || 'Scan the sender address, call-to-action URL, and urgency cues first.';
+  if (hintText) {
+    hintText.textContent = text;
+    hintText.removeAttribute('hidden');
+  }
+
+  points?.spend?.(5, 'Phishing hint');
+  announce('Hint revealed.');
+});
+
 
   // Tool state
   const state = {
@@ -467,6 +475,49 @@ updateVaultCallout();
     setFeedback('Auto-placed markers for demo.');
     markCompleteIfReady();
   }
+// Instructor-only metadata (not required hotspots)
+// Exposed on window so admin tools / hint UI can read it too.
+window.PHISHING_INSTRUCTOR_KEY = {
+  "Picture1.png": {
+    verdict: "Phishing",
+    explainers: [
+      "Lookalike sender domain: 'appl3.co' (number 3 instead of letter 'e') — common impersonation trick.",
+      "Subtle visual inconsistencies (fonts/spacing) can be present; these are instructor hints and not required to be circled.",
+      "Hovering links may reveal non-Apple domains — advanced check for instructors (do not require players to hover)."
+    ],
+    hint: "Check the sender address closely and the sender card at top-left. If the domain contains numbers or odd spellings it is suspicious."
+  },
+
+  "Picture2.png": {
+    verdict: "Phishing",
+    explainers: [
+      "Domain 'icloudsecure.co' is not an official Apple domain.",
+      "Poor grammar and inconsistent casing ('you documents', 'not update') — strong phishing indicator.",
+      "The 'upgrade' CTA is a common lure — treat payment/upgrade prompts as high risk (instructor-level check)."
+    ],
+    hint: "Look for domain mismatches and obvious grammar mistakes. These are quick visual checks players can perform."
+  },
+
+  "Picture3.png": {
+    verdict: "Likely Legitimate",
+    explainers: [
+      "Sender appears to be 'no-reply@amazon.com' with normal formatting — still advise verifying the domain before clicking links.",
+      "Order details and order numbers are common in genuine notifications; confirm the sender domain in the sender card.",
+      "Hover-to-verify links is an advanced action; include as an instructor verification step rather than a required player action."
+    ],
+    hint: "Confirm the sender domain and check order details. If everything matches and grammar/formatting look clean, it's probably legitimate."
+  },
+
+  "Picture4.png": {
+    verdict: "Phishing",
+    explainers: [
+      "Lookalike sender domain 'sharep0int.com' uses a zero in place of an 'o' — common typo-squatting trick.",
+      "The shared file targets financial / high-stress content (e.g., 'Employee Bonuses') — attackers use this to trigger quick clicks.",
+      "Do not require players to circle the green 'anyone with the link' icon or assume the 'Open' button will harvest credentials — these are instructor-level behaviors to explain in feedback."
+    ],
+    hint: "Files that reference finance or HR topics are high-value lures. Verify sender spelling and avoid clicking 'Open' unless you can confirm the share was legitimate."
+  }
+};
 
   // ---------- Hotspots JSON ----------
   function getHotspotMap() {
