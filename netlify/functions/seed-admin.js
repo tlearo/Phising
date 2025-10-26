@@ -1,21 +1,20 @@
 // netlify/functions/seed-admin.js
-import { Client } from 'pg';
-import bcrypt from 'bcryptjs';
+const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
 
-export default async (req) => {
-  // Require a one-time header so random people can't call this
-  const tokenHeader = req.headers.get('x-seed-token') || '';
+exports.handler = async (event) => {
+  const tokenHeader = event.headers['x-seed-token'] || event.headers['X-Seed-Token'];
   const tokenEnv = process.env.ADMIN_SEED_TOKEN || '';
   if (!tokenEnv || tokenHeader !== tokenEnv) {
-    return Response.json({ ok:false, error:'Unauthorized' }, { status:401 });
+    return json(401, { ok: false, error: 'Unauthorized' });
   }
 
   const url = process.env.NEON_DATABASE_URL;
   const plain = process.env.ADMIN_SEED_PASSWORD;
-  if (!url)   return Response.json({ ok:false, error:'NEON_DATABASE_URL not set' }, { status:500 });
-  if (!plain) return Response.json({ ok:false, error:'ADMIN_SEED_PASSWORD not set' }, { status:500 });
+  if (!url)   return json(500, { ok:false, error:'NEON_DATABASE_URL not set' });
+  if (!plain) return json(500, { ok:false, error:'ADMIN_SEED_PASSWORD not set' });
 
-  const client = new Client({ connectionString: url }); // ensure your URL has ?sslmode=require
+  const client = new Client({ connectionString: url }); // use ?sslmode=require on your URL
   await client.connect();
   try {
     await client.query(`
@@ -26,24 +25,27 @@ export default async (req) => {
       )
     `);
 
-    // Refuse to overwrite if admin already exists (safer). Change to UPSERT if you prefer.
+    // refuse overwrite if admin exists (safer)
     const existing = await client.query('select 1 from users where username=$1', ['admin']);
-    if (existing.rowCount) {
-      return Response.json({ ok:false, error:'admin already exists; refusing to overwrite' }, { status:409 });
-    }
+    if (existing.rowCount) return json(409, { ok:false, error:'admin already exists; refusing to overwrite' });
 
     const hash = await bcrypt.hash(plain, 12);
     await client.query(
       `insert into users (username, role, password_hash) values ($1,'admin',$2)`,
       ['admin', hash]
     );
-
-    return Response.json({ ok:true, user:'admin', note:'Remove this function & clear env vars after use' });
+    return json(200, { ok:true, user:'admin' });
   } catch (e) {
-    return Response.json({ ok:false, error: e.message }, { status:500 });
+    return json(500, { ok:false, error: e.message });
   } finally {
     await client.end();
   }
 };
 
-export const config = { path: "/.netlify/functions/seed-admin" };
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}
