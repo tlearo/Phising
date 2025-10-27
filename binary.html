@@ -85,7 +85,7 @@
 
     <section class="intro-banner mt-2" aria-labelledby="binaryBriefHeading">
       <h2 id="binaryBriefHeading">Points reminder</h2>
-      <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check place values, then submit once.</p>
+      <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check the highlighted columns, then submit once.</p>
       <ul>
         <li>The vault digit is the decimal value of the XOR row (1101 ⊕ 1011 = 6).</li>
         <li>Status pills update as you confirm each step; don’t move on until they glow green.</li>
@@ -100,7 +100,7 @@
 
     <aside class="card tip-card mt-2" aria-labelledby="binaryTipHeading">
       <h2 id="binaryTipHeading">Mission tip</h2>
-      <p class="muted">Map every column to its place value first, then convert each binary row to decimal and finish with the XOR digit.</p>
+      <p class="muted">Use the table: every green column adds to the total, grey columns drop out. Sum Binary A, sum Binary B, then compute the XOR digit.</p>
     </aside>
 
     <section class="status-hud" aria-label="Team status">
@@ -174,13 +174,7 @@
 
         <p class="feedback mt-2" id="binaryFeedback" aria-live="polite"></p>
         <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit equals the decimal XOR result.</p>
-        <p id="binaryHintText" class="hint-callout" hidden>Line up the digits under matching place values, convert each binary row to decimal, then compute the XOR row. Record the XOR decimal as your vault digit.</p>
-      </section>
-
-      <section class="card binary-place" aria-labelledby="binaryPlaceHeading">
-        <h2 id="binaryPlaceHeading">Place Values</h2>
-        <p class="muted">1 means the value is <strong>on</strong> (include it); 0 means it is <strong>off</strong> (ignore it). Use this map to convert binary to decimal.</p>
-        <table class="binary-place-table" id="binaryPlaceTable"></table>
+        <p id="binaryHintText" class="hint-callout" hidden>Look for the columns where the bit is 1. Add those values to get each decimal, then keep only the differing columns for the XOR total.</p>
       </section>
 
       <section class="card binary-xor" aria-labelledby="xorHeading">
@@ -197,11 +191,11 @@
       <section class="card binary-guide" aria-labelledby="binaryGuideHeading">
         <h2 id="binaryGuideHeading">Binary Coach</h2>
         <ol class="mt-1">
-          <li>Read Binary A and Binary B from the table; use the place-value chart to convert them to decimal.</li>
-          <li>Fill the XOR row so every differing bit becomes 1, then convert that binary result to decimal.</li>
-          <li>Vault digit = decimal XOR result. Example: 1101 ⊕ 1011 = 0110 → <strong>6</strong>.</li>
+          <li>Read Binary A and Binary B from the table. Add the green columns (1s) to get each decimal value.</li>
+          <li>Use the same columns to work out the XOR total—only the mismatched bits add to the vault digit.</li>
+          <li>Vault digit = decimal XOR result. Example: 1101 ⊕ 1011 = 0110 so the digit is <strong>6</strong>.</li>
         </ol>
-        <p class="muted mt-1">Need a reminder? The place-value table on the right shows why 1s matter in specific columns.</p>
+        <p class="muted mt-1">Green columns contribute to the total; grey columns (0s) drop out. No extra chart needed.</p>
       </section>
     </section>
 
@@ -227,9 +221,9 @@
       <h2 id="onboardBinaryTitle" data-onboard-focus>Binary Lab — Quick Guide</h2>
       <p>The vault digit is the decimal XOR value once your conversions are correct.</p>
       <ol class="onboard__list">
-        <li>Translate Binary A and Binary B into decimal using the place-value chart.</li>
-        <li>Fill the XOR row, then convert that binary result into decimal.</li>
-        <li>Press Check—when all three pills glow green, record the XOR decimal for the vault.</li>
+        <li>Read the table and add the highlighted (green) columns to get the decimal totals for Binary A and Binary B.</li>
+        <li>Keep only the columns that differ to calculate the XOR decimal value.</li>
+        <li>Press Check - when all three pills glow green, record the XOR decimal for the vault.</li>
       </ol>
     </div>
   </div>

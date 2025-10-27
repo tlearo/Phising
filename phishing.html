@@ -92,7 +92,7 @@
         <li>Capture at least three hotspots per message to stay on pace for full credit.</li>
         <li>Hints cost points—use them only when the trail goes cold.</li>
         <li>Record the digit once <strong>Submit Highlights</strong> gives you the all-clear.</li>
-        <li>Need a breather? Use Save/Load to preserve your work without losing points.</li>
+        <li>Highlights now autosave after every stroke and reload automatically when you revisit a slide.</li>
       </ul>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
@@ -147,6 +147,9 @@
             <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
             <button class="btn cta-btn ghost" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
           </div>
+          <p class="muted classification-tip" id="classificationTip" aria-live="polite" hidden>
+            Select "This is Phishing" to unlock highlighting.
+          </p>
         </section>
 
         <section class="phish-step" data-step="2">
@@ -155,15 +158,15 @@
             <h3>Mark the clues</h3>
           </div>
           <p class="muted">Use tight circles over sender details, URLs, grammar errors, or urgency cues.</p>
-          <div class="tool-stack">
-            <div class="tool-row">
-              <button class="btn tool-btn" data-tool="brush" onclick="setTool('brush')" aria-pressed="true">Brush</button>
-              <button class="btn ghost tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
-            </div>
-            <div class="field mt-2">
-              <label for="brushSize">Brush size</label>
-              <input id="brushSize" type="range" min="2" max="24" value="8" />
-            </div>
+            <div class="tool-stack">
+              <div class="tool-row">
+                <button class="btn tool-btn" data-tool="brush" onclick="setTool('brush')" aria-pressed="true">Brush</button>
+                <button class="btn ghost tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
+              </div>
+              <div class="field mt-2">
+                <label for="brushSize">Brush size</label>
+                <input id="brushSize" type="range" min="2" max="24" value="8" />
+              </div>
             <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
               <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
               <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
@@ -179,7 +182,7 @@
             <span class="step-pill">Step 3</span>
             <h3>Submit & advance</h3>
           </div>
-          <p class="muted">Once three hotspots glow green, press <strong>Submit Highlights</strong> under the canvas to lock the slide. Autosave runs after every stroke.</p>
+          <p class="muted">Once three hotspots glow green, press <strong>Submit Highlights</strong> under the canvas to lock the slide. Autosave captures every stroke and reloads it if you refresh or revisit.</p>
           <p class="autosave-status" id="autosaveStatus" aria-live="polite">Autosave ready.</p>
         </section>
 

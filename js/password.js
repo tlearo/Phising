@@ -302,7 +302,7 @@
     if (strengthSummaryEl) {
       const label = Strength.scoreLabel ? Strength.scoreLabel(analysis.score) : `Score ${analysis.score}`;
       const displayTime = analysis.crackTimesDisplay?.offline_slow_hashing_1e4_per_second || analysis.crackTime;
-      strengthSummaryEl.textContent = `${label} — ${displayTime} • Vault digit ${digit} saved.`;
+      strengthSummaryEl.textContent = `${label} - ${displayTime} • Vault digit ${digit} saved.`;
     }
     setFeedback(`Crack Time Lab confirms your password. Vault digit ${digit} recorded.`, true);
   }
@@ -321,7 +321,7 @@
     const analysis = Strength.analyze(sample, [ACTIVE_SCENARIO.answer]);
     const displayTime = analysis.crackTimesDisplay?.offline_slow_hashing_1e4_per_second || analysis.crackTime;
     const label = Strength.scoreLabel ? Strength.scoreLabel(analysis.score) : `Score ${analysis.score}`;
-    strengthSummaryEl.textContent = `${label} — ${displayTime}`;
+    strengthSummaryEl.textContent = `${label} - ${displayTime}`;
     if (strengthScoreEl) strengthScoreEl.textContent = label;
     if (strengthGuessesEl) strengthGuessesEl.textContent = Number.isFinite(analysis.guesses) ? analysis.guesses.toLocaleString() : '∞';
     if (strengthTimeEl) strengthTimeEl.textContent = displayTime;
@@ -333,9 +333,10 @@
       feedbackMessages.push(...analysis.suggestions);
     }
     if (strengthSuggestionsEl) {
-      strengthSuggestionsEl.textContent = feedbackMessages.length
-        ? feedbackMessages.join(' ')
-        : 'Looking good — keep it unique, long, and unrelated to you.';
+      const uniqueMessages = Array.from(new Set(feedbackMessages.filter(Boolean)));
+      strengthSuggestionsEl.textContent = uniqueMessages.length
+        ? uniqueMessages.join(' ')
+        : 'Looking good - keep it unique, long, and unrelated to you.';
     }
     setStrengthMeter(analysis.score, true);
     const matchesAnswer = normalize(sample) === normalize(CFG.answer);
@@ -467,7 +468,7 @@
     localStorage.removeItem('lock_digit_pw_minutes');
     localStorage.setItem('password_crack_time_display', crackTimeDisplay);
     localStorage.setItem(SCENARIO_KEY, String((currentScenarioIndex + 1) % SCENARIOS.length));
-    const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Jump to Step 3 and enter the solved password to capture the vault digit.`;
+    const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Jump to Step 3 and enter the solved password to capture the vault digit. Time to think like a hacker and log the code.`;
     setFeedback(message, true);
     updateProgressPercent(100, { complete: true });
     updateVaultDigitDisplay();

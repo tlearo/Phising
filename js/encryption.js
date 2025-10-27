@@ -63,6 +63,7 @@
   const cipherEl   = $('#cipherText');
   const exampleCipherEl = $('#encExampleCipher');
   const examplePlainEl  = $('#encExamplePlain');
+  const livePlainEl     = $('#livePlaintext');
   const sliderEl   = $('#shiftSlider');
   const shiftDown  = $('#shiftDown');
   const shiftUp    = $('#shiftUp');
@@ -179,6 +180,10 @@
     const decoded = Caesar.decode(cipherLetter, currentShift);
     exampleCipherEl.textContent = cipherLetter;
     examplePlainEl.textContent = decoded.charAt(0) || cipherLetter;
+    if (livePlainEl) {
+      const liveDecoded = Caesar.decode(CIPHERTEXT, currentShift) || '';
+      livePlainEl.textContent = liveDecoded || 'Rotate the wheel to decode...';
+    }
   }
 
   // When caesar.js emits a shift change, mirror it here
@@ -218,7 +223,7 @@
 
   function success(){
     if (feedbackEl){
-      feedbackEl.textContent = `Correct! Shift ${CFG.shift} reveals the plaintext—record it as your vault digit.`;
+      feedbackEl.textContent = `Correct! Shift ${CFG.shift} reveals the plaintext - record it as your vault digit.`;
       feedbackEl.classList.remove('warn');
       feedbackEl.classList.add('ok');
     }

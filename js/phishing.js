@@ -4,7 +4,7 @@
    - Drawing tools: brush / eraser, adjustable size, mouse + touch
    - Hotspot scoring from #phishingHotspots (percentage coordinates)
    - Strict check: a hotspot counts when highlighted within a small radius
-   - Save / Load / Clear / Auto-place (for demos)
+   - Autosave / restore highlights (with manual clear + facilitator auto-place)
    - Marks puzzle complete in ${user}_progress.phishing when threshold met
 */
 
@@ -30,6 +30,7 @@
   const dotContainer = $('#exampleDots');
   const markPhishBtn = $('#markPhish');
   const markLegitBtn = $('#markLegit');
+  const classificationTipEl = $('#classificationTip');
   const classificationBlock = $('#classificationBlock');
   const clearBtn     = $('#clearBtn');
   const hintBtn      = $('#phishHintBtn');
@@ -61,7 +62,7 @@
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
   const REQUIRED_PCT = 0.75;
   const AUTO_SAVE_DELAY = 900;
-  const COVERAGE_LIMIT = 0.45;
+  const COVERAGE_LIMIT = 0.22;
 
 // ---------- Config ----------
 const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
@@ -138,7 +139,7 @@ updateVaultCallout();
 
 
   // Tool state
-  const DEFAULT_ZOOM = window.matchMedia('(min-width: 900px)').matches ? 1.35 : 1.1;
+  const DEFAULT_ZOOM = window.matchMedia('(min-width: 900px)').matches ? 1.05 : 0.95;
 
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
@@ -330,6 +331,10 @@ updateVaultCallout();
   function nudgeClassification(message) {
     if (!classificationBlock) return;
     classificationBlock.classList.add('is-nudged');
+    if (classificationTipEl) {
+      classificationTipEl.textContent = message || 'Select "This is Phishing" to unlock highlighting.';
+      classificationTipEl.removeAttribute('hidden');
+    }
     try {
       classificationBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (_) {
@@ -466,6 +471,7 @@ updateVaultCallout();
         window.vault?.unlock('phishing', PHISHING_DIGIT, {
           message: `Phishing digit ${PHISHING_DIGIT} secured. Add it to the vault.`
         });
+        window.stateSync?.queueSave?.('phishing-complete');
       }
     }
     updateVulnText();
@@ -499,20 +505,24 @@ updateVaultCallout();
     }
   }
 
-  async function loadHighlights() {
+  async function loadHighlights(options = {}) {
+    const { silent = false } = options;
     const raw = localStorage.getItem(storageKey());
-    if (!raw) { setFeedback('No saved highlights for this image.'); return; }
+    if (!raw) {
+      if (!silent) setFeedback('No saved highlights for this image.');
+      return;
+    }
     try {
       const data = JSON.parse(raw);
       await drawDataUrlToCanvas(data.mask, maskCanvas, maskCtx);
       // Mirror the mask to visible canvas lightly
       redrawFromMask();
       state.found = new Set(Array.isArray(data.found) ? data.found : []);
-      setFeedback('Loaded saved highlights.', 'success');
-      updateAutosaveStatus('Highlights loaded from save.');
+      if (!silent) setFeedback('Loaded saved highlights.', 'success');
+      updateAutosaveStatus('Highlights restored from autosave.');
       markCompleteIfReady();
     } catch {
-      setFeedback('Could not load saved highlights.', 'warn');
+      if (!silent) setFeedback('Could not load saved highlights.', 'warn');
     }
   }
 
@@ -536,7 +546,7 @@ updateVaultCallout();
       maskCtx.fill();
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(0,255,170,0.85)';
+      ctx.strokeStyle = 'rgba(9,255,170,0.55)';
       ctx.lineWidth = 3;
       ctx.arc(x, y, HOTSPOT_RADIUS_PX * 0.8, 0, Math.PI * 2);
       ctx.stroke();
@@ -680,12 +690,12 @@ window.PHISHING_INSTRUCTOR_KEY = {
         extra = ' Start highlighting the most suspicious clue you can find.';
       } else if (remaining > 0) {
         if (needed > 0) {
-          extra = ` Keep hunting—${needed === 1 ? 'one more critical clue' : `${needed} more critical clues`} will meet the target.`;
+          extra = ` Keep hunting - ${needed === 1 ? 'one more critical clue' : `${needed} more critical clues`} will meet the target.`;
         } else {
           extra = ` Nice work! ${remaining === 1 ? 'One bonus clue remains if you want the full sweep.' : `${remaining} bonus clues remain if you want the full sweep.`}`;
         }
       } else {
-        extra = ' All clues are marked—excellent coverage!';
+        extra = ' All clues are marked - excellent coverage!';
       }
       const totalSlides = IMAGES.length || 0;
       const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
@@ -714,6 +724,13 @@ window.PHISHING_INSTRUCTOR_KEY = {
       markLegitBtn.classList.toggle('is-selected', isLegit);
     }
     if (isPhish) classificationBlock?.classList.remove('is-nudged');
+    if (classificationTipEl) {
+      if (isPhish) {
+        classificationTipEl.setAttribute('hidden', 'hidden');
+      } else if (!classificationTipEl.hasAttribute('hidden')) {
+        classificationTipEl.textContent = 'Select "This is Phishing" to unlock highlighting.';
+      }
+    }
   }
 
   function setFeedback(msg, tone='info') {
@@ -757,13 +774,16 @@ window.PHISHING_INSTRUCTOR_KEY = {
 
   // ---------- Drawing (mouse + touch) ----------
   function getPos(evt) {
-    const r = drawCanvas.getBoundingClientRect();
-    const zoom = state.zoom || 1;
-    if (evt.touches && evt.touches[0]) {
-      const t = evt.touches[0];
-      return { x: (t.clientX - r.left) / zoom, y: (t.clientY - r.top) / zoom };
-    }
-    return { x: (evt.clientX - r.left) / zoom, y: (evt.clientY - r.top) / zoom };
+    const rect = drawCanvas.getBoundingClientRect();
+    const scaleX = rect.width ? (drawCanvas.width / rect.width) : 1;
+    const scaleY = rect.height ? (drawCanvas.height / rect.height) : 1;
+    const touch = evt.touches && evt.touches[0];
+    const clientX = touch ? touch.clientX : evt.clientX;
+    const clientY = touch ? touch.clientY : evt.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
   }
 
   function resetStrokeState() {
@@ -772,9 +792,9 @@ window.PHISHING_INSTRUCTOR_KEY = {
     state.maskSnapshot = null;
   }
 
-  function restoreMaskSnapshot() {
-    if (state.maskSnapshot) {
-      maskCtx.putImageData(state.maskSnapshot, 0, 0);
+  function restoreMaskSnapshot(snapshot = state.maskSnapshot) {
+    if (snapshot) {
+      maskCtx.putImageData(snapshot, 0, 0);
       redrawFromMask();
     }
   }
@@ -785,6 +805,14 @@ window.PHISHING_INSTRUCTOR_KEY = {
     const height = Math.abs(state.strokeBounds.maxY - state.strokeBounds.minY);
     const area = width * height;
     return state.strokeLength > MAX_STROKE_LENGTH || width > MAX_STROKE_SPAN || height > MAX_STROKE_SPAN || area > MAX_STROKE_AREA;
+  }
+
+  function strokeIsBroad(bounds) {
+    if (!bounds) return false;
+    const width = Math.abs(bounds.maxX - bounds.minX);
+    const height = Math.abs(bounds.maxY - bounds.minY);
+    const area = width * height;
+    return width > 150 || height > 150 || area > 18000;
   }
 
   function beginDraw(x, y) {
@@ -809,18 +837,35 @@ window.PHISHING_INSTRUCTOR_KEY = {
   function finishStroke() {
     if (!state.drawing) return;
     state.drawing = false;
+    const bounds = state.strokeBounds ? { ...state.strokeBounds } : null;
+    const snapshot = state.maskSnapshot;
+    const wasBrush = state.tool === 'brush';
+
     if (exceedsStrokeLimits()) {
-      restoreMaskSnapshot();
+      restoreMaskSnapshot(snapshot);
       setFeedback('Keep highlights focused on the suspicious detail, not the entire email.', 'warn');
       updateVulnText();
       resetStrokeState();
       return;
     }
-    resetStrokeState();
+
+    const prevFound = new Set(state.found);
     recomputeFoundFromMask();
+    const madeProgress = state.found.size > prevFound.size;
+
+    if (wasBrush && bounds && !madeProgress && strokeIsBroad(bounds)) {
+      restoreMaskSnapshot(snapshot);
+      state.found = prevFound;
+      updateVulnText();
+      setFeedback('Circle the specific clue—broad strokes are ignored.', 'warn');
+      resetStrokeState();
+      return;
+    }
+
     enforceCoverageLimit();
     queueAutoSave('stroke');
     markCompleteIfReady();
+    resetStrokeState();
   }
 
   function moveDraw(x, y) {
@@ -859,7 +904,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       ctx.strokeStyle = 'rgba(0,0,0,1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(0,255,170,0.85)';
+      ctx.strokeStyle = 'rgba(9,255,170,0.55)';
     }
     ctx.beginPath();
     if (first) {
@@ -1032,18 +1077,13 @@ window.PHISHING_INSTRUCTOR_KEY = {
 function classify(isPhish){
   const name = currentName();
   const value = isPhish ? 'phish' : 'legit';
-
-  if (isPhish && !maskHasAnyInk()){
-    setFeedback('Mark at least one suspicious indicator before submitting.', 'warn');
-    return;
-  }
-
   try {
     localStorage.setItem(`class_${name}`, value);
   } catch (_) {}
   state.classification = value;
   setFeedback(isPhish ? 'Marked as phishing.' : 'Marked as not phishing.', 'success');
   syncClassificationUi();
+  window.stateSync?.queueSave?.('phishing-classification');
 }
 
 
@@ -1083,7 +1123,7 @@ function classify(isPhish){
     updateVulnText();
     updateSlideUi();
     // Try to load saved highlights for this image
-    loadHighlights().catch(()=>{ /* ignore */ });
+    loadHighlights({ silent: true }).catch(()=>{ /* ignore */ });
   }
 
   imgEl.addEventListener('load', onImageReady);
@@ -1096,7 +1136,7 @@ function classify(isPhish){
   document.addEventListener('DOMContentLoaded', () => {
     // Ensure tool button reflects default
     setTool('brush');
-    updateAutosaveStatus('Autosave ready.');
+    updateAutosaveStatus('Autosave ready - your highlights restore automatically.');
 
     // Determine starting slide from query/src
     const initialName = resolveInitialImage();

@@ -95,6 +95,11 @@
       /* ignore */
     }
     window.stateSync?.queueSave?.('progress');
+    try {
+      window.stateSync?.saveNow?.('progress');
+    } catch (_) {
+      /* ignore */
+    }
     return p;
   }
   function progressMetaKey(u = getUser()) {
@@ -296,6 +301,11 @@
       /* ignore */
     }
     window.stateSync?.queueSave?.('points');
+    try {
+      window.stateSync?.saveNow?.('points');
+    } catch (_) {
+      /* ignore */
+    }
     dispatchScoreEvent(updated, delta, reason);
     return updated;
   }
@@ -439,6 +449,15 @@
   }
 
   function logout(redirect = 'index.html', extraKeys = []) {
+    try {
+      pushActivity({
+        type: 'session',
+        status: 'logout',
+        detail: 'Signed out'
+      });
+    } catch (_) {
+      /* ignore */
+    }
     try {
       window.stateSync?.saveNow?.('logout');
     } catch (_) {

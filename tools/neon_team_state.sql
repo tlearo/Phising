@@ -17,6 +17,9 @@ create table if not exists team_state (
 create index if not exists team_state_updated_idx on team_state (updated_at desc);
 create index if not exists team_state_progress_gin on team_state using gin (progress);
 create index if not exists team_state_activity_gin on team_state using gin (activity);
+create index if not exists team_state_score_idx on team_state (score);
+
+-- The `vault` column also stores misc metadata (e.g., resetVersion timestamps).
 
 -- Optional legacy snapshot tables (only if you still rely on them)
 -- create table progress (...);

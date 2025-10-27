@@ -151,6 +151,12 @@
           <div id="recentActivityList" class="activity-list-wrapper" aria-live="polite"></div>
         </section>
 
+        <section class="card admin-sessions mt-2" aria-labelledby="sessionHeading">
+          <h2 id="sessionHeading">Active Sessions</h2>
+          <p class="muted">Snapshot of who is online and their latest action.</p>
+          <ul class="session-list" id="sessionList"></ul>
+        </section>
+
         <div class="admin-tools-grid mt-2">
           <!-- Data Sync (Netlify ↔ Neon) — hooks only -->
           <section class="card" aria-labelledby="syncHeading">

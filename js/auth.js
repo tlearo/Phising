@@ -198,6 +198,12 @@
         saveUser(server.user);
         if (server.user.role === 'team') {
           await bootstrapTeamState(server.user.username);
+          try {
+            window.utils?.pushActivity({ type: 'session', status: 'login', detail: 'Signed in' });
+            window.stateSync?.saveNow?.('login');
+          } catch (_) {
+            /* ignore */
+          }
         }
         setLoading(false);
         if (window.a11y) window.a11y.announce('Login successful');
@@ -208,6 +214,14 @@
       const demo = tryDemoLogin(username, password);
       if (demo.ok) {
         saveUser(demo.user);
+        if (demo.user.role === 'team') {
+          try {
+            window.utils?.pushActivity({ type: 'session', status: 'login', detail: 'Signed in (demo)' });
+            window.stateSync?.saveNow?.('login');
+          } catch (_) {
+            /* ignore */
+          }
+        }
         setLoading(false);
         if (window.a11y) window.a11y.announce('Logged in with demo account');
         return redirectForRole(demo.user.role);

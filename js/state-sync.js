@@ -11,6 +11,7 @@
   if (!TEAM) return;
 
   const ENDPOINT = '/.netlify/functions/team-state';
+  const AUTO_PULL_MS = 20000;
   const DEFAULT_PROGRESS = {
     phishing: false,
     password: false,
@@ -27,6 +28,7 @@
     activity: `${TEAM}_activity`
   };
   const TEAM_VAULT_KEY = `${TEAM}_vault`;
+  const RESET_VERSION_KEY = `${TEAM}_reset_version`;
 
   function readJSON(key, fallback) {
     try {
@@ -42,6 +44,7 @@
   }
 
   function collectVault() {
+    const existing = readTeamVault();
     const digits = {
       phishing: localStorage.getItem('lock_digit_phishing_total') || null,
       encryption: localStorage.getItem('lock_digit_caesar_shift') || null,
@@ -49,7 +52,7 @@
       essential: localStorage.getItem('lock_digit_essential') || null,
       binary: localStorage.getItem('lock_digit_binary') || null
     };
-    const meta = {};
+    const meta = { ...(existing || {}) };
     Object.entries(digits).forEach(([key, value]) => {
       if (value != null) meta[key] = value;
     });
@@ -96,6 +99,12 @@
     if (state.vault) {
       writeJSON(TEAM_VAULT_KEY, state.vault);
       applyVault(state.vault);
+      const remoteReset = state.vault?.resetVersion;
+      const localReset = localStorage.getItem(RESET_VERSION_KEY);
+      if (remoteReset && String(remoteReset) !== localReset) {
+        localStorage.setItem(RESET_VERSION_KEY, String(remoteReset));
+        setTimeout(() => window.location.reload(), 120);
+      }
     }
   }
 
@@ -177,4 +186,20 @@
   });
 
   pull(true);
+  setInterval(() => {
+    pull(false);
+  }, AUTO_PULL_MS);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      queueSave('visibility');
+    } else {
+      pull(false);
+    }
+  });
+
+  window.addEventListener('online', () => {
+    pull(false);
+    queueSave('online');
+  });
 })();

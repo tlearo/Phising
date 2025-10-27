@@ -33,18 +33,11 @@
     xor: $('#binarySumXor')
   };
 
-  const bitInputs = {
-    a: [],
-    b: [],
-    xor: []
-  };
-
   const feedbackEl = $('#binaryFeedback');
   const chestHint = $('#binaryChestHint');
   const hintBtn = $('#binaryHintBtn');
   const hintBox = $('#binaryHintText');
   const vaultDigitDisplay = $('#binaryVaultDigit');
-  const placeTable = $('#binaryPlaceTable');
 
   const points = window.utils?.points;
   points?.ensure();
@@ -88,15 +81,6 @@
     return out;
   }
 
-  function sanitizeBitInput(el) {
-    if (!el) return;
-    const clean = el.value.replace(/[^01]/g, '');
-    el.value = clean.slice(-1);
-  }
-
-  function readBits(row) {
-    return bitInputs[row].map(input => (input.value || '').trim()).join('');
-  }
 
   function setStatus(key, state, message) {
     const pill = status[key];
@@ -141,7 +125,6 @@
   }
 
   function clearInputs() {
-    bitInputs.xor.forEach(input => { input.value = ''; });
     Object.values(inputs).forEach(input => { if (input) input.value = ''; });
     setStatus('a', null, 'Decimal pending');
     setStatus('b', null, 'Decimal pending');
@@ -157,8 +140,8 @@
   }
 
   function describeBits(bits) {
-    if (!bits || bits.length !== BIT_LENGTH) return 'Enter 0s and 1s above each column.';
-    if (/[^01]/.test(bits)) return 'Use only 0 or 1 in every slot.';
+    if (!bits || bits.length !== BIT_LENGTH) return 'Use the highlighted columns to add their values.';
+    if (/[^01]/.test(bits)) return 'Bits must be either 0 or 1.';
     const contributions = [];
     let total = 0;
     bits.split('').forEach((bit, idx) => {
@@ -175,6 +158,7 @@
   function updateSums() {
     const aBits = BINARY_A.padStart(BIT_LENGTH, '0');
     const bBits = BINARY_B.padStart(BIT_LENGTH, '0');
+    const xorBits = XOR_BIN.padStart(BIT_LENGTH, '0');
     if (sumLabels.a) {
       sumLabels.a.textContent = `Binary A contributions: ${describeBits(aBits)} (decimal ${DEC_A})`;
     }
@@ -182,13 +166,7 @@
       sumLabels.b.textContent = `Binary B contributions: ${describeBits(bBits)} (decimal ${DEC_B})`;
     }
     if (sumLabels.xor) {
-      const xorBits = readBits('xor');
-      if (xorBits && xorBits.length === BIT_LENGTH && !/[^01]/.test(xorBits)) {
-        const total = parseInt(xorBits, 2);
-        sumLabels.xor.textContent = `XOR contributions: ${describeBits(xorBits)} (decimal ${total})`;
-      } else {
-        sumLabels.xor.textContent = 'XOR contributions: Enter 0/1 values for each column.';
-      }
+      sumLabels.xor.textContent = `XOR contributions: ${describeBits(xorBits)} (decimal ${XOR_DEC})`;
     }
   }
 
@@ -219,26 +197,14 @@
       return false;
     }
 
-    const xorBits = readBits('xor');
-    if (xorBits.length !== BIT_LENGTH) {
-      setStatus('xor', false, 'Fill the XOR row with 0s and 1s.');
-      progress.xor = false;
-      return false;
-    }
-    if (/[^01]/.test(xorBits)) {
-      setStatus('xor', false, 'Use only 0 or 1 in the XOR row.');
-      progress.xor = false;
-      return false;
-    }
-    if (xorBits !== XOR_BIN) {
-      setStatus('xor', false, 'Revisit the XOR bits (remember: 1 ⊕ 1 = 0, 1 ⊕ 0 = 1).');
-      progress.xor = false;
-      return false;
-    }
-
     const decInput = Number(inputs.xorDec?.value || NaN);
-    if (!Number.isInteger(decInput) || decInput !== XOR_DEC) {
-      setStatus('xor', false, 'Decimal XOR does not match the binary row.');
+    if (!Number.isInteger(decInput)) {
+      setStatus('xor', false, 'Enter the XOR decimal using digits only.');
+      progress.xor = false;
+      return false;
+    }
+    if (decInput !== XOR_DEC) {
+      setStatus('xor', false, `XOR decimal should be ${XOR_DEC}. Recheck the mismatched columns.`);
       progress.xor = false;
       return false;
     }
@@ -263,6 +229,7 @@
     const flag = window.utils?.setProgressFlag;
     flag?.('binary', true);
     storeLockDigit();
+    window.stateSync?.queueSave?.('binary-complete');
   }
 
   function handleCheck() {
@@ -281,59 +248,12 @@
         });
       }
     } else if (decimalsOk) {
-      setFeedback('Decimals confirmed. Solve the XOR row next.', false);
+      setFeedback('Decimals confirmed. Now enter the XOR decimal using the differing columns.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     } else {
-      setFeedback('Not yet. Use the place-value table to convert both binaries to decimal.', false);
+      setFeedback('Not yet. Add the highlighted columns to convert each binary to decimal first.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     }
-  }
-
-  function renderPlaceTable() {
-    if (!placeTable) return;
-    placeTable.innerHTML = '';
-    const thead = document.createElement('thead');
-    const headerRows = [
-      { label: 'Position', values: POSITIONS.map(String) },
-      { label: 'Exponent', values: POSITIONS.map(exp => `2^${exp}`) },
-      { label: 'Value', values: PLACE_VALUES.map(String) }
-    ];
-
-    headerRows.forEach(row => {
-      const tr = document.createElement('tr');
-      const th = document.createElement('th');
-      th.textContent = row.label;
-      tr.appendChild(th);
-      row.values.forEach(value => {
-        const td = document.createElement('td');
-        td.textContent = value;
-        tr.appendChild(td);
-      });
-      thead.appendChild(tr);
-    });
-    placeTable.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    const rows = [
-      { label: 'Binary A', digits: BINARY_A.padStart(BIT_LENGTH, '0') },
-      { label: 'Binary B', digits: BINARY_B.padStart(BIT_LENGTH, '0') }
-    ];
-
-    rows.forEach(row => {
-      const tr = document.createElement('tr');
-      const th = document.createElement('th');
-      th.textContent = row.label;
-      tr.appendChild(th);
-      Array.from(row.digits).forEach((digit, idx) => {
-        const td = document.createElement('td');
-        td.textContent = digit;
-        td.classList.add(digit === '1' ? 'is-on' : 'is-off');
-        td.setAttribute('data-position', String(POSITIONS[idx]));
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    });
-    placeTable.appendChild(tbody);
   }
 
   function renderInputTable() {
@@ -365,81 +285,40 @@
 
     const tbody = document.createElement('tbody');
     const rows = [
-      { key: 'a', label: 'Binary A' },
-      { key: 'b', label: 'Binary B' },
-      { key: 'xor', label: 'A XOR B' }
+      { label: 'Binary A', digits: BINARY_A.padStart(BIT_LENGTH, '0'), rowClass: 'binary-row-a' },
+      { label: 'Binary B', digits: BINARY_B.padStart(BIT_LENGTH, '0'), rowClass: 'binary-row-b' },
+      { label: 'A XOR B', digits: XOR_BIN.padStart(BIT_LENGTH, '0'), rowClass: 'binary-row-xor' }
     ];
 
-    let xorRowRef = null;
-
     rows.forEach(row => {
-      if (!bitInputs[row.key]) bitInputs[row.key] = [];
-      bitInputs[row.key].length = 0;
       const tr = document.createElement('tr');
+      tr.className = row.rowClass;
       const th = document.createElement('th');
       th.scope = 'row';
       th.textContent = row.label;
       tr.appendChild(th);
-      for (let i = 0; i < BIT_LENGTH; i += 1) {
+      Array.from(row.digits).forEach((digit, idx) => {
         const td = document.createElement('td');
-        if (row.key === 'xor') {
-          const input = document.createElement('input');
-          input.type = 'text';
-          input.inputMode = 'numeric';
-          input.autocomplete = 'off';
-          input.placeholder = '0';
-          input.maxLength = 1;
-          input.dataset.row = row.key;
-          input.dataset.index = String(i);
-          input.addEventListener('input', () => {
-            sanitizeBitInput(input);
-            progress.xor = false;
-            setStatus('xor', null, 'Pending');
-            updateSums();
-          });
-          td.appendChild(input);
-          bitInputs[row.key].push(input);
-        } else {
-          const digits = row.key === 'a' ? BINARY_A.padStart(BIT_LENGTH, '0') : BINARY_B.padStart(BIT_LENGTH, '0');
-          const digit = digits[i];
-          td.textContent = digit;
-          td.classList.add(digit === '1' ? 'is-on' : 'is-off');
-          bitInputs[row.key].push({ value: digit });
-        }
+        td.textContent = digit;
+        td.classList.add(digit === '1' ? 'is-on' : 'is-off');
+        td.setAttribute('data-position', String(POSITIONS[idx]));
         tr.appendChild(td);
-      }
-      if (row.key === 'xor') xorRowRef = tr;
+      });
       tbody.appendChild(tr);
     });
 
-    if (xorRowRef) {
-      const dividerRow = document.createElement('tr');
-      dividerRow.className = 'binary-divider-row';
-      const th = document.createElement('th');
-      th.textContent = '';
-      dividerRow.appendChild(th);
-      for (let i = 0; i < BIT_LENGTH; i += 1) {
-        const td = document.createElement('td');
-        const line = document.createElement('div');
-        line.className = 'binary-divider-line';
-        td.appendChild(line);
-        dividerRow.appendChild(td);
-      }
-      tbody.insertBefore(dividerRow, xorRowRef);
-    }
-
-    const valueGuideRow = document.createElement('tr');
-    valueGuideRow.className = 'binary-guides-row';
+    const guideRow = document.createElement('tr');
+    guideRow.className = 'binary-guides-row';
     const guideTh = document.createElement('th');
-    guideTh.textContent = 'Value if column = 1';
-    valueGuideRow.appendChild(guideTh);
+    guideTh.textContent = 'Column value if bit = 1';
+    guideRow.appendChild(guideTh);
     PLACE_VALUES.forEach(value => {
       const td = document.createElement('td');
       td.textContent = value;
       td.className = 'binary-guide-cell';
-      valueGuideRow.appendChild(td);
+      guideRow.appendChild(td);
     });
-    tbody.appendChild(valueGuideRow);
+    tbody.appendChild(guideRow);
 
     table.appendChild(tbody);
     updateSums();
@@ -454,13 +333,13 @@
 
     hintBtn?.addEventListener('click', () => {
       if (hintUsed) {
-        setFeedback('Hint already revealed—convert both rows using the place-value chart, then compute XOR.', true);
+        setFeedback('Hint already revealed - add the green columns for each binary, then keep only the mismatched ones for XOR.', true);
         return;
       }
       hintUsed = true;
       hintBox?.removeAttribute('hidden');
       points?.spend(5, 'Binary hint');
-      setFeedback('Hint revealed. Add the values underneath every 1 to get the decimal totals, then set the XOR row where the bits differ.', true);
+      setFeedback('Hint revealed. Sum the green columns to get each decimal, then total only the differing columns for the XOR digit.', true);
     });
 
     Object.values(inputs).forEach(input => {
@@ -488,7 +367,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     populateDefaults();
-    renderPlaceTable();
     renderInputTable();
     clearInputs();
     initEvents();

@@ -368,6 +368,8 @@
   let teamRows = [];
   let activePointsTeam = null;
   let pointsModalChart = null;
+  let chartsAnimated = false;
+  let forceChartAnimation = false;
 
   // ---------- Auth guard ---------------------------------------------------
 
@@ -405,6 +407,12 @@
       const activity = normalizeActivity(getJSON(activityKey(team), []), issues);
       setJSON(activityKey(team), activity);
 
+      const vault = readVault(team);
+      const sessionEvents = activity.filter(entry => entry.type === 'session');
+      const lastSession = sessionEvents.length ? sessionEvents[sessionEvents.length - 1] : null;
+      const sessionActive = lastSession?.status === 'login';
+      const lastEvent = activity.length ? activity[activity.length - 1] : null;
+
       const completed = PUZZLES.reduce((acc, p) => acc + (progress[p] ? 1 : 0), 0);
       const avgTime = average(times);
       const totalTime = times.reduce((a, b) => a + b, 0);
@@ -437,7 +445,13 @@
         lastActivityAt,
         lastMovement,
         stalled: isStalled,
-        issues
+        issues,
+        vault,
+        session: {
+          active: sessionActive,
+          lastSession,
+          lastEvent
+        }
       });
     });
 
@@ -457,13 +471,15 @@
     listEl.innerHTML = '';
 
     rows.forEach(row => {
-      const { team, progress, completed, avgTime, totalTime, score, progressPercent, lastLog, issues } = row;
+      const { team, progress, completed, avgTime, totalTime, score, progressPercent, lastLog, issues, session } = row;
       const puzzleCount = PUZZLES.length;
       const percent = Math.max(0, Math.min(100, Number(progressPercent) || 0));
 
       const card = document.createElement('article');
       card.className = 'team-card';
       card.dataset.team = team;
+      if (issues?.length) card.classList.add('has-issues');
+      if (session?.active) card.classList.add('is-live');
       if (issues?.length) card.classList.add('has-issues');
 
       // Header with team name + points / action
@@ -477,7 +493,7 @@
       h3.textContent = team.toUpperCase();
 
       const subtitle = document.createElement('small');
-      subtitle.textContent = `${completed}/${puzzleCount} puzzles`;
+      subtitle.textContent = `${completed}/${puzzleCount} puzzles${session?.active ? ' • online' : ''}`;
 
       titleWrap.append(h3, subtitle);
       if (row.stalled) {
@@ -578,6 +594,14 @@
 
       card.appendChild(badges);
 
+      if (session?.lastEvent) {
+        const statusRow = document.createElement('div');
+        statusRow.className = 'team-card__session';
+        const statusLabel = session.active ? 'Active now' : 'Last seen';
+        statusRow.innerHTML = `<span>${statusLabel}</span><span>${timeAgo(session.lastSession?.at || session.lastEvent.at)}</span><span>${describeActivity(session.lastEvent)}</span>`;
+        card.appendChild(statusRow);
+      }
+
       if (issues?.length) {
         const warn = document.createElement('p');
         warn.className = 'team-card__issues';
@@ -673,6 +697,43 @@
       });
     }
     activityFiltersReady = true;
+  }
+
+  function renderSessionList(rows) {
+    const list = qs('#sessionList');
+    if (!list) return;
+    list.innerHTML = '';
+    const sorted = rows.slice().sort((a, b) => {
+      const aActive = a.session?.active ? 1 : 0;
+      const bActive = b.session?.active ? 1 : 0;
+      if (bActive !== aActive) return bActive - aActive;
+      const aAt = a.session?.lastSession?.at || a.session?.lastEvent?.at || 0;
+      const bAt = b.session?.lastSession?.at || b.session?.lastEvent?.at || 0;
+      return bAt - aAt;
+    });
+
+    sorted.forEach(row => {
+      const li = document.createElement('li');
+      li.className = `session-list__item ${row.session?.active ? 'is-online' : 'is-offline'}`;
+      const name = document.createElement('strong');
+      name.textContent = row.team.toUpperCase();
+
+      const status = document.createElement('span');
+      status.className = 'session-list__status';
+      status.textContent = row.session?.active ? 'Online' : 'Offline';
+
+      const time = document.createElement('span');
+      time.className = 'session-list__time';
+      const refTs = row.session?.lastSession?.at || row.session?.lastEvent?.at;
+      time.textContent = refTs ? timeAgo(refTs) : '—';
+
+      const detail = document.createElement('span');
+      detail.className = 'session-list__detail';
+      detail.textContent = row.session?.lastEvent ? describeActivity(row.session.lastEvent) : 'No activity recorded.';
+
+      li.append(name, status, time, detail);
+      list.appendChild(li);
+    });
   }
 
   function renderLockDigits() {
@@ -1031,6 +1092,8 @@
     const completedData = rows.map(r => r.completed);
     const avgTimeData = rows.map(r => r.avgTime ?? 0);
     const challengeData = PUZZLES.map(puzzle => rows.reduce((acc, row) => acc + (row.progress?.[puzzle] ? 1 : 0), 0));
+    const animate = forceChartAnimation || !chartsAnimated;
+    const commonAnimation = animate ? { duration: 650, easing: 'easeOutCubic' } : false;
 
     // Progress chart
     const progressCtx = qs('#progressChart')?.getContext('2d');
@@ -1051,7 +1114,8 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true, max: 4, ticks: { stepSize: 1 } } },
+          animation: commonAnimation,
+          scales: { y: { beginAtZero: true, max: PUZZLES.length, ticks: { stepSize: 1 } } },
           plugins: {
             legend: { display: true, position: 'top' },
             title: { display: false }
@@ -1080,6 +1144,7 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: commonAnimation,
           scales: { y: { beginAtZero: true } },
           plugins: {
             legend: { display: true, position: 'top' },
@@ -1089,6 +1154,38 @@
         }
       });
     }
+
+    const challengeCtx = qs('#challengeChart')?.getContext('2d');
+    if (challengeCtx) {
+      if (challengeChart) challengeChart.destroy();
+      challengeChart = new Chart(challengeCtx, {
+        type: 'bar',
+        data: {
+          labels: PUZZLES.map(puzzle => PUZZLE_LABELS[puzzle] || puzzle),
+          datasets: [
+            {
+              label: 'Teams completed',
+              data: challengeData,
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: commonAnimation,
+          scales: { y: { beginAtZero: true, max: Math.max(1, rows.length), ticks: { stepSize: 1 } } },
+          plugins: {
+            legend: { display: true, position: 'top' },
+            title: { display: false }
+          },
+          layout: { padding: 6 }
+        }
+      });
+    }
+
+    if (animate) chartsAnimated = true;
+    forceChartAnimation = false;
   }
 
   // ---------- Controls -----------------------------------------------------
@@ -1130,13 +1227,14 @@
         status.textContent = 'Resetting all teams…';
         status.classList.remove('status-ok', 'status-warn');
       }
+      const resetVersion = Date.now();
       TEAMS.forEach(team => {
         setJSON(`${team}_progress`, { ...DEFAULT_PROGRESS });
         setJSON(`${team}_progress_meta`, {});
         setJSON(`${team}_times`, []);
         setJSON(activityKey(team), []);
-        logTeamActivity(team, { type: 'event', detail: 'Progress reset by admin' });
-        writeVault(team, {});
+        logTeamActivity(team, { type: 'session', status: 'reset', detail: 'Progress reset by admin', at: resetVersion });
+        writeVault(team, { resetVersion });
         resetTeamScore(team, 'Reset via admin');
       });
       ['lock_digit_phishing_total',
@@ -1157,11 +1255,13 @@
           status.textContent = 'All teams reset.';
           status.classList.add('status-ok');
         }
+        noteSync('Reset', 'All teams reset and synced.');
       } catch (err) {
         if (status) {
           status.textContent = `Reset sync failed: ${err.message}`;
           status.classList.add('status-warn');
         }
+        noteSync('Reset', err.message, 'warn');
       }
       announce('All team progress reset.');
       renderLockDigits();
@@ -1180,7 +1280,9 @@
 
     const showCelebrate = (withPodium = false) => {
       if (!confettiLayer) return;
-      renderPodium(teamRows);
+      const rows = loadTeamData();
+      teamRows = rows;
+      renderPodium(rows);
       confettiLayer.classList.add('is-active');
       confettiLayer.classList.toggle('podium-visible', withPodium);
       confettiLayer.setAttribute('aria-hidden', 'false');
@@ -1248,6 +1350,7 @@
     qs('#pullNeonBtn')?.addEventListener('click', async () => {
       const status = qs('#syncStatus');
       try {
+        forceChartAnimation = true;
         await syncFromNeon(status);
         refresh();
       } catch (_) {
@@ -1374,6 +1477,7 @@
     drawCharts(rows);
     initActivityFilters();
     renderActivityFeed(rows);
+    renderSessionList(rows);
     if (activePointsTeam && modalRefs.wrapper?.classList.contains('is-open')) {
       const row = teamRows.find(r => r.team === activePointsTeam);
       if (row) hydratePointsModal(row);
@@ -1391,6 +1495,9 @@
     wireControls(refreshAll);
     const throttledRefresh = window.utils?.throttle ? window.utils.throttle(refreshAll, 300) : refreshAll;
     window.addEventListener('storage', throttledRefresh);
+    setInterval(() => {
+      syncFromNeon().then(() => refreshAll()).catch((err) => noteSync('Auto pull', err.message, 'warn'));
+    }, 25000);
   });
 
 })();
