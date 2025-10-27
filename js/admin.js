@@ -44,6 +44,108 @@
   const vaultKey = (team) => `${team}_vault`;
   const activityFilter = { team: 'all', type: 'all' };
   let activityFiltersReady = false;
+  const syncDiagnosticsEl = qs('#syncDiagnostics');
+
+  function noteSync(type, message, tone = 'info') {
+    if (!syncDiagnosticsEl) return;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    syncDiagnosticsEl.textContent = `[${timestamp}] ${type}: ${message}`;
+    syncDiagnosticsEl.dataset.tone = tone;
+  }
+
+  function normalizeProgress(raw, issues) {
+    const cleaned = { ...DEFAULT_PROGRESS };
+    PUZZLES.forEach(puzzle => {
+      const value = !!raw?.[puzzle];
+      if (raw && typeof raw[puzzle] !== 'boolean' && raw[puzzle] != null) {
+        issues.push(`Progress.${puzzle} normalized`);
+      }
+      cleaned[puzzle] = value;
+    });
+    return cleaned;
+  }
+
+  function normalizeProgressMeta(raw, issues) {
+    const meta = {};
+    if (!raw || typeof raw !== 'object') return meta;
+    Object.entries(raw).forEach(([key, value]) => {
+      const percent = Math.max(0, Math.min(100, Math.round(Number(value?.percent ?? value ?? 0))));
+      const updated = Number(value?.updatedAt ?? Date.now());
+      if (!Number.isFinite(percent)) issues.push(`Progress meta ${key} percent reset`);
+      if (!Number.isFinite(updated)) issues.push(`Progress meta ${key} timestamp reset`);
+      meta[key] = {
+        percent: Number.isFinite(percent) ? percent : 0,
+        updatedAt: Number.isFinite(updated) ? updated : Date.now()
+      };
+    });
+    return meta;
+  }
+
+  function normalizeTimes(raw, issues) {
+    if (!Array.isArray(raw)) {
+      if (raw != null) issues.push('Time log reset (invalid shape)');
+      return [];
+    }
+    const filtered = raw
+      .map(n => Number(n))
+      .filter(n => Number.isFinite(n) && n >= 0);
+    if (filtered.length !== raw.length) issues.push('Time log sanitized');
+    return filtered;
+  }
+
+  function normalizeScore(raw, issues) {
+    const num = Number(raw);
+    if (!Number.isFinite(num)) {
+      issues.push('Score reset to base');
+      return SCORE_BASE;
+    }
+    return Math.max(0, Math.round(num));
+  }
+
+  function normalizeScoreLog(raw, issues, fallbackTotal) {
+    if (!Array.isArray(raw)) {
+      if (raw != null) issues.push('Score log reset (invalid shape)');
+      return [];
+    }
+    const sanitized = raw.map(entry => {
+      const delta = Number(entry?.delta ?? 0);
+      const total = Number(entry?.total ?? fallbackTotal);
+      const at = Number(entry?.at ?? Date.now());
+      const reason = entry?.reason || 'update';
+      if (!Number.isFinite(delta) || !Number.isFinite(total) || !Number.isFinite(at)) {
+        issues.push('Score log entry normalized');
+      }
+      return {
+        delta: Number.isFinite(delta) ? Math.round(delta) : 0,
+        total: Number.isFinite(total) ? Math.max(0, Math.round(total)) : fallbackTotal,
+        at: Number.isFinite(at) ? at : Date.now(),
+        reason
+      };
+    });
+    return sanitized.slice(-SCORE_LOG_LIMIT);
+  }
+
+  function normalizeActivity(raw, issues) {
+    if (!Array.isArray(raw)) {
+      if (raw != null) issues.push('Activity log reset (invalid shape)');
+      return [];
+    }
+    return raw.map(entry => {
+      const at = Number(entry?.at ?? Date.now());
+      const normalized = {
+        type: entry?.type || 'event',
+        detail: entry?.detail || '',
+        puzzle: entry?.puzzle || null,
+        status: entry?.status || null,
+        delta: Number.isFinite(Number(entry?.delta)) ? Number(entry.delta) : null,
+        total: Number.isFinite(Number(entry?.total)) ? Number(entry.total) : null,
+        reason: entry?.reason || null,
+        at: Number.isFinite(at) ? at : Date.now()
+      };
+      if (!Number.isFinite(at)) issues.push('Activity entry timestamp normalized');
+      return normalized;
+    });
+  }
 
   function getJSON(key, fallback) {
     try {
@@ -148,13 +250,15 @@
     pendingPushes.delete(team);
     const snapshot = getTeamStateSnapshot(team);
     try {
-      await fetch('/.netlify/functions/team-state', {
+      const res = await fetch('/.netlify/functions/team-state', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...snapshot, reason })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (err) {
       console.warn('Team sync failed', team, err);
+      noteSync('Auto push', `${team} sync failed: ${err.message}`, 'warn');
     }
   }
 
@@ -282,18 +386,28 @@
     const rows = [];
 
     TEAMS.forEach(team => {
-      const progress = getJSON(`${team}_progress`, { ...DEFAULT_PROGRESS });
-      const progressMeta = getJSON(`${team}_progress_meta`, {});
-      const times = getJSON(`${team}_times`, []); // array of seconds per puzzle (optional)
+      const issues = [];
+      const progress = normalizeProgress(getJSON(`${team}_progress`, DEFAULT_PROGRESS), issues);
+      setJSON(`${team}_progress`, progress);
+
+      const progressMeta = normalizeProgressMeta(getJSON(`${team}_progress_meta`, {}), issues);
+      setJSON(`${team}_progress_meta`, progressMeta);
+
+      const times = normalizeTimes(getJSON(`${team}_times`, []), issues);
+      setJSON(`${team}_times`, times);
+
+      const score = normalizeScore(localStorage.getItem(scoreKey(team)), issues);
+      localStorage.setItem(scoreKey(team), String(score));
+
+      const scoreLog = normalizeScoreLog(readScoreLog(team), issues, score);
+      localStorage.setItem(scoreLogKey(team), JSON.stringify(scoreLog));
+
+      const activity = normalizeActivity(getJSON(activityKey(team), []), issues);
+      setJSON(activityKey(team), activity);
 
       const completed = PUZZLES.reduce((acc, p) => acc + (progress[p] ? 1 : 0), 0);
       const avgTime = average(times);
-      const totalTime = Array.isArray(times)
-        ? times.filter(n => typeof n === 'number' && isFinite(n)).reduce((a, b) => a + b, 0)
-        : 0;
-      const score = readScore(team);
-      const scoreLog = readScoreLog(team);
-      const activity = getJSON(activityKey(team), []);
+      const totalTime = times.reduce((a, b) => a + b, 0);
       const progressPercent = Math.round((completed / PUZZLES.length) * 100);
       const lastProgressAt = Object.values(progressMeta || {}).reduce((max, entry) => {
         const ts = Number(entry?.updatedAt) || 0;
@@ -322,7 +436,8 @@
         lastProgressAt,
         lastActivityAt,
         lastMovement,
-        stalled: isStalled
+        stalled: isStalled,
+        issues
       });
     });
 
@@ -342,13 +457,14 @@
     listEl.innerHTML = '';
 
     rows.forEach(row => {
-      const { team, progress, completed, avgTime, totalTime, score, progressPercent, lastLog } = row;
+      const { team, progress, completed, avgTime, totalTime, score, progressPercent, lastLog, issues } = row;
       const puzzleCount = PUZZLES.length;
       const percent = Math.max(0, Math.min(100, Number(progressPercent) || 0));
 
       const card = document.createElement('article');
       card.className = 'team-card';
       card.dataset.team = team;
+      if (issues?.length) card.classList.add('has-issues');
 
       // Header with team name + points / action
       const header = document.createElement('div');
@@ -461,6 +577,14 @@
       });
 
       card.appendChild(badges);
+
+      if (issues?.length) {
+        const warn = document.createElement('p');
+        warn.className = 'team-card__issues';
+        warn.textContent = `Data checks: ${issues.join('; ')}`;
+        card.appendChild(warn);
+      }
+
       listEl.appendChild(card);
     });
   }
@@ -1123,8 +1247,12 @@
     // Neon sync hooks (optional Netlify Functions)
     qs('#pullNeonBtn')?.addEventListener('click', async () => {
       const status = qs('#syncStatus');
-      await syncFromNeon(status);
-      refresh();
+      try {
+        await syncFromNeon(status);
+        refresh();
+      } catch (_) {
+        refresh();
+      }
     });
 
     qs('#pushNeonBtn')?.addEventListener('click', async () => {
@@ -1141,17 +1269,48 @@
           body: JSON.stringify({ teams: payload })
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const body = await res.json().catch(() => ({ ok: true }));
         if (status) {
           status.textContent = 'Push complete.';
           status.classList.add('status-ok');
         }
         announce('Pushed stats to Neon.');
+        noteSync('Push', body?.updated ? `Synced ${body.updated} teams to Neon.` : 'Push complete.');
       } catch (e) {
         if (status) {
           status.textContent = `Push failed: ${e.message}`;
           status.classList.add('status-warn');
         }
+        noteSync('Push', e.message, 'warn');
       }
+    });
+
+    qs('#validateDataBtn')?.addEventListener('click', () => {
+      const problems = teamRows.flatMap(row => (row.issues || []).map(issue => `${row.team}: ${issue}`));
+      if (!problems.length) {
+        noteSync('Validation', 'No data issues detected.', 'info');
+      } else {
+        noteSync('Validation', `${problems.length} data issue(s) flagged. See highlighted team cards.`, 'warn');
+        if (typeof console !== 'undefined') {
+          const payload = problems.map(text => ({ issue: text }));
+          if (typeof console.table === 'function') console.table(payload);
+          else console.log(payload);
+        }
+      }
+    });
+
+    qs('#downloadStateBtn')?.addEventListener('click', () => {
+      const snapshot = JSON.stringify(teamRows, null, 2);
+      const blob = new Blob([snapshot], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `team-state-${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      noteSync('Snapshot', 'Downloaded current team state as JSON.');
     });
   }
 
@@ -1167,29 +1326,40 @@
       if (!data || !Array.isArray(data.teams)) {
         throw new Error('No teams returned');
       }
+      const corrections = [];
       data.teams.forEach(row => {
         if (!row || !row.team) return;
         const team = String(row.team).toLowerCase();
-        setJSON(`${team}_progress`, { ...DEFAULT_PROGRESS, ...(row.progress || {}) });
-        setJSON(`${team}_progress_meta`, row.progressMeta || {});
-        setJSON(`${team}_times`, Array.isArray(row.times) ? row.times : []);
-        localStorage.setItem(scoreKey(team), String(Math.max(0, Math.round(row.score ?? SCORE_BASE))));
-        localStorage.setItem(scoreLogKey(team), JSON.stringify(row.scoreLog || []));
-        setJSON(activityKey(team), row.activity || []);
+        const issues = [];
+        const progress = normalizeProgress(row.progress, issues);
+        setJSON(`${team}_progress`, progress);
+        const progressMeta = normalizeProgressMeta(row.progressMeta, issues);
+        setJSON(`${team}_progress_meta`, progressMeta);
+        const times = normalizeTimes(row.times, issues);
+        setJSON(`${team}_times`, times);
+        const score = normalizeScore(row.score, issues);
+        localStorage.setItem(scoreKey(team), String(score));
+        const scoreLog = normalizeScoreLog(row.scoreLog, issues, score);
+        localStorage.setItem(scoreLogKey(team), JSON.stringify(scoreLog));
+        const activity = normalizeActivity(row.activity, issues);
+        setJSON(activityKey(team), activity);
         writeVault(team, row.vault || {});
+        if (issues.length) corrections.push({ team, issues });
       });
       if (statusEl) {
         statusEl.textContent = 'Pulled latest stats from Neon.';
         statusEl.classList.add('status-ok');
       }
-      return true;
+      noteSync('Pull', `Pulled ${data.teams.length} team states${corrections.length ? `; ${corrections.length} cleaned` : ''}.`);
+      return { teams: data.teams, corrections };
     } catch (e) {
       if (statusEl) {
         statusEl.textContent = `Pull failed: ${e.message}`;
         statusEl.classList.add('status-warn');
       }
       console.error('Neon sync failed:', e);
-      return false;
+      noteSync('Pull', e.message, 'warn');
+      throw e;
     }
   }
 
@@ -1216,7 +1386,7 @@
 
     renderWelcome(user);
     setupPointsModal();
-    syncFromNeon().then(refreshAll).catch(refreshAll);
+    syncFromNeon().then(() => refreshAll()).catch(() => refreshAll());
     wireChartTabs();
     wireControls(refreshAll);
     const throttledRefresh = window.utils?.throttle ? window.utils.throttle(refreshAll, 300) : refreshAll;

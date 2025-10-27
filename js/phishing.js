@@ -32,7 +32,6 @@
   const markLegitBtn = $('#markLegit');
   const classificationBlock = $('#classificationBlock');
   const clearBtn     = $('#clearBtn');
-  const selectAllBtn = $('#selectAllBtn');
   const hintBtn      = $('#phishHintBtn');
   const hintText     = $('#phishHintText');
   const vaultDisplay = $('#phishVaultValue');

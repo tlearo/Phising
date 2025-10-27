@@ -25,12 +25,51 @@ async function ensureTeamStateTable(client) {
 }
 
 function sanitizeRow(row = {}) {
-  const progress = { ...DEFAULT_PROGRESS, ...(row.progress || {}) };
-  const progressMeta = row.progressMeta && typeof row.progressMeta === 'object' ? row.progressMeta : {};
-  const times = Array.isArray(row.times) ? row.times.filter(n => Number.isFinite(n)) : [];
+  const progress = { ...DEFAULT_PROGRESS };
+  Object.keys(DEFAULT_PROGRESS).forEach(key => {
+    progress[key] = !!row?.progress?.[key];
+  });
+
+  const progressMeta = {};
+  if (row.progressMeta && typeof row.progressMeta === 'object') {
+    Object.entries(row.progressMeta).forEach(([key, value]) => {
+      const percent = Math.max(0, Math.min(100, Math.round(Number(value?.percent ?? value ?? 0))));
+      const updatedAt = Number(value?.updatedAt ?? Date.now());
+      progressMeta[key] = {
+        percent: Number.isFinite(percent) ? percent : 0,
+        updatedAt: Number.isFinite(updatedAt) ? updatedAt : Date.now()
+      };
+    });
+  }
+
+  const times = Array.isArray(row.times)
+    ? row.times.map(n => Number(n)).filter(n => Number.isFinite(n) && n >= 0)
+    : [];
+
   const score = Number.isFinite(row.score) ? Math.max(0, Math.round(row.score)) : 100;
-  const scoreLog = Array.isArray(row.scoreLog) ? row.scoreLog : [];
-  const activity = Array.isArray(row.activity) ? row.activity : [];
+
+  const scoreLog = Array.isArray(row.scoreLog)
+    ? row.scoreLog.map(entry => ({
+        delta: Number.isFinite(entry?.delta) ? Math.round(entry.delta) : 0,
+        total: Number.isFinite(entry?.total) ? Math.max(0, Math.round(entry.total)) : score,
+        reason: entry?.reason || 'update',
+        at: Number.isFinite(entry?.at) ? entry.at : Date.now()
+      }))
+    : [];
+
+  const activity = Array.isArray(row.activity)
+    ? row.activity.map(entry => ({
+        type: entry?.type || 'event',
+        detail: entry?.detail || '',
+        puzzle: entry?.puzzle || null,
+        status: entry?.status || null,
+        delta: Number.isFinite(entry?.delta) ? Number(entry.delta) : null,
+        total: Number.isFinite(entry?.total) ? Number(entry.total) : null,
+        reason: entry?.reason || null,
+        at: Number.isFinite(entry?.at) ? Number(entry.at) : Date.now()
+      }))
+    : [];
+
   const vault = row.vault && typeof row.vault === 'object' ? row.vault : {};
   return { progress, progressMeta, times, score, scoreLog, activity, vault };
 }
@@ -65,7 +104,7 @@ export default async (req) => {
       );
     }
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, updated: teams.length });
   } catch (e) {
     return Response.json({ ok: false, error: e.message }, { status: 500 });
   } finally {

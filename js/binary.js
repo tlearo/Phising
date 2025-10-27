@@ -143,8 +143,8 @@
   function clearInputs() {
     bitInputs.xor.forEach(input => { input.value = ''; });
     Object.values(inputs).forEach(input => { if (input) input.value = ''; });
-    setStatus('a', null, 'Pending');
-    setStatus('b', null, 'Pending');
+    setStatus('a', null, 'Decimal pending');
+    setStatus('b', null, 'Decimal pending');
     setStatus('xor', null, 'Pending');
     setFeedback('');
     chestHint?.setAttribute('hidden', 'hidden');
@@ -267,13 +267,12 @@
 
   function handleCheck() {
     const alreadyComplete = window.utils?.readProgress?.()?.binary;
-    const bitsOk = validateBits();
-    const xorOk = checkXor(bitsOk);
-    const productOk = checkProduct();
+    const decimalsOk = checkDecimalInputs();
+    const xorOk = checkXor(decimalsOk);
     updateProgressState();
 
-    if (bitsOk && xorOk && productOk) {
-      setFeedback(`Success! ${DEC_A} × ${DEC_B} = ${PRODUCT_DEC}. Vault digit captured: ${VAULT_DIGIT} (ones digit of the product).`, true);
+    if (decimalsOk && xorOk) {
+      setFeedback(`Success! Binary A = ${DEC_A}, Binary B = ${DEC_B}, XOR = ${XOR_DEC}. Vault digit captured: ${VAULT_DIGIT}.`, true);
       chestHint?.removeAttribute('hidden');
       markBinaryComplete();
       if (!alreadyComplete) {
@@ -281,14 +280,11 @@
           message: `Binary digit ${VAULT_DIGIT} recorded. Enter it on the vault panel.`
         });
       }
-    } else if (bitsOk && xorOk) {
-      setFeedback('Almost there—confirm the multiplication to finish.', false);
-      chestHint?.setAttribute('hidden', 'hidden');
-    } else if (bitsOk) {
-      setFeedback('Binary rows look good. Solve the XOR and product next.', false);
+    } else if (decimalsOk) {
+      setFeedback('Decimals confirmed. Solve the XOR row next.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     } else {
-      setFeedback('Not yet. Double-check the binary rows from the place-value table.', false);
+      setFeedback('Not yet. Use the place-value table to convert both binaries to decimal.', false);
       chestHint?.setAttribute('hidden', 'hidden');
     }
   }
@@ -447,8 +443,6 @@
 
     table.appendChild(tbody);
     updateSums();
-    setStatus('bits', true, 'Binary rows provided.');
-    progress.bits = true;
   }
 
   function initEvents() {
@@ -460,21 +454,24 @@
 
     hintBtn?.addEventListener('click', () => {
       if (hintUsed) {
-        setFeedback('Hint already revealed—align the place values and multiply like long multiplication.', true);
+        setFeedback('Hint already revealed—convert both rows using the place-value chart, then compute XOR.', true);
         return;
       }
       hintUsed = true;
       hintBox?.removeAttribute('hidden');
       points?.spend(5, 'Binary hint');
-      setFeedback('Hint revealed. Switch on every column where there is a 1, then add the shifted values together.', true);
+      setFeedback('Hint revealed. Add the values underneath every 1 to get the decimal totals, then set the XOR row where the bits differ.', true);
     });
 
     Object.values(inputs).forEach(input => {
       input?.addEventListener('input', () => {
         setFeedback('');
-        if (input === inputs.productBin || input === inputs.productDec) {
-          progress.product = false;
-          setStatus('product', null, 'Pending');
+        if (input === inputs.decA) {
+          progress.decimals = false;
+          setStatus('a', null, 'Decimal pending');
+        } else if (input === inputs.decB) {
+          progress.decimals = false;
+          setStatus('b', null, 'Decimal pending');
         } else if (input === inputs.xorDec) {
           progress.xor = false;
           setStatus('xor', null, 'Pending');

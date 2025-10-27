@@ -2,11 +2,11 @@
   'use strict';
 
   const PUZZLES = [
-    { key: 'phishing', label: 'Phishing', storage: ['lock_digit_phishing_total'] },
-    { key: 'encryption', label: 'Encryption', storage: ['lock_digit_caesar_shift'] },
-    { key: 'password', label: 'Password', storage: ['lock_digit_pw_minutes', 'lock_digit_pw_clues'] },
-    { key: 'essential', label: 'Essential Eight', storage: ['lock_digit_essential'] },
-    { key: 'binary', label: 'Binary', storage: ['lock_digit_binary'] }
+    { key: 'phishing', label: 'Phishing', storage: ['lock_digit_phishing_total'], href: 'phishing.html' },
+    { key: 'encryption', label: 'Encryption', storage: ['lock_digit_caesar_shift'], href: 'encryption.html' },
+    { key: 'password', label: 'Password', storage: ['lock_digit_pw_minutes', 'lock_digit_pw_clues'], href: 'password.html' },
+    { key: 'essential', label: 'Essential Eight', storage: ['lock_digit_essential'], href: 'essential.html' },
+    { key: 'binary', label: 'Binary', storage: ['lock_digit_binary'], href: 'binary.html' }
   ];
 
   function readStorageValue(keys) {
@@ -66,14 +66,29 @@
     const countEl = status.querySelector('.vault-status__count');
 
     let found = 0;
-    PUZZLES.forEach((item, index) => {
+    PUZZLES.forEach((item) => {
       const li = list?.querySelector(`[data-vault-key="${item.key}"]`);
       const digit = digits[item.key];
       const hasDigit = digit != null && digit !== '' && !Number.isNaN(Number(digit));
       if (li) {
-        li.textContent = hasDigit ? String(digit) : '•';
+        let btn = li.firstElementChild;
+        if (!(btn instanceof HTMLButtonElement)) {
+          li.textContent = '';
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'vault-dot-btn';
+          btn.dataset.puzzle = item.key;
+          if (item.href) btn.dataset.href = item.href;
+          li.appendChild(btn);
+        }
+        btn.textContent = hasDigit ? String(digit) : '•';
+        btn.disabled = !item.href;
+        const label = hasDigit
+          ? `${item.label} digit ${String(digit)}`
+          : `${item.label} — launch puzzle`;
+        btn.setAttribute('aria-label', label);
         li.classList.toggle('is-found', hasDigit);
-        li.setAttribute('aria-label', `${item.label} digit ${hasDigit ? String(digit) : 'locked'}`);
+        li.setAttribute('aria-label', label);
       }
       if (hasDigit) found++;
     });
@@ -126,6 +141,17 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     updateUi();
+    const list = document.querySelector('#vaultStatus .vault-status__digits');
+    if (list) {
+      list.addEventListener('click', (ev) => {
+        const button = ev.target.closest('button[data-href]');
+        if (!button) return;
+        const href = button.dataset.href;
+        if (!href) return;
+        if (button.disabled) return;
+        window.location.href = href;
+      });
+    }
   });
 
   window.addEventListener('storage', (event) => {

@@ -36,18 +36,18 @@
 
   const SCENARIOS = [
     {
-      id: 'password123',
-      label: 'Even worse with numbers',
-      answer: 'password123',
+      id: 'pass123',
+      label: 'Shortcut thinker',
+      answer: 'pass123',
       clues: [
-        'It starts with the most common word on breach lists.',
-        'The ending is a short counting sequence.',
-        'All lowercase letters until the final three characters.',
+        'It starts with a common abbreviation for a credential.',
+        'The ending is a tiny counting sequence.',
+        'All lowercase letters until the final numbers.',
         'You can type it straight across the keyboard.',
-        'It is the first example everyone tells you not to use.'
+        'It is the example every hacker hopes you will choose.'
       ],
-      bonusHint: 'Take the word “password” and tack on 1-2-3.',
-      crackSeconds: 12
+      bonusHint: 'Take the four-letter word for a credential and tack on 123.',
+      crackSeconds: 0.8
     },
     {
       id: 'dragon',
@@ -144,7 +144,7 @@
   const scenarioSeconds = Number.isFinite(scenarioAnalysis.seconds)
     ? scenarioAnalysis.seconds
     : Number(ACTIVE_SCENARIO.crackSeconds) || 120;
-  ACTIVE_SCENARIO.crackSeconds = scenarioSeconds;
+  ACTIVE_SCENARIO.crackSeconds = Math.min(0.8, scenarioSeconds);
 
   // ---------------- Helpers ----------------
   const $  = (sel, root = document) => root.querySelector(sel);

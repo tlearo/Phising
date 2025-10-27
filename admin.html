@@ -154,16 +154,21 @@
         <div class="admin-tools-grid mt-2">
           <!-- Data Sync (Netlify ↔ Neon) — hooks only -->
           <section class="card" aria-labelledby="syncHeading">
-            <h2 id="syncHeading">Data Sync (Netlify ↔ Neon)</h2>
-            <p class="mt-1" style="color:var(--muted)">
-              Pull/push team progress to a Neon Postgres instance (wire-up later).
-            </p>
-            <div class="flex mt-1 control-row">
-              <button class="btn" id="pullNeonBtn" type="button" title="Fetch latest stats from Neon">Pull from Neon</button>
-              <button class="btn ghost" id="pushNeonBtn" type="button" title="Write local stats to Neon">Push to Neon</button>
-            </div>
-            <p id="syncStatus" class="mt-1 muted" aria-live="polite"></p>
-          </section>
+          <h2 id="syncHeading">Data Sync (Netlify ↔ Neon)</h2>
+          <p class="mt-1" style="color:var(--muted)">
+            Pull/push team progress to a Neon Postgres instance (wire-up later).
+          </p>
+          <div class="flex mt-1 control-row">
+            <button class="btn" id="pullNeonBtn" type="button" title="Fetch latest stats from Neon">Pull from Neon</button>
+            <button class="btn ghost" id="pushNeonBtn" type="button" title="Write local stats to Neon">Push to Neon</button>
+          </div>
+          <p id="syncStatus" class="mt-1 muted" aria-live="polite"></p>
+          <div class="sync-diagnostics mt-1" id="syncDiagnostics" aria-live="polite"></div>
+          <div class="flex mt-1 control-row">
+            <button class="btn ghost" id="validateDataBtn" type="button">Run validation</button>
+            <button class="btn ghost" id="downloadStateBtn" type="button">Download snapshot</button>
+          </div>
+        </section>
 
           <!-- Game Controls / Utilities -->
           <section class="card" aria-labelledby="controlsHeading">
