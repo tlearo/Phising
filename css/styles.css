@@ -1232,6 +1232,9 @@ body.phish-overlay-open {
     .mission-card__footer {
         justify-content: center;
     }
+    .dashboard-grid > .chest-section {
+        width: 100%;
+    }
 }
 
 .badge {
@@ -1411,6 +1414,7 @@ body.phish-overlay-open {
     display: grid;
     gap: 1.5rem;
     grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr);
+    align-items: start;
 }
 
 @media (max-width: 960px) {
@@ -1609,6 +1613,35 @@ body.phish-overlay-open {
     line-height: 1.45;
 }
 
+.binary-xor {
+    display: grid;
+    gap: .75rem;
+}
+
+.binary-coach {
+    border-top: 1px solid rgba(88, 166, 255, .12);
+    padding-top: .75rem;
+    display: grid;
+    gap: .5rem;
+}
+
+.binary-coach h3 {
+    font-size: 1.05rem;
+    margin: 0;
+}
+
+.binary-coach ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: .4rem;
+}
+
+.binary-coach p {
+    margin: 0;
+    color: var(--muted);
+}
+
 .binary-guide ol {
     margin: 0;
     padding-left: 1.35rem;
@@ -1623,6 +1656,16 @@ body.phish-overlay-open {
 /* ==== Vault / Chest ======================================================= */
 .chest-section h2 {
     color: var(--brand)
+}
+
+.dashboard-grid > .mission-card,
+.dashboard-grid > .chest-section,
+.dashboard-grid > .quick-tips {
+    width: 100%;
+}
+
+.dashboard-grid > .chest-section {
+    align-self: stretch;
 }
 
 .vault-box {
@@ -1853,17 +1896,19 @@ input[type="range"]::-moz-range-thumb {
     gap: 1rem;
 }
 
+
 .phish-step {
     border: 1px solid rgba(88, 166, 255, .2);
     border-radius: 12px;
     padding: .85rem 1rem;
     background: rgba(9, 15, 25, .65);
     display: grid;
-    gap: .55rem;
+    gap: .65rem;
 }
 
 .phish-step p {
     margin: 0;
+    line-height: 1.45;
 }
 
 .phish-step__heading {
@@ -1898,7 +1943,7 @@ input[type="range"]::-moz-range-thumb {
 
 .phish-step .classification-buttons {
     display: grid;
-    gap: .5rem;
+    gap: .75rem;
     position: relative;
 }
 
@@ -1921,6 +1966,7 @@ input[type="range"]::-moz-range-thumb {
 .classification-tip:not([hidden]) {
     font-size: .82rem;
     color: #fca5a5;
+    margin-top: -.35rem;
 }
 
 .phish-step--examples .link-list {
@@ -2420,8 +2466,8 @@ input[type="range"]::-moz-range-thumb {
     text-decoration: none;
     transition: color .2s ease;
     position: relative;
-    padding-left: 1.7rem;
-    line-height: 1.4;
+    padding-left: 2rem;
+    line-height: 1.45;
 }
 
 .thumb-nav a:hover {
@@ -2436,10 +2482,10 @@ input[type="range"]::-moz-range-thumb {
 .thumb-nav a::before {
     content: "";
     position: absolute;
-    left: .35rem;
+    left: .55rem;
     top: 50%;
-    width: .75rem;
-    height: .75rem;
+    width: .85rem;
+    height: .85rem;
     border-radius: 50%;
     border: 1px solid var(--border);
     background: transparent;
@@ -2963,6 +3009,22 @@ footer {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
+}
+
+.site-header .header-actions nav {
+  margin-right: auto;
+}
+
+.site-header .header-actions .vault-status {
+  order: 2;
+}
+
+.site-header .header-actions .nav-btn--next {
+  order: 3;
+}
+
+.site-header .header-actions .nav-btn--logout {
+  order: 4;
 }
 
 .nav-btn--back {
