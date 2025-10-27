@@ -1,8 +1,13 @@
-// netlify/functions/seed-admin.js
-const { Client } = require('pg');
-const bcrypt = require('bcryptjs');
+import { Client } from 'pg';
+import bcrypt from 'bcryptjs';
 
-exports.handler = async (event) => {
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body)
+});
+
+export default async function handler(event) {
   const tokenHeader = event.headers['x-seed-token'] || event.headers['X-Seed-Token'];
   const tokenEnv = process.env.ADMIN_SEED_TOKEN || '';
   if (!tokenEnv || tokenHeader !== tokenEnv) {
@@ -14,7 +19,7 @@ exports.handler = async (event) => {
   if (!url)   return json(500, { ok:false, error:'NEON_DATABASE_URL not set' });
   if (!plain) return json(500, { ok:false, error:'ADMIN_SEED_PASSWORD not set' });
 
-  const client = new Client({ connectionString: url }); // ensure ?sslmode=require on the URL
+  const client = new Client({ connectionString: url });
   await client.connect();
   try {
     await client.query(`
@@ -25,11 +30,10 @@ exports.handler = async (event) => {
       )
     `);
 
-    // safer: don’t overwrite if admin exists
-    const existing = await client.query('select 1 from users where username=$1', ['admin']);
+    const existing = await client.query('select 1 from users where username=$1 limit 1', ['admin']);
     if (existing.rowCount) return json(409, { ok:false, error:'admin already exists; refusing to overwrite' });
 
-    const hash = await bcrypt.hash(plain, 12);
+    const hash = await bcrypt.hash(plain, Number(process.env.BCRYPT_ROUNDS) || 12);
     await client.query(
       `insert into users (username, role, password_hash) values ($1,'admin',$2)`,
       ['admin', hash]
@@ -40,13 +44,4 @@ exports.handler = async (event) => {
   } finally {
     await client.end();
   }
-};
-
-function json(statusCode, body) {
-  return {
-    statusCode,
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  };
 }
-
