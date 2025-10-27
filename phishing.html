@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/onboarding.js" defer></script>
@@ -76,6 +77,9 @@
       <p class="mt-1" style="color:var(--muted)">
         Mark the risky parts of the email (domains, grammar, urgency, mismatched branding…). Find enough indicators to earn your digit.
       </p>
+      <div class="puzzle-actions mt-1">
+        <button class="btn ghost sm onboard-trigger" type="button" data-onboard="onboard-phishing">How to play</button>
+      </div>
     </header>
 
     <section class="intro-banner mt-2" aria-labelledby="phishingBriefHeading">
@@ -117,56 +121,84 @@
             <li>Use the brush tool to circle suspicious clues. Aim to highlight at least three hotspots.</li>
             <li>Submit your highlights, then decide if the email is phishing or legitimate.</li>
           </ol>
-          <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-phishing">How to play</button>
         </div>
       </div>
     </section>
 
+    <aside class="card tip-card mt-2" aria-labelledby="phishTipHeading">
+      <h2 id="phishTipHeading">Mission tip</h2>
+      <p class="muted">Circle only the precise clue (sender, CTA, wording). Broad scribbles cost points and no longer count as valid highlights.</p>
+    </aside>
+
     <!-- Layout: left tools, right stage -->
     <section class="main-layout mt-2" id="phishWorkspace">
       <!-- LEFT: toolbox -->
-      <aside class="card" aria-label="Toolbox">
-        <h2>Tools</h2>
+      <aside class="card phish-sidebar" aria-label="Mission steps">
+        <section class="phish-step" data-step="1">
+          <div class="phish-step__heading">
+            <span class="step-pill">Step 1</span>
+            <h3>Classify first</h3>
+          </div>
+          <p class="muted">Choose a verdict before highlighting. Only phishing examples accept highlights.</p>
+          <div class="classification-buttons" id="classificationBlock" aria-label="Email classification actions">
+            <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
+            <button class="btn cta-btn ghost" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
+          </div>
+        </section>
 
-        <div class="flex mt-1" style="gap:.5rem; flex-wrap:wrap;">
-          <button class="btn tool-btn" data-tool="brush" onclick="setTool('brush')" aria-pressed="true">Brush</button>
-          <button class="btn ghost tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
-        </div>
+        <section class="phish-step" data-step="2">
+          <div class="phish-step__heading">
+            <span class="step-pill">Step 2</span>
+            <h3>Mark the clues</h3>
+          </div>
+          <p class="muted">Use tight circles over sender details, URLs, grammar errors, or urgency cues.</p>
+          <div class="tool-stack">
+            <div class="tool-row">
+              <button class="btn tool-btn" data-tool="brush" onclick="setTool('brush')" aria-pressed="true">Brush</button>
+              <button class="btn ghost tool-btn" data-tool="eraser" onclick="setTool('eraser')">Eraser</button>
+            </div>
+            <div class="field mt-2">
+              <label for="brushSize">Brush size</label>
+              <input id="brushSize" type="range" min="2" max="24" value="8" />
+            </div>
+            <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
+              <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
+              <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
+            </div>
+            <p id="phishHintText" class="hint-callout" hidden>
+              Scan the sender address, call-to-action URL, and urgency cues first—phishers often betray themselves there.
+            </p>
+          </div>
+        </section>
 
-        <div class="field mt-2">
-          <label for="brushSize">Brush size</label>
-          <input id="brushSize" type="range" min="2" max="24" value="8" />
-        </div>
+        <section class="phish-step" data-step="3">
+          <div class="phish-step__heading">
+            <span class="step-pill">Step 3</span>
+            <h3>Submit & advance</h3>
+          </div>
+          <p class="muted">Once three hotspots glow green, press <strong>Submit Highlights</strong> under the canvas to lock the slide. Autosave runs after every stroke.</p>
+          <p class="autosave-status" id="autosaveStatus" aria-live="polite">Autosave ready.</p>
+        </section>
 
-        <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
-          <button class="btn" id="saveBtn" type="button">Save</button>
-          <button class="btn ghost" id="loadBtn" type="button">Load</button>
-          <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
-          <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
-        </div>
-
-        <p id="phishHintText" class="hint-callout" hidden>
-          Scan the sender address, call-to-action URL, and urgency cues first—phishers often betray themselves there.
-        </p>
-
-        <hr class="mt-2" />
-
-        <h2 class="mt-2">Examples</h2>
-        <nav class="thumb-nav mt-1" aria-label="Examples">
-          <ul class="link-list">
-            <li><a href="phishing.html?img=Picture1.png">Apple – “sound played”</a></li>
-            <li><a href="phishing.html?img=Picture2.png">iCloud – “storage full”</a></li>
-            <li><a href="phishing.html?img=Picture3.png">Amazon – “order confirmation”</a></li>
-            <li><a href="phishing.html?img=Picture4.png">SharePoint – “file shared”</a></li>
-          </ul>
-        </nav>
-
-        <p class="mt-2" id="vulnerabilityCount" aria-live="polite">You marked 0 out of 5 vulnerabilities.</p>
-
-        <div class="mt-2">
-          <a href="game.html" class="btn ghost">Back to Vault</a>
-          <a href="index.html" class="btn">Home</a>
-        </div>
+        <section class="phish-step phish-step--examples">
+          <div class="phish-step__heading">
+            <span class="step-pill">Gallery</span>
+            <h3>Email examples</h3>
+          </div>
+          <nav class="thumb-nav mt-1" aria-label="Examples">
+            <ul class="link-list">
+              <li><a href="phishing.html?img=Picture1.png">Apple – “sound played”</a></li>
+              <li><a href="phishing.html?img=Picture2.png">iCloud – “storage full”</a></li>
+              <li><a href="phishing.html?img=Picture3.png">Amazon – “order confirmation”</a></li>
+              <li><a href="phishing.html?img=Picture4.png">SharePoint – “file shared”</a></li>
+            </ul>
+          </nav>
+          <p class="mt-2" id="vulnerabilityCount" aria-live="polite">You marked 0 out of 5 vulnerabilities.</p>
+          <div class="mt-2">
+            <a href="game.html" class="btn ghost">Back to Vault</a>
+            <a href="index.html" class="btn">Home</a>
+          </div>
+        </section>
       </aside>
 
       <!-- RIGHT: image stage -->
@@ -188,6 +220,7 @@
 
           <div class="image-container">
             <div id="imageStage" class="image-stage">
+              <div class="example-banner" id="exampleBanner" aria-live="polite">Example 1 of 4</div>
               <img id="phishingImage"
                    src="assets/Picture1.png"
                    alt="Email screenshot for phishing analysis"
@@ -202,18 +235,12 @@
 
         <div class="carousel-dots" id="exampleDots" aria-label="Email example navigation" role="tablist"></div>
         <p id="slideStatus" class="muted text-center" aria-live="polite">Example 1 of 4</p>
+        <p id="vulnerabilityCountStage" class="muted stage-vuln" aria-live="polite"></p>
 
         <div id="feedbackPanel" class="mt-2">
           <div class="feedback-actions">
             <button id="submitButton" class="btn primary" type="button" data-tooltip="Submit highlights for review">Submit Highlights</button>
-            <div class="classification-cta" aria-label="Email classification actions">
-              <p class="cta-title">Ready to classify?</p>
-              <div class="classification-buttons">
-                <button class="btn cta-btn warn" id="markPhish" type="button" aria-pressed="false">This is Phishing</button>
-                <button class="btn cta-btn primary" id="markLegit" type="button" aria-pressed="false">Looks Legit</button>
-              </div>
-              <p class="cta-hint">You can change your choice after reviewing other examples.</p>
-            </div>
+            <p class="cta-hint">Steps 1 &amp; 2 must be complete before submitting.</p>
           </div>
           <p id="phishingFeedback" class="status-message mt-1" aria-live="polite"></p>
         </div>
@@ -308,4 +335,3 @@
   </script>
 </body>
 </html>
-

@@ -9,23 +9,22 @@
   const DEC_B = parseInt(BINARY_B, 2);
   const XOR_BIN = xorStrings(BINARY_A, BINARY_B);
   const XOR_DEC = parseInt(XOR_BIN, 2);
-  const PRODUCT_DEC = DEC_A * DEC_B;
-  const PRODUCT_BIN = PRODUCT_DEC.toString(2);
+  const VAULT_DIGIT = XOR_DEC;
 
   const BIT_LENGTH = Math.max(BINARY_A.length, BINARY_B.length);
   const POSITIONS = Array.from({ length: BIT_LENGTH }, (_, i) => BIT_LENGTH - 1 - i);
   const PLACE_VALUES = POSITIONS.map(exp => 2 ** exp);
 
   const inputs = {
-    xorDec: $('#xorDec'),
-    productBin: $('#productBin'),
-    productDec: $('#productDec')
+    decA: $('#decAInput'),
+    decB: $('#decBInput'),
+    xorDec: $('#xorDec')
   };
 
   const status = {
-    bits: $('#bitsStatus'),
-    xor: $('#xorStatus'),
-    product: $('#productStatus')
+    a: $('#valueAStatus'),
+    b: $('#valueBStatus'),
+    xor: $('#xorStatus')
   };
 
   const sumLabels = {
@@ -53,9 +52,8 @@
   let hintUsed = false;
 
   const progress = {
-    bits: false,
-    xor: false,
-    product: false
+    decimals: false,
+    xor: false
   };
 
   function updateVaultDigitDisplay(forceValue) {
@@ -126,16 +124,14 @@
     const setter = window.utils?.setProgressPercent;
     if (typeof setter !== 'function') return;
     let percent = 0;
-    if (progress.bits) percent = 40;
-    if (progress.bits && progress.xor) percent = 70;
-    if (progress.product) percent = 100;
-    setter('binary', percent, { complete: progress.product });
+    if (progress.decimals) percent = 60;
+    if (progress.decimals && progress.xor) percent = 100;
+    setter('binary', percent, { complete: progress.decimals && progress.xor });
   }
 
   function resetProgress() {
-    progress.bits = false;
+    progress.decimals = false;
     progress.xor = false;
-    progress.product = false;
     updateProgressState();
   }
 
@@ -145,20 +141,17 @@
   }
 
   function clearInputs() {
-    ['a', 'b', 'xor'].forEach(row => {
-      bitInputs[row].forEach(input => { input.value = ''; });
-    });
+    bitInputs.xor.forEach(input => { input.value = ''; });
     Object.values(inputs).forEach(input => { if (input) input.value = ''; });
-    setStatus('bits', true, 'Binary rows provided.');
+    setStatus('a', null, 'Pending');
+    setStatus('b', null, 'Pending');
     setStatus('xor', null, 'Pending');
-    setStatus('product', null, 'Pending');
     setFeedback('');
     chestHint?.setAttribute('hidden', 'hidden');
     hintBox?.setAttribute('hidden', 'hidden');
     hintUsed = false;
-    progress.bits = true;
+    progress.decimals = false;
     progress.xor = false;
-    progress.product = false;
     updateProgressState();
     updateSums();
   }
@@ -199,15 +192,29 @@
     }
   }
 
-  function validateBits() {
-    setStatus('bits', true, 'Binary rows provided.');
-    progress.bits = true;
-    return true;
+  function checkDecimalInputs() {
+    let ok = true;
+    const aVal = Number(inputs.decA?.value || NaN);
+    const bVal = Number(inputs.decB?.value || NaN);
+    if (!Number.isInteger(aVal) || aVal !== DEC_A) {
+      setStatus('a', false, `Binary A converts to ${DEC_A}.`);
+      ok = false;
+    } else {
+      setStatus('a', true, `Binary A = ${DEC_A}.`);
+    }
+    if (!Number.isInteger(bVal) || bVal !== DEC_B) {
+      setStatus('b', false, `Binary B converts to ${DEC_B}.`);
+      ok = false;
+    } else {
+      setStatus('b', true, `Binary B = ${DEC_B}.`);
+    }
+    progress.decimals = ok;
+    return ok;
   }
 
-  function checkXor(bitsOk) {
-    if (!bitsOk) {
-      setStatus('xor', false, 'Complete Binary A and B first.');
+  function checkXor(decimalsOk) {
+    if (!decimalsOk) {
+      setStatus('xor', false, 'Convert both decimals first.');
       progress.xor = false;
       return false;
     }
@@ -241,40 +248,13 @@
     return true;
   }
 
-  function checkProduct() {
-    const binInput = (inputs.productBin?.value || '').replace(/[^01]/g, '');
-    const decInput = Number(inputs.productDec?.value || NaN);
-
-    if (!binInput) {
-      setStatus('product', false, 'Enter the product in binary.');
-      progress.product = false;
-      return false;
-    }
-
-    if (parseInt(binInput, 2) !== PRODUCT_DEC || binInput.length !== PRODUCT_BIN.length) {
-      setStatus('product', false, 'Binary product is incorrect.');
-      progress.product = false;
-      return false;
-    }
-
-    if (!Number.isInteger(decInput) || decInput !== PRODUCT_DEC) {
-      setStatus('product', false, 'Decimal product is incorrect.');
-      progress.product = false;
-      return false;
-    }
-
-    setStatus('product', true, 'Product confirmed.');
-    progress.product = true;
-    return true;
-  }
-
   function storeLockDigit() {
     try {
-      localStorage.setItem('lock_digit_binary', String(XOR_DEC));
+      localStorage.setItem('lock_digit_binary', String(VAULT_DIGIT));
     } catch (_) {
       /* ignore */
     }
-    updateVaultDigitDisplay(String(XOR_DEC));
+    updateVaultDigitDisplay(String(VAULT_DIGIT));
   }
 
   function markBinaryComplete() {
@@ -293,12 +273,12 @@
     updateProgressState();
 
     if (bitsOk && xorOk && productOk) {
-      setFeedback(`Success! Decimal product is ${PRODUCT_DEC}. Vault digit captured: ${XOR_DEC}.`, true);
+      setFeedback(`Success! ${DEC_A} × ${DEC_B} = ${PRODUCT_DEC}. Vault digit captured: ${VAULT_DIGIT} (ones digit of the product).`, true);
       chestHint?.removeAttribute('hidden');
       markBinaryComplete();
       if (!alreadyComplete) {
-        window.vault?.unlock('binary', XOR_DEC, {
-          message: `Binary digit ${XOR_DEC} recorded. Enter it on the vault panel.`
+        window.vault?.unlock('binary', VAULT_DIGIT, {
+          message: `Binary digit ${VAULT_DIGIT} recorded. Enter it on the vault panel.`
         });
       }
     } else if (bitsOk && xorOk) {

@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/onboarding.js" defer></script>
@@ -74,6 +75,9 @@
     <header class="game-header">
       <h1 class="glow">Essential Eight</h1>
       <p class="mt-1" style="color:var(--muted)">Drag each control to the matching description. Get them all right to earn your digit.</p>
+      <div class="puzzle-actions mt-1">
+        <button class="btn ghost sm onboard-trigger" type="button" data-onboard="onboard-essential">How to play</button>
+      </div>
     </header>
 
     <section class="intro-banner mt-2" aria-labelledby="essentialBriefHeading">
@@ -85,12 +89,16 @@
         <li>Need help? The hint button costs points, so time it wisely.</li>
         <li>Digit four is always the number of Essential Eight strategies—make sure you’ve earned it first!</li>
       </ul>
-      <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-essential">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p><strong id="essentialVaultValue">—</strong> Essential Eight strategies — complete the set before claiming the digit.</p>
       </div>
     </section>
+
+    <aside class="card tip-card mt-2" aria-labelledby="essentialTipHeading">
+      <h2 id="essentialTipHeading">Mission tip</h2>
+      <p class="muted">Each mitigation can only be used once. Read the “Impact” cue before dropping—any leftover strategy gives you the vault digit.</p>
+    </aside>
 
     <section class="status-hud" aria-label="Team status">
       <div class="points-box">

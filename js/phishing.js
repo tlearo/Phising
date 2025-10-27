@@ -30,8 +30,7 @@
   const dotContainer = $('#exampleDots');
   const markPhishBtn = $('#markPhish');
   const markLegitBtn = $('#markLegit');
-  const saveBtn      = $('#saveBtn');
-  const loadBtn      = $('#loadBtn');
+  const classificationBlock = $('#classificationBlock');
   const clearBtn     = $('#clearBtn');
   const selectAllBtn = $('#selectAllBtn');
   const hintBtn      = $('#phishHintBtn');
@@ -42,6 +41,9 @@
   const zoomInBtn    = $('#phishZoomInBtn');
   const zoomOutBtn   = $('#phishZoomOutBtn');
   const fullscreenBtn= $('#phishFullscreenBtn');
+  const autosaveStatusEl = $('#autosaveStatus');
+  const vulnStageEl = $('#vulnerabilityCountStage');
+  const exampleBanner = $('#exampleBanner');
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
@@ -59,16 +61,18 @@
   const MAX_STROKE_AREA = 52000; // approx area (px^2) before we consider it too large
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
   const REQUIRED_PCT = 0.75;
+  const AUTO_SAVE_DELAY = 900;
+  const COVERAGE_LIMIT = 0.45;
 
 // ---------- Config ----------
 const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
 const DEFAULT_IMAGE = IMAGES[0];
 
 const IMAGE_LABELS = {
-  'Picture1.png': 'Apple — “sound played”',
-  'Picture2.png': 'iCloud — “storage full”',
-  'Picture3.png': 'Amazon — “order confirmation”',
-  'Picture4.png': 'SharePoint — “file shared”'
+  'Picture1.png': 'Apple — "sound played"',
+  'Picture2.png': 'iCloud — "storage full"',
+  'Picture3.png': 'Amazon — "order confirmation"',
+  'Picture4.png': 'SharePoint — "file shared"'
 };
 
 // Mark which images are truly phishing (used for digit #1 and auto-scoring)
@@ -135,6 +139,8 @@ updateVaultCallout();
 
 
   // Tool state
+  const DEFAULT_ZOOM = window.matchMedia('(min-width: 900px)').matches ? 1.35 : 1.1;
+
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
     size: 8,
@@ -149,16 +155,18 @@ updateVaultCallout();
     hotspots: [],
     found: new Set(), // indexes of hotspots found
     imgName: DEFAULT_IMAGE,
-    zoom: 1,
+    zoom: DEFAULT_ZOOM,
     classification: null
   };
 
-  const ZOOM_MIN = 1;
-  const ZOOM_MAX = 2.5;
+  const ZOOM_MIN = 0.9;
+  const ZOOM_MAX = 3;
   const ZOOM_STEP = 0.2;
   let overlayEl = null;
   let workspacePlaceholder = null;
   let workspaceParent = null;
+  let autoSaveTimer = null;
+  let classificationNudgeTimer = null;
 
   function updateZoomControls() {
     const atMin = state.zoom <= ZOOM_MIN + 0.001;
@@ -175,9 +183,11 @@ updateVaultCallout();
 
   function applyZoom() {
     if (!stageEl) return;
+    const isZoomed = state.zoom > ZOOM_MIN + 0.05;
     stageEl.style.transform = `scale(${state.zoom})`;
+    stageEl.classList.toggle('is-zoomed', isZoomed);
     if (imageContainer) {
-      imageContainer.classList.toggle('is-zoomed', state.zoom > ZOOM_MIN + 0.05);
+      imageContainer.classList.toggle('is-zoomed', isZoomed);
     }
     updateZoomControls();
   }
@@ -270,6 +280,10 @@ updateVaultCallout();
         slideStatus.textContent = `Example ${slideshow.index + 1} of ${total} — ${label}`;
       }
     }
+    if (exampleBanner) {
+      const label = IMAGE_LABELS[current] || current;
+      exampleBanner.textContent = `Example ${slideshow.index + 1} of ${total} — ${label}`;
+    }
     if (prevBtn) {
       prevBtn.disabled = slideshow.index <= 0;
       prevBtn.setAttribute('aria-disabled', prevBtn.disabled ? 'true' : 'false');
@@ -299,6 +313,50 @@ updateVaultCallout();
     });
 
     updateDotUi();
+  }
+
+  function updateAutosaveStatus(message) {
+    if (!autosaveStatusEl) return;
+    autosaveStatusEl.textContent = message || 'Autosave ready.';
+  }
+
+  function queueAutoSave(reason = 'auto') {
+    if (!maskHasAnyInk()) return;
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      saveHighlights({ silent: true, source: reason });
+    }, AUTO_SAVE_DELAY);
+  }
+
+  function nudgeClassification(message) {
+    if (!classificationBlock) return;
+    classificationBlock.classList.add('is-nudged');
+    try {
+      classificationBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (_) {
+      /* ignore scroll issues */
+    }
+    if (message) setFeedback(message, 'warn');
+    clearTimeout(classificationNudgeTimer);
+    classificationNudgeTimer = setTimeout(() => {
+      classificationBlock.classList.remove('is-nudged');
+    }, 3200);
+  }
+
+  function enforceCoverageLimit() {
+    if (!maskCanvas.width || !maskCanvas.height) return;
+    const totalPixels = maskCanvas.width * maskCanvas.height;
+    if (!totalPixels) return;
+    const data = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+    let ink = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] > 0) ink += 1;
+    }
+    const coverage = ink / totalPixels;
+    if (coverage > COVERAGE_LIMIT) {
+      eraseAll();
+      setFeedback('Highlights should target individual clues, not the entire email. Try again with smaller circles.', 'warn');
+    }
   }
 
   const dotButtons = [];
@@ -421,13 +479,25 @@ updateVaultCallout();
   }
 
   // Save mask as PNG data URL + found indexes
-  function saveHighlights() {
+  function saveHighlights(options = {}) {
+    const { silent = false, source = 'manual' } = options;
+    if (!maskHasAnyInk() && !silent) {
+      setFeedback('Add at least one highlight before saving.', 'warn');
+      return;
+    }
     const data = {
       mask: maskCanvas.toDataURL('image/png'),
       found: Array.from(state.found)
     };
     localStorage.setItem(storageKey(), JSON.stringify(data));
-    setFeedback('Saved your highlights.', 'success');
+    clearTimeout(autoSaveTimer);
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (silent) {
+      updateAutosaveStatus(`Autosaved at ${timestamp}.`);
+    } else {
+      setFeedback('Saved your highlights.', 'success');
+      updateAutosaveStatus(`Saved at ${timestamp}.`);
+    }
   }
 
   async function loadHighlights() {
@@ -440,6 +510,7 @@ updateVaultCallout();
       redrawFromMask();
       state.found = new Set(Array.isArray(data.found) ? data.found : []);
       setFeedback('Loaded saved highlights.', 'success');
+      updateAutosaveStatus('Highlights loaded from save.');
       markCompleteIfReady();
     } catch {
       setFeedback('Could not load saved highlights.', 'warn');
@@ -452,6 +523,7 @@ updateVaultCallout();
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     state.found.clear();
     setFeedback('Cleared.');
+    updateAutosaveStatus('Canvas cleared. Autosave will resume on the next stroke.');
     updateVulnText();
   }
 
@@ -569,6 +641,8 @@ window.PHISHING_INSTRUCTOR_KEY = {
     }));
     state.found.clear();
     state.classification = localStorage.getItem(`class_${state.imgName}`) || null;
+    clearTimeout(autoSaveTimer);
+    updateAutosaveStatus('Autosave ready.');
     updateVulnText();
     syncClassificationUi();
   }
@@ -595,7 +669,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
   }
 
   function updateVulnText() {
-    if (!vulnCountEl) return;
+    if (!vulnCountEl && !vulnStageEl) return;
     const total = state.hotspots.length || 0;
     const found = state.found.size;
     if (total) {
@@ -617,9 +691,12 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const totalSlides = IMAGES.length || 0;
       const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
       const slideSummary = totalSlides ? ` Examples cleared: ${doneSlides}/${totalSlides}.` : '';
-      vulnCountEl.textContent = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
+      const message = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
+      if (vulnCountEl) vulnCountEl.textContent = message;
+      if (vulnStageEl) vulnStageEl.textContent = message;
     } else {
-      vulnCountEl.textContent = 'No hotspots defined for this image.';
+      if (vulnCountEl) vulnCountEl.textContent = 'No hotspots defined for this image.';
+      if (vulnStageEl) vulnStageEl.textContent = 'No hotspots defined for this image.';
     }
     broadcastProgress();
   }
@@ -637,6 +714,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       markLegitBtn.setAttribute('aria-pressed', isLegit ? 'true' : 'false');
       markLegitBtn.classList.toggle('is-selected', isLegit);
     }
+    if (isPhish) classificationBlock?.classList.remove('is-nudged');
   }
 
   function setFeedback(msg, tone='info') {
@@ -711,9 +789,9 @@ window.PHISHING_INSTRUCTOR_KEY = {
   }
 
   function beginDraw(x, y) {
-    if (state.classification === 'legit') {
-      setFeedback('You marked this example as legitimate. Switch to "This is Phishing" before highlighting clues.', 'warn');
-      announce('Highlighting disabled while marked legitimate');
+    if (state.classification !== 'phish') {
+      nudgeClassification('Select "This is Phishing" before highlighting clues.');
+      announce('Highlighting disabled until classification is set to phishing');
       return;
     }
     state.drawing = true;
@@ -741,6 +819,8 @@ window.PHISHING_INSTRUCTOR_KEY = {
     }
     resetStrokeState();
     recomputeFoundFromMask();
+    enforceCoverageLimit();
+    queueAutoSave('stroke');
     markCompleteIfReady();
   }
 
@@ -905,7 +985,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
 
     // Require a classification
     if (!userClass) {
-      setFeedback('Choose “Is phishing” or “Isn’t phishing” first.', 'warn');
+      setFeedback('Choose "Is phishing" or "Isn\'t phishing" first.', 'warn');
       return;
     }
     // If they said phishing, require at least one highlight
@@ -940,8 +1020,6 @@ window.PHISHING_INSTRUCTOR_KEY = {
   }
 
 
-  window.saveHighlights  = saveHighlights;
-  window.loadHighlights  = loadHighlights;
   window.eraseAll        = eraseAll;
   window.selectAll       = selectAll;
   window.submitHighlights= submitHighlights;
@@ -1019,6 +1097,7 @@ function classify(isPhish){
   document.addEventListener('DOMContentLoaded', () => {
     // Ensure tool button reflects default
     setTool('brush');
+    updateAutosaveStatus('Autosave ready.');
 
     // Determine starting slide from query/src
     const initialName = resolveInitialImage();
@@ -1027,6 +1106,7 @@ function classify(isPhish){
     state.imgName = currentName();
     buildDots();
     updateSlideUi();
+    setZoom(DEFAULT_ZOOM);
 
     // Wire slideshow buttons & keyboard toggles
     prevBtn?.addEventListener('click', prev);
@@ -1042,11 +1122,13 @@ function classify(isPhish){
 
     // Classification buttons
     markPhishBtn?.addEventListener('click', () => classify(true));
-    markLegitBtn?.addEventListener('click', () => classify(false));
+    markLegitBtn?.addEventListener('click', () => {
+      const proceed = window.confirm('Marking this as "Looks Legit" will advance you to the next example and costs points if incorrect. Continue?');
+      if (!proceed) return;
+      classify(false);
+    });
 
     // File operations
-    saveBtn?.addEventListener('click', saveHighlights);
-    loadBtn?.addEventListener('click', loadHighlights);
     clearBtn?.addEventListener('click', eraseAll);
     selectAllBtn?.addEventListener('click', () => {
       if (!confirm('Auto-place markers is intended for facilitators. Continue?')) {

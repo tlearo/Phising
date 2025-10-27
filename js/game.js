@@ -286,8 +286,12 @@
   function ensureLogout(){
     if (typeof window.logout === 'function') return;
     window.logout = function () {
-      localStorage.clear();
-      window.location.href = 'index.html';
+      if (window.utils?.logout) {
+        window.utils.logout('index.html');
+      } else {
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+      }
     };
   }
 

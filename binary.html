@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/onboarding.js" defer></script>
@@ -74,23 +75,30 @@
     <header class="game-header">
       <h1 class="glow">Binary Operations Lab</h1>
       <p class="mt-1" style="color:var(--muted)">Compare bits with XOR, multiply the values, and capture the vault digit from the decimal result.</p>
+      <div class="puzzle-actions mt-1">
+        <button class="btn ghost sm onboard-trigger" type="button" data-onboard="onboard-binary">How to play</button>
+      </div>
     </header>
 
     <section class="intro-banner mt-2" aria-labelledby="binaryBriefHeading">
       <h2 id="binaryBriefHeading">Points reminder</h2>
       <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check place values, then submit once.</p>
       <ul>
-        <li>The final digit is the decimal value of the XOR row—convert it correctly to unlock the vault.</li>
+        <li>The vault digit is the decimal value of the XOR row (1101 ⊕ 1011 = 6).</li>
         <li>Status pills update as you confirm each step; don’t move on until they glow green.</li>
         <li>Use the crack-time calculator or scratch space before entering answers to avoid point hits.</li>
         <li>Hints are available, but they cost points—save them for when you are truly stuck.</li>
       </ul>
-      <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-binary">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
-        <p>The decimal value of the XOR row. When you finish the table, record <strong id="binaryVaultDigit">—</strong>.</p>
+        <p>Record the decimal XOR result. When you finish the table, capture <strong id="binaryVaultDigit">—</strong>.</p>
       </div>
     </section>
+
+    <aside class="card tip-card mt-2" aria-labelledby="binaryTipHeading">
+      <h2 id="binaryTipHeading">Mission tip</h2>
+      <p class="muted">Map every column to its place value first, then convert each binary row to decimal and finish with the XOR digit.</p>
+    </aside>
 
     <section class="status-hud" aria-label="Team status">
       <div class="points-box">
@@ -135,23 +143,23 @@
         <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. 1 ⊕ 1 = 0, 1 ⊕ 0 = 1, 0 ⊕ 0 = 0.</p>
 
         <div class="binary-status mt-2" aria-live="polite">
-          <span class="status-pill" id="bitsStatus">Bits pending</span>
+          <span class="status-pill" id="valueAStatus">Decimal A pending</span>
+          <span class="status-pill" id="valueBStatus">Decimal B pending</span>
           <span class="status-pill" id="xorStatus">XOR pending</span>
-          <span class="status-pill" id="productStatus">Product pending</span>
         </div>
 
         <div class="binary-result-grid mt-2">
+          <label class="result-field" for="decAInput">
+            <span>Binary A in decimal</span>
+            <input id="decAInput" name="decAInput" type="number" inputmode="numeric" autocomplete="off" placeholder="13" aria-label="Decimal value of Binary A" />
+          </label>
+          <label class="result-field" for="decBInput">
+            <span>Binary B in decimal</span>
+            <input id="decBInput" name="decBInput" type="number" inputmode="numeric" autocomplete="off" placeholder="11" aria-label="Decimal value of Binary B" />
+          </label>
           <label class="result-field" for="xorDec">
             <span>Decimal XOR (vault digit)</span>
-            <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Decimal XOR of A and B" />
-          </label>
-          <label class="result-field" for="productBin">
-            <span>Binary product</span>
-            <input id="productBin" name="productBin" type="text" inputmode="numeric" autocomplete="off" placeholder="00000000" aria-label="Binary product of A multiplied by B" />
-          </label>
-          <label class="result-field" for="productDec">
-            <span>Decimal product</span>
-            <input id="productDec" name="productDec" type="number" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Decimal product of A multiplied by B" />
+            <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off" placeholder="6" aria-label="Decimal XOR of A and B" />
           </label>
         </div>
 
@@ -163,7 +171,7 @@
 
         <p class="feedback mt-2" id="binaryFeedback" aria-live="polite"></p>
         <p class="muted mt-1" id="binaryChestHint" hidden>Your vault digit equals the decimal XOR result.</p>
-        <p id="binaryHintText" class="hint-callout" hidden>Line up the digits under matching place values. Multiply like long multiplication: each 1 in the lower number means a shifted copy of the top number that you add together.</p>
+        <p id="binaryHintText" class="hint-callout" hidden>Line up the digits under matching place values, convert each binary row to decimal, then compute the XOR row. Record the XOR decimal as your vault digit.</p>
       </section>
 
       <section class="card binary-place" aria-labelledby="binaryPlaceHeading">
@@ -180,7 +188,17 @@
           <li>It powers parity checks and error detection in network packets.</li>
           <li>It forms the backbone of many stream ciphers and one-time pads.</li>
         </ul>
-        <p class="mt-1">In this lab, XOR warms you up before the multiplication so you understand how the numbers interact. Once you nail the product, convert it to decimal and capture the ones digit for the vault.</p>
+        <p class="mt-1">In this lab, XOR warms you up before you convert the binary values to decimal. Once all three decimals are confirmed, the XOR value becomes your vault digit.</p>
+      </section>
+
+      <section class="card binary-guide" aria-labelledby="binaryGuideHeading">
+        <h2 id="binaryGuideHeading">Binary Coach</h2>
+        <ol class="mt-1">
+          <li>Read Binary A and Binary B from the table; use the place-value chart to convert them to decimal.</li>
+          <li>Fill the XOR row so every differing bit becomes 1, then convert that binary result to decimal.</li>
+          <li>Vault digit = decimal XOR result. Example: 1101 ⊕ 1011 = 0110 → <strong>6</strong>.</li>
+        </ol>
+        <p class="muted mt-1">Need a reminder? The place-value table on the right shows why 1s matter in specific columns.</p>
       </section>
     </section>
 
@@ -204,11 +222,11 @@
     <div class="onboard__dialog">
       <button class="onboard__close" type="button" aria-label="Close tutorial" data-onboard-close>&times;</button>
       <h2 id="onboardBinaryTitle" data-onboard-focus>Binary Lab — Quick Guide</h2>
-      <p>The vault digit is the ones place of the decimal product once both rows are correct.</p>
+      <p>The vault digit is the decimal XOR value once your conversions are correct.</p>
       <ol class="onboard__list">
-        <li>Convert A ⊕ B in both binary and decimal; the status pill turns green when both are right.</li>
-        <li>Multiply the values for the second row, again providing the binary string and the decimal result.</li>
-        <li>Submit with the Check button—when both pills glow, record the product&#8217;s ones digit for the vault.</li>
+        <li>Translate Binary A and Binary B into decimal using the place-value chart.</li>
+        <li>Fill the XOR row, then convert that binary result into decimal.</li>
+        <li>Press Check—when all three pills glow green, record the XOR decimal for the vault.</li>
       </ol>
     </div>
   </div>
@@ -223,7 +241,7 @@
         <span aria-hidden="true">•</span>
         <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
-      <p class="footer-note">Solve the XOR, multiply the binaries, and the vault digit reveals itself.</p>
+      <p class="footer-note">Convert both binaries, crush the XOR, and the vault digit reveals itself.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
     </div>
   </footer>

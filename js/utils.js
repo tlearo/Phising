@@ -84,6 +84,17 @@
     const p = getJSON(key, {});
     p[flag] = !!value;
     setJSON(key, p);
+    try {
+      pushActivity({
+        type: 'progress',
+        puzzle: flag,
+        status: value ? 'complete' : 'reset',
+        detail: value ? 'Puzzle completed' : 'Puzzle reopened'
+      }, u);
+    } catch (_) {
+      /* ignore */
+    }
+    window.stateSync?.queueSave?.('progress');
     return p;
   }
   function progressMetaKey(u = getUser()) {
@@ -104,6 +115,7 @@
     if (typeof opts.complete === 'boolean') {
       setProgressFlag(flag, opts.complete, u);
     }
+    window.stateSync?.queueSave?.('progress');
     try {
       window.dispatchEvent(new CustomEvent('progress:change', {
         detail: {
@@ -273,6 +285,17 @@
     const updated = Math.max(0, Math.round(current + delta));
     localStorage.setItem(scoreKey(u), String(updated));
     appendScoreLog({ delta, reason, at: Date.now(), total: updated }, u);
+    try {
+      pushActivity({
+        type: 'points',
+        delta,
+        total: updated,
+        reason: reason || 'Score change'
+      }, u);
+    } catch (_) {
+      /* ignore */
+    }
+    window.stateSync?.queueSave?.('points');
     dispatchScoreEvent(updated, delta, reason);
     return updated;
   }
@@ -396,6 +419,74 @@
     });
   }
 
+  const SESSION_KEYS = [
+    'user',
+    'session_token',
+    'auth_token',
+    'sessionUser',
+    'active_role'
+  ];
+
+  function clearSessionKeys(extraKeys = []) {
+    const removals = new Set([...SESSION_KEYS, ...extraKeys.filter(Boolean)]);
+    removals.forEach((key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (_) {
+        /* ignore storage issues */
+      }
+    });
+  }
+
+  function logout(redirect = 'index.html', extraKeys = []) {
+    try {
+      window.stateSync?.saveNow?.('logout');
+    } catch (_) {
+      /* ignore */
+    }
+    clearSessionKeys(extraKeys);
+    window.location.href = redirect;
+  }
+
+  const ACTIVITY_LIMIT = 120;
+
+  function activityKey(u = getUser()) {
+    return `${u?.username || 'team'}_activity`;
+  }
+
+  function readActivity(u = getUser()) {
+    return getJSON(activityKey(u), []);
+  }
+
+  function pushActivity(entry, u = getUser()) {
+    const key = activityKey(u);
+    const list = readActivity(u);
+    const normalized = {
+      type: entry?.type || 'event',
+      detail: entry?.detail || '',
+      puzzle: entry?.puzzle || null,
+      delta: entry?.delta ?? null,
+      total: entry?.total ?? null,
+      status: entry?.status || null,
+      reason: entry?.reason || null,
+      at: entry?.at || Date.now()
+    };
+    list.push(normalized);
+    if (list.length > ACTIVITY_LIMIT) {
+      list.splice(0, list.length - ACTIVITY_LIMIT);
+    }
+    setJSON(key, list);
+    try {
+      window.stateSync?.queueSave?.('activity');
+      window.dispatchEvent(new CustomEvent('activity:change', {
+        detail: { entry: normalized, user: u?.username || 'team' }
+      }));
+    } catch (_) {
+      /* ignore */
+    }
+    return list;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initBackLinks();
     hideAdminLinksForTeams();
@@ -405,11 +496,16 @@
   window.utils = {
     $, $$, on, createEl, addClass, removeClass, toggleClass,
     getJSON, setJSON, removeJSON,
-    getUser, saveUser, progressKey, timesKey, readProgress, setProgressFlag,
+    getUser, saveUser, progressKey, progressMetaKey, timesKey, readProgress, setProgressFlag,
     readProgressMeta, setProgressPercent, getProgressPercent, pushTime,
     fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus,
     points: pointsApi,
     backOrHome,
-    initStatusHud
+    initStatusHud,
+    clearSessionKeys,
+    logout,
+    activityKey,
+    readActivity,
+    pushActivity
   };
 })();

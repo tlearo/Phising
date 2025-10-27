@@ -102,9 +102,59 @@
   // ---------- Public logout (used by headers) ------------------------------
 
   window.logout = function logout() {
-    localStorage.clear();
-    window.location.href = 'index.html';
+    if (window.utils?.logout) {
+      window.utils.logout('index.html');
+    } else {
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
   };
+
+  const DEFAULT_PROGRESS = {
+    phishing: false,
+    password: false,
+    encryption: false,
+    essential: false,
+    binary: false
+  };
+
+  async function bootstrapTeamState(username) {
+    const team = String(username || '').toLowerCase();
+    if (!team) return;
+    try {
+      const url = new URL('/.netlify/functions/team-state', window.location.origin);
+      url.searchParams.set('team', team);
+      const res = await fetch(url.toString(), { method: 'GET' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const payload = await res.json();
+      const state = payload?.state;
+      if (!state) return;
+      const progressKey = `${team}_progress`;
+      const metaKey = `${team}_progress_meta`;
+      const timesKey = `${team}_times`;
+      const scoreKey = `${team}_score`;
+      const scoreLogKey = `${team}_score_log`;
+      const activityKey = `${team}_activity`;
+      localStorage.setItem(progressKey, JSON.stringify({ ...DEFAULT_PROGRESS, ...(state.progress || {}) }));
+      localStorage.setItem(metaKey, JSON.stringify(state.progressMeta || {}));
+      localStorage.setItem(timesKey, JSON.stringify(state.times || []));
+      if (Number.isFinite(state.score)) {
+        localStorage.setItem(scoreKey, String(Math.max(0, Math.round(state.score))));
+      }
+      localStorage.setItem(scoreLogKey, JSON.stringify(state.scoreLog || []));
+      localStorage.setItem(activityKey, JSON.stringify(state.activity || []));
+      if (state.vault) {
+        if (state.vault.phishing) localStorage.setItem('lock_digit_phishing_total', String(state.vault.phishing));
+        if (state.vault.encryption) localStorage.setItem('lock_digit_caesar_shift', String(state.vault.encryption));
+        if (state.vault.password) localStorage.setItem('lock_digit_pw_minutes', String(state.vault.password));
+        if (state.vault.essential) localStorage.setItem('lock_digit_essential', String(state.vault.essential));
+        if (state.vault.binary) localStorage.setItem('lock_digit_binary', String(state.vault.binary));
+        localStorage.setItem(`${team}_vault`, JSON.stringify(state.vault));
+      }
+    } catch (err) {
+      console.warn('Unable to hydrate team state', err);
+    }
+  }
 
   // ---------- Page bootstrap ----------------------------------------------
 
@@ -146,6 +196,9 @@
       const server = await tryServerLogin(username, password);
       if (server.ok) {
         saveUser(server.user);
+        if (server.user.role === 'team') {
+          await bootstrapTeamState(server.user.username);
+        }
         setLoading(false);
         if (window.a11y) window.a11y.announce('Login successful');
         return redirectForRole(server.user.role);

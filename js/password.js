@@ -36,18 +36,18 @@
 
   const SCENARIOS = [
     {
-      id: 'password',
-      label: 'The obvious choice',
-      answer: 'password',
+      id: 'password123',
+      label: 'Even worse with numbers',
+      answer: 'password123',
       clues: [
-        'It sits on every “worst passwords” list.',
-        'It is all lowercase letters.',
-        'It literally describes itself.',
-        'You can type it with one hand.',
-        'Sometimes people tack numbers on the end…'
+        'It starts with the most common word on breach lists.',
+        'The ending is a short counting sequence.',
+        'All lowercase letters until the final three characters.',
+        'You can type it straight across the keyboard.',
+        'It is the first example everyone tells you not to use.'
       ],
-      bonusHint: 'No symbols, no numbers — just the word itself.',
-      crackSeconds: 3
+      bonusHint: 'Take the word “password” and tack on 1-2-3.',
+      crackSeconds: 12
     },
     {
       id: 'dragon',

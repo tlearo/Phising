@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/Chart.min.js" defer></script>
@@ -79,6 +80,7 @@
 
     <!-- Fun escape-room overlays (hooks only; style/JS later) -->
     <div id="confettiLayer" aria-hidden="true">
+      <button class="celebrate-close" id="celebrateClose" type="button" aria-label="Close celebration">&times;</button>
       <div class="admin-podium" aria-hidden="true">
         <div class="admin-podium__inner">
           <h2 class="admin-podium__title">Team Podium</h2>
@@ -119,6 +121,7 @@
             <div class="chart-tabs" role="tablist">
               <button class="chart-tab is-active" type="button" data-target="progressChart" aria-controls="progressChart" aria-selected="true">Puzzle Completion</button>
               <button class="chart-tab" type="button" data-target="timeChart" aria-controls="timeChart" aria-selected="false">Avg Time (s)</button>
+              <button class="chart-tab" type="button" data-target="challengeChart" aria-controls="challengeChart" aria-selected="false">Per Puzzle</button>
             </div>
           </div>
           <div class="chart-carousel">
@@ -126,7 +129,26 @@
                     aria-label="Bar chart of puzzles completed per team"></canvas>
             <canvas id="timeChart" data-panel="timeChart" width="400" height="220" class="chart-panel" role="img"
                     aria-label="Bar chart of average completion times per team"></canvas>
+            <canvas id="challengeChart" data-panel="challengeChart" width="400" height="220" class="chart-panel" role="img"
+                    aria-label="Bar chart showing how many teams completed each challenge"></canvas>
           </div>
+        </section>
+
+        <section class="card admin-activity mt-2" aria-labelledby="activityHeading">
+          <div class="activity-header">
+            <h2 id="activityHeading">Recent Activity</h2>
+            <div class="activity-filters" aria-label="Activity filters">
+              <label>
+                <span class="sr-only">Filter by team</span>
+                <select id="activityTeamFilter" aria-label="Filter by team"></select>
+              </label>
+              <label>
+                <span class="sr-only">Filter by type</span>
+                <select id="activityTypeFilter" aria-label="Filter by activity type"></select>
+              </label>
+            </div>
+          </div>
+          <div id="recentActivityList" class="activity-list-wrapper" aria-live="polite"></div>
         </section>
 
         <div class="admin-tools-grid mt-2">

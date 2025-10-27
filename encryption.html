@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/styles.css" />
   <script src="js/accessibility.js" defer></script>
   <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/onboarding.js" defer></script>
@@ -75,6 +76,9 @@
     <header class="game-header">
       <h1 class="glow">Encryption</h1>
       <p class="mt-1" style="color:var(--muted)">Use the Caesar wheel to decode the message. Submit the plaintext to earn your digit.</p>
+      <div class="puzzle-actions mt-1">
+        <button class="btn ghost sm onboard-trigger" type="button" data-onboard="onboard-encryption">How to play</button>
+      </div>
     </header>
 
     <section class="intro-banner mt-2" aria-labelledby="encryptionBriefHeading">
@@ -86,12 +90,16 @@
         <li>Need a nudge? The hint button costs points, so use it sparingly.</li>
         <li>Record the shift number in the vault as soon as you earn confirmation.</li>
       </ul>
-      <button class="btn ghost sm mt-2 onboard-trigger" type="button" data-onboard="onboard-encryption">How to play</button>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p>The shift value will appear here after you submit the correct plaintext: <strong id="encVaultValue">—</strong>.</p>
       </div>
     </section>
+
+    <aside class="card tip-card mt-2" aria-labelledby="encryptionTipHeading">
+      <h2 id="encryptionTipHeading">Mission tip</h2>
+      <p class="muted">Use the preview area to confirm the plaintext before submitting. The correct shift value becomes your vault digit—write it down the moment the message reads clearly.</p>
+    </aside>
 
     <section class="status-hud" aria-label="Team status">
       <div class="points-box">

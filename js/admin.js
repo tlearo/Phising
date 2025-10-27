@@ -25,12 +25,25 @@
 
   const SCORE_BASE = 100;
   const SCORE_LOG_LIMIT = 60;
+  const STALLED_MS = 15 * 60 * 1000; // 15 minutes of no progress
+
+  const DEFAULT_PROGRESS = {
+    phishing: false,
+    password: false,
+    encryption: false,
+    essential: false,
+    binary: false
+  };
 
   const qs = (sel, root = document) => root.querySelector(sel);
   const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
   const scoreKey = (team) => `${team}_score`;
   const scoreLogKey = (team) => `${team}_score_log`;
+  const activityKey = (team) => `${team}_activity`;
+  const vaultKey = (team) => `${team}_vault`;
+  const activityFilter = { team: 'all', type: 'all' };
+  let activityFiltersReady = false;
 
   function getJSON(key, fallback) {
     try {
@@ -70,6 +83,88 @@
     }
   }
 
+  function timeAgo(ts) {
+    if (!ts) return '—';
+    const diff = Date.now() - ts;
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) {
+      const mins = Math.floor(diff / 60000);
+      return `${mins}m ago`;
+    }
+    if (diff < 86400000) {
+      const hrs = Math.floor(diff / 3600000);
+      return `${hrs}h ago`;
+    }
+    const days = Math.floor(diff / 86400000);
+    return `${days}d ago`;
+  }
+
+  function readVault(team) {
+    return getJSON(vaultKey(team), {});
+  }
+
+  function writeVault(team, value) {
+    setJSON(vaultKey(team), value || {});
+  }
+
+  function logTeamActivity(team, entry) {
+    const key = activityKey(team);
+    const list = getJSON(key, []);
+    const normalized = {
+      type: entry?.type || 'event',
+      detail: entry?.detail || '',
+      puzzle: entry?.puzzle || null,
+      status: entry?.status || null,
+      delta: entry?.delta ?? null,
+      reason: entry?.reason || null,
+      total: entry?.total ?? null,
+      at: entry?.at || Date.now()
+    };
+    list.push(normalized);
+    if (list.length > SCORE_LOG_LIMIT * 2) {
+      list.splice(0, list.length - SCORE_LOG_LIMIT * 2);
+    }
+    setJSON(key, list);
+    return list;
+  }
+
+  function getTeamStateSnapshot(team) {
+    return {
+      team,
+      progress: getJSON(`${team}_progress`, { ...DEFAULT_PROGRESS }),
+      progressMeta: getJSON(`${team}_progress_meta`, {}),
+      times: getJSON(`${team}_times`, []),
+      score: readScore(team),
+      scoreLog: readScoreLog(team),
+      activity: getJSON(activityKey(team), []),
+      vault: readVault(team)
+    };
+  }
+
+  const pendingPushes = new Map();
+
+  async function pushTeamState(team, reason = 'admin-update') {
+    if (!team) return;
+    pendingPushes.delete(team);
+    const snapshot = getTeamStateSnapshot(team);
+    try {
+      await fetch('/.netlify/functions/team-state', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...snapshot, reason })
+      });
+    } catch (err) {
+      console.warn('Team sync failed', team, err);
+    }
+  }
+
+  function queueTeamPush(team, reason = 'admin-update') {
+    if (!team) return;
+    if (pendingPushes.has(team)) clearTimeout(pendingPushes.get(team));
+    const timer = setTimeout(() => pushTeamState(team, reason), 800);
+    pendingPushes.set(team, timer);
+  }
+
   // ---------- Points helpers ----------------------------------------------
 
   function readScore(team) {
@@ -104,6 +199,8 @@
     }
     localStorage.setItem(scoreLogKey(team), JSON.stringify(log));
     localStorage.setItem(scoreKey(team), String(total));
+    logTeamActivity(team, { type: 'points', delta, total, reason: entry.reason });
+    queueTeamPush(team, 'points');
     return { total, delta, log };
   }
 
@@ -130,6 +227,8 @@
     };
     localStorage.setItem(scoreKey(team), String(SCORE_BASE));
     localStorage.setItem(scoreLogKey(team), JSON.stringify([entry]));
+    logTeamActivity(team, { type: 'points', delta: 0, total: SCORE_BASE, reason });
+    queueTeamPush(team, 'points');
     return { total: SCORE_BASE, delta: 0, log: [entry] };
   }
 
@@ -151,6 +250,13 @@
       updatedAt: Date.now()
     };
     setJSON(metaKey, meta);
+    logTeamActivity(team, {
+      type: 'progress',
+      puzzle,
+      status: value ? 'complete' : 'reset',
+      detail: value ? 'Marked complete via admin' : 'Reopened via admin'
+    });
+    queueTeamPush(team, 'progress');
     announce(`${team.toUpperCase()} ${value ? 'completed' : 'reopened'} ${PUZZLE_LABELS[puzzle] || puzzle}.`);
     refreshAll();
   }
@@ -176,14 +282,8 @@
     const rows = [];
 
     TEAMS.forEach(team => {
-      const progress = getJSON(`${team}_progress`, {
-        phishing: false,
-        password: false,
-        encryption: false,
-        essential: false,
-        binary: false
-      });
-
+      const progress = getJSON(`${team}_progress`, { ...DEFAULT_PROGRESS });
+      const progressMeta = getJSON(`${team}_progress_meta`, {});
       const times = getJSON(`${team}_times`, []); // array of seconds per puzzle (optional)
 
       const completed = PUZZLES.reduce((acc, p) => acc + (progress[p] ? 1 : 0), 0);
@@ -193,19 +293,36 @@
         : 0;
       const score = readScore(team);
       const scoreLog = readScoreLog(team);
+      const activity = getJSON(activityKey(team), []);
       const progressPercent = Math.round((completed / PUZZLES.length) * 100);
+      const lastProgressAt = Object.values(progressMeta || {}).reduce((max, entry) => {
+        const ts = Number(entry?.updatedAt) || 0;
+        return ts > max ? ts : max;
+      }, 0);
+      const lastActivityAt = activity.reduce((max, entry) => {
+        const ts = Number(entry?.at) || 0;
+        return ts > max ? ts : max;
+      }, 0);
+      const lastMovement = Math.max(lastProgressAt, lastActivityAt, scoreLog[scoreLog.length - 1]?.at || 0);
+      const isStalled = completed < PUZZLES.length && lastProgressAt > 0 && Date.now() - lastProgressAt > STALLED_MS;
 
       rows.push({
         team,
         progress,
+        progressMeta,
         times,
         completed,
         avgTime,
         totalTime,
         score,
         scoreLog,
+        activity,
         progressPercent,
-        lastLog: scoreLog[scoreLog.length - 1] || null
+        lastLog: scoreLog[scoreLog.length - 1] || null,
+        lastProgressAt,
+        lastActivityAt,
+        lastMovement,
+        stalled: isStalled
       });
     });
 
@@ -247,6 +364,15 @@
       subtitle.textContent = `${completed}/${puzzleCount} puzzles`;
 
       titleWrap.append(h3, subtitle);
+      if (row.stalled) {
+        const badgeWrap = document.createElement('div');
+        badgeWrap.className = 'team-card__badges-inline';
+        const stalledTag = document.createElement('span');
+        stalledTag.className = 'team-card__status is-stalled';
+        stalledTag.textContent = 'Needs nudge';
+        badgeWrap.appendChild(stalledTag);
+        titleWrap.appendChild(badgeWrap);
+      }
 
       const actionWrap = document.createElement('div');
       actionWrap.className = 'team-card__action';
@@ -308,7 +434,10 @@
         lastSpan.textContent = 'No score changes yet';
       }
 
-      meta.append(avgSpan, totalSpan, lastSpan);
+      const activitySpan = document.createElement('span');
+      activitySpan.innerHTML = `Last activity <strong>${timeAgo(row.lastMovement)}</strong>`;
+
+      meta.append(avgSpan, totalSpan, lastSpan, activitySpan);
       card.appendChild(meta);
 
       const badges = document.createElement('div');
@@ -334,6 +463,92 @@
       card.appendChild(badges);
       listEl.appendChild(card);
     });
+  }
+
+  function describeActivity(entry) {
+    if (!entry) return 'Updated';
+    if (entry.type === 'progress') {
+      const label = PUZZLE_LABELS[entry.puzzle] || (entry.puzzle || '').toUpperCase();
+      return `${label}: ${entry.status === 'complete' ? 'Completed' : 'Reset'}`;
+    }
+    if (entry.type === 'points') {
+      const delta = Number(entry.delta) || 0;
+      const sign = delta >= 0 ? '+' : '−';
+      const amount = Math.abs(delta);
+      return `${sign}${amount} pts — ${entry.reason || 'Score change'}`;
+    }
+    return entry.detail || entry.reason || 'Updated';
+  }
+
+  function renderActivityFeed(rows) {
+    const container = qs('#recentActivityList');
+    if (!container) return;
+    const events = [];
+    rows.forEach(row => {
+      (row.activity || []).forEach(entry => {
+        events.push({ ...entry, team: row.team });
+      });
+    });
+    events.sort((a, b) => (b.at || 0) - (a.at || 0));
+    const filtered = events.filter(event => {
+      if (activityFilter.team !== 'all' && event.team !== activityFilter.team) return false;
+      if (activityFilter.type !== 'all' && event.type !== activityFilter.type) return false;
+      return true;
+    }).slice(0, 40);
+
+    container.innerHTML = '';
+    if (!filtered.length) {
+      const empty = document.createElement('p');
+      empty.className = 'muted';
+      empty.textContent = 'No recent activity for this filter.';
+      container.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('ul');
+    list.className = 'activity-list';
+
+    filtered.forEach(event => {
+      const li = document.createElement('li');
+      li.className = 'activity-list__item';
+      const summary = describeActivity(event);
+      li.innerHTML = `
+        <span class="activity-list__time">${timeAgo(event.at)}</span>
+        <span class="activity-list__team">${event.team.toUpperCase()}</span>
+        <span class="activity-list__summary">${summary}</span>
+      `;
+      list.appendChild(li);
+    });
+
+    container.appendChild(list);
+  }
+
+  function initActivityFilters() {
+    if (activityFiltersReady) return;
+    const teamSelect = qs('#activityTeamFilter');
+    if (teamSelect) {
+      teamSelect.innerHTML = '<option value="all">All teams</option>' + TEAMS.map(t => `<option value="${t}">${t.toUpperCase()}</option>`).join('');
+      teamSelect.value = activityFilter.team;
+      teamSelect.addEventListener('change', () => {
+        activityFilter.team = teamSelect.value;
+        renderActivityFeed(teamRows);
+      });
+    }
+    const typeSelect = qs('#activityTypeFilter');
+    if (typeSelect) {
+      const typeOptions = [
+        { value: 'all', label: 'All events' },
+        { value: 'progress', label: 'Progress only' },
+        { value: 'points', label: 'Points only' }
+      ];
+      typeSelect.innerHTML = typeOptions.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+      typeSelect.value = activityFilter.type;
+      typeSelect.addEventListener('change', () => {
+        activityFilter.type = typeSelect.value;
+        renderActivityFeed(teamRows);
+      });
+    }
+    activityFiltersReady = true;
   }
 
   function renderLockDigits() {
@@ -685,12 +900,13 @@
 
   // ---------- Charts -------------------------------------------------------
 
-  let progressChart, timeChart;
+  let progressChart, timeChart, challengeChart;
 
   function drawCharts(rows) {
     const labels = rows.map(r => r.team.toUpperCase());
     const completedData = rows.map(r => r.completed);
     const avgTimeData = rows.map(r => r.avgTime ?? 0);
+    const challengeData = PUZZLES.map(puzzle => rows.reduce((acc, row) => acc + (row.progress?.[puzzle] ? 1 : 0), 0));
 
     // Progress chart
     const progressCtx = qs('#progressChart')?.getContext('2d');
@@ -783,12 +999,21 @@
 
   function wireControls(refresh) {
     // Reset all local team progress/times
-    qs('#resetAllProgress')?.addEventListener('click', () => {
-      if (!confirm('Reset progress and times for all teams?')) return;
-      TEAMS.forEach(t => {
-        localStorage.removeItem(`${t}_progress`);
-        localStorage.removeItem(`${t}_times`);
-        resetTeamScore(t, 'Reset via admin');
+    qs('#resetAllProgress')?.addEventListener('click', async () => {
+      if (!confirm('Reset progress, points, and times for every team?')) return;
+      const status = qs('#syncStatus');
+      if (status) {
+        status.textContent = 'Resetting all teams…';
+        status.classList.remove('status-ok', 'status-warn');
+      }
+      TEAMS.forEach(team => {
+        setJSON(`${team}_progress`, { ...DEFAULT_PROGRESS });
+        setJSON(`${team}_progress_meta`, {});
+        setJSON(`${team}_times`, []);
+        setJSON(activityKey(team), []);
+        logTeamActivity(team, { type: 'event', detail: 'Progress reset by admin' });
+        writeVault(team, {});
+        resetTeamScore(team, 'Reset via admin');
       });
       ['lock_digit_phishing_total',
        'lock_digit_caesar_shift',
@@ -797,6 +1022,23 @@
        'lock_digit_essential',
        'lock_digit_binary'
       ].forEach(key => localStorage.removeItem(key));
+      try {
+        const payload = TEAMS.map(getTeamStateSnapshot);
+        await fetch('/.netlify/functions/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teams: payload })
+        });
+        if (status) {
+          status.textContent = 'All teams reset.';
+          status.classList.add('status-ok');
+        }
+      } catch (err) {
+        if (status) {
+          status.textContent = `Reset sync failed: ${err.message}`;
+          status.classList.add('status-warn');
+        }
+      }
       announce('All team progress reset.');
       renderLockDigits();
       refresh();
@@ -806,21 +1048,25 @@
     const confettiLayer = qs('#confettiLayer');
     const spotlightLayer = qs('#spotlightLayer');
 
-    const podium = qs('.admin-podium');
+    const hideCelebrate = () => {
+      if (!confettiLayer) return;
+      confettiLayer.classList.remove('is-active', 'podium-visible');
+      confettiLayer.setAttribute('aria-hidden', 'true');
+    };
 
-    qs('#triggerConfetti')?.addEventListener('click', () => {
+    const showCelebrate = (withPodium = false) => {
       if (!confettiLayer) return;
       renderPodium(teamRows);
       confettiLayer.classList.add('is-active');
+      confettiLayer.classList.toggle('podium-visible', withPodium);
       confettiLayer.setAttribute('aria-hidden', 'false');
+    };
+
+    qs('#celebrateClose')?.addEventListener('click', hideCelebrate);
+
+    qs('#triggerConfetti')?.addEventListener('click', () => {
+      showCelebrate(false);
       announce('Celebration!');
-      // Auto hide after a few seconds
-      setTimeout(() => {
-        if (!confettiLayer.classList.contains('podium-visible')) {
-          confettiLayer.classList.remove('is-active');
-          confettiLayer.setAttribute('aria-hidden', 'true');
-        }
-      }, 3600);
     });
 
     qs('#toggleSpotlight')?.addEventListener('click', () => {
@@ -834,13 +1080,9 @@
       if (!confettiLayer) return;
       const showing = !confettiLayer.classList.contains('podium-visible');
       if (showing) {
-        renderPodium(teamRows);
-        confettiLayer.classList.add('is-active', 'podium-visible');
-        confettiLayer.setAttribute('aria-hidden', 'false');
+        showCelebrate(true);
       } else {
-        confettiLayer.classList.remove('podium-visible');
-        confettiLayer.classList.remove('is-active');
-        confettiLayer.setAttribute('aria-hidden', 'true');
+        hideCelebrate();
       }
       announce(showing ? 'Podium shown' : 'Podium hidden');
     });
@@ -870,13 +1112,18 @@
 
     // Logout top link is handled in HTML glue; expose global too
     window.logout = function () {
-      localStorage.clear();
-      window.location.href = 'index.html';
+      if (window.utils?.logout) {
+        window.utils.logout('index.html');
+      } else {
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+      }
     };
 
     // Neon sync hooks (optional Netlify Functions)
     qs('#pullNeonBtn')?.addEventListener('click', async () => {
-      await syncFromNeon(qs('#syncStatus'));
+      const status = qs('#syncStatus');
+      await syncFromNeon(status);
       refresh();
     });
 
@@ -887,21 +1134,11 @@
           status.textContent = 'Pushing to Neon…';
           status.classList.remove('status-ok', 'status-warn');
         }
-        const teams = TEAMS.map(team => ({
-          team,
-          progress: getJSON(`${team}_progress`, {
-            phishing: false,
-            password: false,
-            encryption: false,
-            essential: false,
-            binary: false
-          }),
-          times: getJSON(`${team}_times`, [])
-        }));
+        const payload = TEAMS.map(getTeamStateSnapshot);
         const res = await fetch('/.netlify/functions/push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teams })
+          body: JSON.stringify({ teams: payload })
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         if (status) {
@@ -932,8 +1169,14 @@
       }
       data.teams.forEach(row => {
         if (!row || !row.team) return;
-        if (row.progress) setJSON(`${row.team}_progress`, row.progress);
-        if (row.times) setJSON(`${row.team}_times`, row.times);
+        const team = String(row.team).toLowerCase();
+        setJSON(`${team}_progress`, { ...DEFAULT_PROGRESS, ...(row.progress || {}) });
+        setJSON(`${team}_progress_meta`, row.progressMeta || {});
+        setJSON(`${team}_times`, Array.isArray(row.times) ? row.times : []);
+        localStorage.setItem(scoreKey(team), String(Math.max(0, Math.round(row.score ?? SCORE_BASE))));
+        localStorage.setItem(scoreLogKey(team), JSON.stringify(row.scoreLog || []));
+        setJSON(activityKey(team), row.activity || []);
+        writeVault(team, row.vault || {});
       });
       if (statusEl) {
         statusEl.textContent = 'Pulled latest stats from Neon.';
@@ -959,6 +1202,8 @@
     renderTeamCards(rows);
     renderStats(rows);
     drawCharts(rows);
+    initActivityFilters();
+    renderActivityFeed(rows);
     if (activePointsTeam && modalRefs.wrapper?.classList.contains('is-open')) {
       const row = teamRows.find(r => r.team === activePointsTeam);
       if (row) hydratePointsModal(row);
@@ -971,15 +1216,11 @@
 
     renderWelcome(user);
     setupPointsModal();
-    syncFromNeon().finally(refreshAll);
+    syncFromNeon().then(refreshAll).catch(refreshAll);
     wireChartTabs();
     wireControls(refreshAll);
     const throttledRefresh = window.utils?.throttle ? window.utils.throttle(refreshAll, 300) : refreshAll;
     window.addEventListener('storage', throttledRefresh);
-    const AUTO_REFRESH_MS = 10000;
-    setInterval(() => {
-      syncFromNeon().finally(refreshAll);
-    }, AUTO_REFRESH_MS);
   });
 
 })();

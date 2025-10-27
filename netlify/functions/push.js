@@ -1,6 +1,41 @@
 import { Client } from 'pg';
 
-export default async (req, context) => {
+const DEFAULT_PROGRESS = {
+  phishing: false,
+  password: false,
+  encryption: false,
+  essential: false,
+  binary: false
+};
+
+async function ensureTeamStateTable(client) {
+  await client.query(`
+    create table if not exists team_state (
+      team text primary key,
+      progress jsonb not null default '{}'::jsonb,
+      progress_meta jsonb not null default '{}'::jsonb,
+      times jsonb not null default '[]'::jsonb,
+      score integer not null default 100,
+      score_log jsonb not null default '[]'::jsonb,
+      activity jsonb not null default '[]'::jsonb,
+      vault jsonb not null default '{}'::jsonb,
+      updated_at timestamptz not null default now()
+    )
+  `);
+}
+
+function sanitizeRow(row = {}) {
+  const progress = { ...DEFAULT_PROGRESS, ...(row.progress || {}) };
+  const progressMeta = row.progressMeta && typeof row.progressMeta === 'object' ? row.progressMeta : {};
+  const times = Array.isArray(row.times) ? row.times.filter(n => Number.isFinite(n)) : [];
+  const score = Number.isFinite(row.score) ? Math.max(0, Math.round(row.score)) : 100;
+  const scoreLog = Array.isArray(row.scoreLog) ? row.scoreLog : [];
+  const activity = Array.isArray(row.activity) ? row.activity : [];
+  const vault = row.vault && typeof row.vault === 'object' ? row.vault : {};
+  return { progress, progressMeta, times, score, scoreLog, activity, vault };
+}
+
+export default async (req) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
   const body = await req.json().catch(() => ({}));
   const teams = Array.isArray(body.teams) ? body.teams : [];
@@ -9,37 +44,24 @@ export default async (req, context) => {
   await client.connect();
 
   try {
-    for (const t of teams) {
-      const team = String(t.team).toLowerCase();
+    await ensureTeamStateTable(client);
+    for (const raw of teams) {
+      const team = String(raw?.team || '').trim().toLowerCase();
       if (!team) continue;
-
-      // upsert progress
+      const sanitized = sanitizeRow(raw);
       await client.query(
-        `insert into progress (team, phishing, password, encryption, essential)
-         values ($1,$2,$3,$4,$5)
+        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8, now())
          on conflict (team) do update set
-           phishing=excluded.phishing,
-           password=excluded.password,
-           encryption=excluded.encryption,
-           essential=excluded.essential`,
-        [
-          team,
-          !!t.progress?.phishing,
-          !!t.progress?.password,
-          !!t.progress?.encryption,
-          !!t.progress?.essential
-        ]
-      );
-
-      // Optional: store average time
-      const timesArr = Array.isArray(t.times) ? t.times.filter(n => Number.isFinite(n)) : [];
-      const avg = timesArr.length ? Math.round(timesArr.reduce((a,b)=>a+b,0)/timesArr.length) : null;
-
-      await client.query(
-        `insert into times (team, avg_seconds)
-         values ($1,$2)
-         on conflict (team) do update set avg_seconds = excluded.avg_seconds`,
-        [team, avg]
+           progress = excluded.progress,
+           progress_meta = excluded.progress_meta,
+           times = excluded.times,
+           score = excluded.score,
+           score_log = excluded.score_log,
+           activity = excluded.activity,
+           vault = excluded.vault,
+           updated_at = now()`,
+        [team, sanitized.progress, sanitized.progressMeta, sanitized.times, sanitized.score, sanitized.scoreLog, sanitized.activity, sanitized.vault]
       );
     }
 

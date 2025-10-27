@@ -370,6 +370,27 @@ form .row {
     background: radial-gradient(circle at top left, rgba(88, 166, 255, .18), transparent 55%), var(--panel);
 }
 
+.puzzle-actions {
+    display: flex;
+    gap: .5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.puzzle-actions .btn {
+    min-width: 0;
+}
+
+.tip-card {
+    border-left: 4px solid var(--brand);
+    background: rgba(14, 22, 35, .9);
+    box-shadow: 0 20px 35px rgba(0, 0, 0, .35);
+}
+
+.tip-card h2 {
+    margin-bottom: .25rem;
+}
+
 .intro-banner {
     background: linear-gradient(145deg, rgba(88, 166, 255, .16), rgba(9, 255, 136, .08));
     border: 1px solid rgba(88, 166, 255, .35);
@@ -591,6 +612,20 @@ form .row {
     display: grid;
     gap: .85rem;
     justify-items: start;
+    position: relative;
+}
+
+.classification-cta.is-nudged {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, .5);
+}
+
+.classification-cta.is-nudged::after {
+    content: 'Select a classification before highlighting';
+    position: absolute;
+    top: -1.75rem;
+    left: .75rem;
+    font-size: .8rem;
+    color: #f87171;
 }
 
 .classification-buttons {
@@ -714,13 +749,21 @@ body.phish-overlay-open {
 }
 
 #phishWorkspace.is-fullscreen {
-    width: min(1100px, 100%);
+    width: min(95vw, 1300px);
     max-height: 100vh;
     overflow: auto;
     box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
     background: rgba(6, 12, 20, .92);
     border-radius: 18px;
     padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+#phishWorkspace.is-fullscreen .image-stage {
+    max-width: min(95vw, 1400px);
+}
+
+#phishWorkspace.is-fullscreen .image-stage {
+    max-width: min(95vw, 1400px);
 }
 
 #phishWorkspace.is-fullscreen .card {
@@ -733,10 +776,9 @@ body.phish-overlay-open {
 }
 
 .canvas-carousel {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 1.25rem;
-    align-items: center;
+    position: relative;
+    display: flex;
+    justify-content: center;
     padding: 1.25rem clamp(1rem, 2vw, 1.75rem);
     background: linear-gradient(160deg, rgba(18, 26, 40, .95), rgba(11, 17, 26, .88));
     border: 1px solid rgba(88, 166, 255, .18);
@@ -748,7 +790,7 @@ body.phish-overlay-open {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: rgba(88, 166, 255, .16);
+    background: rgba(7, 12, 22, .75);
     border: 2px solid var(--brand);
     color: #fff;
     font-size: 2rem;
@@ -756,7 +798,14 @@ body.phish-overlay-open {
     place-items: center;
     cursor: pointer;
     transition: transform .2s ease, box-shadow .2s ease;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
 }
+
+.canvas-carousel #prevImg { left: 1rem; }
+.canvas-carousel #nextImg { right: 1rem; }
 
 .carousel-arrow:hover:not(:disabled) {
     transform: translateY(-2px);
@@ -1577,6 +1626,13 @@ body.phish-overlay-open {
     line-height: 1.45;
 }
 
+.binary-guide ol {
+    margin: 0;
+    padding-left: 1.35rem;
+    display: grid;
+    gap: .4rem;
+}
+
 .arrow {
     color: var(--brand)
 }
@@ -1590,12 +1646,13 @@ body.phish-overlay-open {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem
+    gap: 1rem;
+    width: 100%;
 }
 
 .chest {
     position: relative;
-    width: 360px;
+    width: min(360px, 100%);
     height: 200px;
     perspective: 800px
 }
@@ -1654,6 +1711,11 @@ body.phish-overlay-open {
     animation: fadeIn .25s ease
 }
 
+.lock-panel {
+    width: 100%;
+    max-width: 520px;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -1671,7 +1733,8 @@ body.phish-overlay-open {
     justify-content: center;
     align-items: center;
     gap: .5rem;
-    margin-top: .25rem
+    margin-top: .25rem;
+    flex-wrap: wrap;
 }
 
 .lock-digit {
@@ -1686,6 +1749,8 @@ body.phish-overlay-open {
     transition: transform .2s;
     appearance: textfield;
     -moz-appearance: textfield;
+    flex: 1 1 50px;
+    max-width: 60px;
 }
 
 .lock-digit:focus {
@@ -1795,6 +1860,67 @@ input[type="range"]::-moz-range-thumb {
     background: radial-gradient(circle at top, rgba(88,166,255,.12), transparent 75%);
     border-radius: 16px;
     overflow: hidden;
+    width: 100%;
+}
+
+.phish-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.phish-step {
+    border: 1px solid rgba(88, 166, 255, .2);
+    border-radius: 12px;
+    padding: .85rem 1rem;
+    background: rgba(9, 15, 25, .65);
+    display: grid;
+    gap: .55rem;
+}
+
+.phish-step__heading {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.phish-step__heading h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.step-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    background: rgba(88, 166, 255, .15);
+    color: var(--brand);
+}
+
+.tool-stack .tool-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.phish-step .classification-buttons {
+    display: grid;
+    gap: .5rem;
+}
+
+.phish-step--examples .link-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.phish-step--examples .link-list a {
+    display: inline-block;
+    padding: .25rem 0;
 }
 
 /* Wrapper keeps the stage + controls centered under the canvas */
@@ -1812,8 +1938,8 @@ input[type="range"]::-moz-range-thumb {
 .image-stage {
     position: relative;
     width: 100%;
-    max-width: 900px;
-    min-height: clamp(16rem, 55vw, 26rem);
+    max-width: 1300px;
+    min-height: clamp(22rem, 60vw, 40rem);
     background: rgba(6, 11, 18, .95);
     border: 1px solid rgba(88, 166, 255, .25);
     border-radius: 14px;
@@ -1821,6 +1947,10 @@ input[type="range"]::-moz-range-thumb {
     overflow: hidden;
     transform-origin: top left;
     transition: transform .18s ease;
+}
+
+.image-stage.is-zoomed {
+    overflow: visible;
 }
 
 .image-container.is-zoomed {
@@ -1844,6 +1974,32 @@ input[type="range"]::-moz-range-thumb {
     height: 100%;
     pointer-events: auto;
     z-index: 10;
+}
+
+.example-banner {
+    position: absolute;
+    bottom: .75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: .35rem 1.25rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .65);
+    color: #fff;
+    font-size: .85rem;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.autosave-status {
+    font-size: .85rem;
+    color: var(--muted);
+}
+
+.stage-vuln {
+    text-align: center;
+    color: var(--muted);
+    font-size: .9rem;
+    margin-top: .35rem;
 }
 
 /* ==== Active tool state ================================================== */
@@ -1962,6 +2118,19 @@ input[type="range"]::-moz-range-thumb {
     color: var(--muted);
 }
 
+.team-card__status {
+    display: inline-flex;
+    align-items: center;
+    padding: .15rem .55rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    background: rgba(239, 68, 68, .2);
+    color: #f87171;
+}
+
 .team-card__meta strong {
     color: var(--ink);
     font-family: "JetBrains Mono", Consolas, monospace;
@@ -1972,6 +2141,12 @@ input[type="range"]::-moz-range-thumb {
     display: flex;
     flex-wrap: wrap;
     gap: .45rem;
+}
+
+.team-card__badges-inline {
+    display: flex;
+    gap: .35rem;
+    margin-top: .25rem;
 }
 
 .team-card__action {
@@ -2819,17 +2994,33 @@ footer {
 }
 
 .vault-status__digits li {
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: rgba(59, 130, 246, .14);
-  font-weight: 600;
-  font-size: .95rem;
   border: 1px solid rgba(148, 163, 184, .45);
-  color: var(--muted);
   transition: transform .2s ease, background .2s ease, color .2s ease;
+  overflow: hidden;
+  color: var(--muted);
+}
+
+.vault-status__digits li button {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.vault-status__digits li button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 .vault-status__digits li.is-found {
@@ -3135,6 +3326,14 @@ h1.glow {
   line-height: 1;
 }
 
+.nav-btn--next {
+  display: inline-flex;
+}
+
+.nav-btn--next[hidden] {
+  display: none;
+}
+
 /* make footer optional full-bleed if desired */
 .site-footer.header-bleed {
   width: 100vw; left: 50%; margin-left: -50vw;
@@ -3164,10 +3363,99 @@ h1.glow { font-size: clamp(1.9rem, 4.5vw, 3.2rem); }
 
 .admin-grid .card { width: 100%; }
 
+.celebrate-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, .55);
+  border: 1px solid rgba(255, 255, 255, .35);
+  color: #fff;
+  font-size: 1.5rem;
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 5;
+}
+
 .admin-tools-grid {
   display: grid;
   gap: 1.1rem;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.admin-activity {
+  background: linear-gradient(150deg, rgba(18,30,48,.9), rgba(9,14,23,.92));
+  border: 1px solid rgba(88,166,255,.18);
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.activity-filters {
+  display: flex;
+  gap: .5rem;
+}
+
+.activity-filters select {
+  background: rgba(9, 13, 20, .85);
+  border: 1px solid rgba(88, 166, 255, .4);
+  color: #fff;
+  padding: .35rem .75rem;
+  border-radius: 8px;
+}
+
+.activity-list-wrapper {
+  margin-top: .75rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .65rem;
+}
+
+.activity-list__item {
+  display: grid;
+  grid-template-columns: 110px 90px 1fr;
+  gap: .5rem;
+  align-items: center;
+  background: rgba(10, 14, 20, .65);
+  border: 1px solid rgba(88,166,255,.12);
+  border-radius: 10px;
+  padding: .5rem .75rem;
+  font-size: .9rem;
+}
+
+.activity-list__time {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.activity-list__team {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  letter-spacing: .06em;
+}
+
+.activity-list__summary {
+  color: #f8fafc;
+}
+
+@media (max-width: 600px) {
+  .activity-list__item {
+    grid-template-columns: 1fr;
+  }
 }
 
 .admin-notes {
