@@ -332,7 +332,17 @@
     localStorage.setItem(scoreKey(team), String(SCORE_BASE));
     localStorage.setItem(scoreLogKey(team), JSON.stringify([entry]));
     logTeamActivity(team, { type: 'points', delta: 0, total: SCORE_BASE, reason });
-    queueTeamPush(team, 'points');
+    const resetVersion = Date.now();
+    writeVault(team, { resetVersion });
+    [
+      'lock_digit_phishing_total',
+      'lock_digit_caesar_shift',
+      'lock_digit_pw_clues',
+      'lock_digit_pw_minutes',
+      'lock_digit_essential',
+      'lock_digit_binary'
+    ].forEach(key => localStorage.removeItem(key));
+    queueTeamPush(team, 'vault-reset');
     return { total: SCORE_BASE, delta: 0, log: [entry] };
   }
 

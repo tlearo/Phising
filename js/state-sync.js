@@ -30,6 +30,32 @@
   const TEAM_VAULT_KEY = `${TEAM}_vault`;
   const RESET_VERSION_KEY = `${TEAM}_reset_version`;
 
+  function clearPuzzleState() {
+    const globalKeys = [
+      'lock_digit_phishing_total',
+      'lock_digit_caesar_shift',
+      'lock_digit_pw_minutes',
+      'lock_digit_pw_clues',
+      'lock_digit_essential',
+      'lock_digit_binary'
+    ];
+    globalKeys.forEach(key => {
+      try { localStorage.removeItem(key); } catch (_) {}
+    });
+    const patterns = [
+      /^phish_done_/,
+      /^class_/,
+      new RegExp(`^${TEAM}_phishing_`),
+      new RegExp(`^${TEAM}_progress$`),
+      new RegExp(`^${TEAM}_progress_meta$`)
+    ];
+    Object.keys(localStorage).forEach(key => {
+      if (patterns.some((regex) => regex.test(key))) {
+        try { localStorage.removeItem(key); } catch (_) {}
+      }
+    });
+  }
+
   function readJSON(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
@@ -102,6 +128,7 @@
       const remoteReset = state.vault?.resetVersion;
       const localReset = localStorage.getItem(RESET_VERSION_KEY);
       if (remoteReset && String(remoteReset) !== localReset) {
+        clearPuzzleState();
         localStorage.setItem(RESET_VERSION_KEY, String(remoteReset));
         setTimeout(() => window.location.reload(), 120);
       }

@@ -179,22 +179,21 @@
 
       <section class="card binary-xor" aria-labelledby="xorHeading">
         <h2 id="xorHeading">Why XOR Matters</h2>
-        <p class="mt-1">Exclusive OR (XOR) is the Swiss army knife of bitwise operations:</p>
+        <p class="mt-1">XOR flags every column where the two binaries disagree.</p>
         <ul class="mt-1">
-          <li>It flags every bit-flip between two values, making differences easy to spot.</li>
-          <li>It powers parity checks and error detection in network packets.</li>
-          <li>It forms the backbone of many stream ciphers and one-time pads.</li>
+          <li>1 means the bits differ (keep that column); 0 means they match (drop it).</li>
+          <li>The remaining columns add together to produce your vault digit.</li>
         </ul>
-        <p class="mt-1">In this lab, XOR warms you up before you convert the binary values to decimal. Once all three decimals are confirmed, the XOR value becomes your vault digit.</p>
+        <p class="mt-1">Confirm each decimal row, then bank the XOR total.</p>
 
         <div class="binary-coach" aria-labelledby="binaryCoachHeading">
           <h3 id="binaryCoachHeading">Binary Coach</h3>
           <ol>
-            <li>Read Binary A and Binary B from the table. Add the green columns (1s) to get each decimal value.</li>
-            <li>Use the same columns to work out the XOR total—only the mismatched bits add to the vault digit.</li>
-            <li>Vault digit = decimal XOR result. Example: 1101 ⊕ 1011 = 0110 so the digit is <strong>6</strong>.</li>
+            <li>Add the green columns in Binary A and Binary B to prove the decimal values.</li>
+            <li>Mark only the mismatched columns for XOR—their sum is the vault digit.</li>
+            <li>Example: 1101 ⊕ 1011 = 0110, so the digit you record is <strong>6</strong>.</li>
           </ol>
-          <p>Green columns contribute to the total; grey columns (0s) drop out. No extra chart needed.</p>
+          <p>Grey columns are safe to ignore. Keep focusing on the highlighted ones.</p>
         </div>
       </section>
     </section>

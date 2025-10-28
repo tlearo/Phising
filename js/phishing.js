@@ -23,6 +23,7 @@
   const brushSizeEl  = $('#brushSize');
   const feedbackEl   = $('#phishingFeedback');
   const vulnCountEl  = $('#vulnerabilityCount');
+  const vulnDotsEl   = $('#vulnProgressDots');
   const submitBtn    = $('#submitButton');
   const prevBtn      = $('#prevImg');
   const nextBtn      = $('#nextImg');
@@ -547,7 +548,7 @@ updateVaultCallout();
       maskCtx.fill();
 
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(9,255,170,0.55)';
+      ctx.strokeStyle = 'rgba(9,255,170,0.35)';
       ctx.lineWidth = 3;
       ctx.arc(x, y, HOTSPOT_RADIUS_PX * 0.8, 0, Math.PI * 2);
       ctx.stroke();
@@ -702,13 +703,34 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
       const slideSummary = totalSlides ? ` Examples cleared: ${doneSlides}/${totalSlides}.` : '';
       const message = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
-      if (vulnCountEl) vulnCountEl.textContent = message;
+      if (vulnCountEl) {
+        const neededMsg = needed > 0
+          ? `${Math.max(needed, 0)} more to meet the target.`
+          : found ? 'Target met — mark extras if you spot them.' : 'Start highlighting the most suspicious clue you can find.';
+        vulnCountEl.textContent = `Found ${found}/${total}. ${neededMsg}`;
+      }
+      if (vulnDotsEl) renderVulnDots(total, found, required);
       if (vulnStageEl) vulnStageEl.textContent = message;
     } else {
       if (vulnCountEl) vulnCountEl.textContent = 'No hotspots defined for this image.';
       if (vulnStageEl) vulnStageEl.textContent = 'No hotspots defined for this image.';
+      if (vulnDotsEl) vulnDotsEl.innerHTML = '';
     }
     broadcastProgress();
+  }
+
+  function renderVulnDots(total, found, required) {
+    if (!vulnDotsEl) return;
+    vulnDotsEl.innerHTML = '';
+    if (!total) return;
+    for (let i = 0; i < total; i += 1) {
+      const dot = document.createElement('span');
+      dot.className = 'phish-progress__dot';
+      if (i < found) dot.classList.add('is-met');
+      if (i >= required) dot.classList.add('is-bonus');
+      dot.setAttribute('aria-label', i < found ? `Clue ${i + 1} marked` : `Clue ${i + 1} pending`);
+      vulnDotsEl.appendChild(dot);
+    }
   }
 
   function syncClassificationUi() {
@@ -905,7 +927,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       ctx.strokeStyle = 'rgba(0,0,0,1)';
     } else {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(9,255,170,0.55)';
+      ctx.strokeStyle = 'rgba(9,255,170,0.35)';
     }
     ctx.beginPath();
     if (first) {
