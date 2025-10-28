@@ -20,10 +20,23 @@
     return null;
   }
 
+  function clearDigit(item) {
+    if (!item) return;
+    item.storage?.forEach(key => {
+      try { localStorage.removeItem(key); } catch (_) {}
+    });
+  }
+
   function readDigits() {
     const result = {};
+    const progress = window.utils?.readProgress?.() || {};
     PUZZLES.forEach(item => {
-      result[item.key] = readStorageValue(item.storage);
+      let digit = readStorageValue(item.storage);
+      if (digit != null && progress[item.key] !== true) {
+        clearDigit(item);
+        digit = null;
+      }
+      result[item.key] = digit;
     });
     return result;
   }
@@ -123,6 +136,11 @@
     const numericDigit = Number(digit);
     if (!Number.isNaN(numericDigit)) {
       persistDigit(item, numericDigit);
+      try {
+        window.stateSync?.queueSave?.('vault');
+      } catch (_) {
+        /* ignore */
+      }
     }
     const detail = {
       puzzle: key,
