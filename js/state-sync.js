@@ -11,7 +11,7 @@
   if (!TEAM) return;
 
   const ENDPOINT = '/.netlify/functions/team-state';
-  const AUTO_PULL_MS = 20000;
+  const AUTO_PULL_MS = 10000;
   const DEFAULT_PROGRESS = {
     phishing: false,
     password: false,
@@ -54,6 +54,9 @@
         try { localStorage.removeItem(key); } catch (_) {}
       }
     });
+    try { localStorage.removeItem(TEAM_VAULT_KEY); } catch (_) {}
+    try { localStorage.removeItem(RESET_VERSION_KEY); } catch (_) {}
+    try { window.vault?.refresh?.(); } catch (_) {}
   }
 
   function readJSON(key, fallback) {

@@ -448,7 +448,36 @@
     });
   }
 
+  function clearTeamState(user) {
+    const team = (user?.role === 'team' && user?.username) ? String(user.username).toLowerCase() : null;
+    if (!team) {
+      ['lock_digit_phishing_total','lock_digit_caesar_shift','lock_digit_pw_minutes','lock_digit_pw_clues','lock_digit_essential','lock_digit_binary'].forEach(key => {
+        try { localStorage.removeItem(key); } catch (_) {}
+      });
+      try { window.vault?.refresh?.(); } catch (_) {}
+      return;
+    }
+    const teamKeys = [
+      `${team}_progress`,
+      `${team}_progress_meta`,
+      `${team}_times`,
+      `${team}_score`,
+      `${team}_score_log`,
+      `${team}_activity`,
+      `${team}_vault`,
+      `${team}_reset_version`
+    ];
+    teamKeys.forEach(key => {
+      try { localStorage.removeItem(key); } catch (_) {}
+    });
+    ['lock_digit_phishing_total','lock_digit_caesar_shift','lock_digit_pw_minutes','lock_digit_pw_clues','lock_digit_essential','lock_digit_binary'].forEach(key => {
+      try { localStorage.removeItem(key); } catch (_) {}
+    });
+    try { window.vault?.refresh?.(); } catch (_) {}
+  }
+
   function logout(redirect = 'index.html', extraKeys = []) {
+    const user = getUser();
     try {
       pushActivity({
         type: 'session',
@@ -463,6 +492,7 @@
     } catch (_) {
       /* ignore */
     }
+    clearTeamState(user);
     clearSessionKeys(extraKeys);
     window.location.href = redirect;
   }
