@@ -13,6 +13,18 @@ create table if not exists team_state (
   updated_at timestamptz not null default now()
 );
 
+alter table team_state
+  add column if not exists vault jsonb not null default '{}'::jsonb;
+
+alter table team_state
+  alter column progress set default '{}'::jsonb,
+  alter column progress_meta set default '{}'::jsonb,
+  alter column times set default '[]'::jsonb,
+  alter column score set default 100,
+  alter column score_log set default '[]'::jsonb,
+  alter column activity set default '[]'::jsonb,
+  alter column updated_at set default now();
+
 -- Helpful indexes for admin reporting / troubleshooting
 create index if not exists team_state_updated_idx on team_state (updated_at desc);
 create index if not exists team_state_progress_gin on team_state using gin (progress);
