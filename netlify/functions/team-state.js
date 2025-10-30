@@ -55,6 +55,16 @@ function normalizeActivity(raw) {
   }));
 }
 
+function normalizeEndless(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(entry => ({
+    name: String(entry?.name || 'Anonymous').slice(0, 80),
+    score: Number.isFinite(entry?.score) ? Math.max(0, Math.round(entry.score)) : 0,
+    level: Number.isFinite(entry?.level) ? Math.max(1, Math.round(entry.level)) : 1,
+    at: Number.isFinite(entry?.at) ? Number(entry.at) : Date.now()
+  }));
+}
+
 const respond = (status, body) => new Response(JSON.stringify(body), {
   status,
   headers: { 'content-type': 'application/json' }
@@ -67,8 +77,9 @@ function sanitizePayload(body = {}) {
   const score = normalizeScore(body.score);
   const scoreLog = normalizeScoreLog(body.scoreLog, score);
   const activity = normalizeActivity(body.activity);
+  const endless = normalizeEndless(body.endless);
   const vault = body.vault && typeof body.vault === 'object' ? body.vault : {};
-  return { progress, progress_meta: progressMeta, times, score, score_log: scoreLog, activity, vault };
+  return { progress, progress_meta: progressMeta, times, score, score_log: scoreLog, activity, endless, vault };
 }
 
 function normalizeState(row) {
@@ -80,6 +91,7 @@ function normalizeState(row) {
     score: row.score,
     scoreLog: row.score_log,
     activity: row.activity,
+    endless: row.endless,
     vault: row.vault
   });
   return {
@@ -90,6 +102,7 @@ function normalizeState(row) {
     score: sanitized.score,
     scoreLog: sanitized.score_log,
     activity: sanitized.activity,
+    endless: sanitized.endless,
     vault: sanitized.vault,
     updatedAt: row.updated_at || null
   };
@@ -113,8 +126,8 @@ export default async (req) => {
       }
       const defaults = sanitizePayload({});
       await client.query(
-        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
-         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb, now())`,
+        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, endless, vault, updated_at)
+         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb, now())`,
         [
           teamKey,
           JSON.stringify(defaults.progress),
@@ -123,6 +136,7 @@ export default async (req) => {
           defaults.score,
           JSON.stringify(defaults.score_log),
           JSON.stringify(defaults.activity),
+          JSON.stringify(defaults.endless),
           JSON.stringify(defaults.vault)
         ]
       );
@@ -148,11 +162,12 @@ export default async (req) => {
         sanitized.score,
         JSON.stringify(sanitized.score_log),
         JSON.stringify(sanitized.activity),
+        JSON.stringify(sanitized.endless),
         JSON.stringify(sanitized.vault)
       ];
       await client.query(
-        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
-         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb, now())
+        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, endless, vault, updated_at)
+         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb, now())
          on conflict (team) do update set
            progress = excluded.progress,
            progress_meta = excluded.progress_meta,
@@ -160,6 +175,7 @@ export default async (req) => {
            score = excluded.score,
            score_log = excluded.score_log,
            activity = excluded.activity,
+           endless = excluded.endless,
            vault = excluded.vault,
            updated_at = now()`,
         values

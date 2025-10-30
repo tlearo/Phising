@@ -46,8 +46,17 @@ function sanitizeRow(row = {}) {
       }))
     : [];
 
+  const endless = Array.isArray(row.endless)
+    ? row.endless.map(entry => ({
+        name: String(entry?.name || 'Anonymous').slice(0, 80),
+        score: Number.isFinite(entry?.score) ? Math.max(0, Math.round(entry.score)) : 0,
+        level: Number.isFinite(entry?.level) ? Math.max(1, Math.round(entry.level)) : 1,
+        at: Number.isFinite(entry?.at) ? Number(entry.at) : Date.now()
+      }))
+    : [];
+
   const vault = row.vault && typeof row.vault === 'object' ? row.vault : {};
-  return { progress, progressMeta, times, score, scoreLog, activity, vault };
+  return { progress, progressMeta, times, score, scoreLog, activity, endless, vault };
 }
 
 export default async (req) => {
@@ -65,8 +74,8 @@ export default async (req) => {
       if (!team) continue;
       const sanitized = sanitizeRow(raw);
       await client.query(
-        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8, now())
+        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, endless, vault, updated_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9, now())
          on conflict (team) do update set
            progress = excluded.progress,
            progress_meta = excluded.progress_meta,
@@ -74,9 +83,10 @@ export default async (req) => {
            score = excluded.score,
            score_log = excluded.score_log,
            activity = excluded.activity,
+           endless = excluded.endless,
            vault = excluded.vault,
            updated_at = now()`,
-        [team, sanitized.progress, sanitized.progressMeta, sanitized.times, sanitized.score, sanitized.scoreLog, sanitized.activity, sanitized.vault]
+        [team, sanitized.progress, sanitized.progressMeta, sanitized.times, sanitized.score, sanitized.scoreLog, sanitized.activity, sanitized.endless, sanitized.vault]
       );
     }
 

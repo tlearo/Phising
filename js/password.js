@@ -78,7 +78,7 @@
   const scenarioSeconds = Number.isFinite(scenarioAnalysis.seconds)
     ? scenarioAnalysis.seconds
     : Number(ACTIVE_SCENARIO.crackSeconds) || 120;
-  ACTIVE_SCENARIO.crackSeconds = Math.min(0.8, scenarioSeconds);
+  ACTIVE_SCENARIO.crackSeconds = Math.max(2, scenarioSeconds);
 
   // ---------------- Helpers ----------------
   const $  = (sel, root = document) => root.querySelector(sel);

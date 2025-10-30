@@ -9,9 +9,13 @@ create table if not exists team_state (
   score integer not null default 100,
   score_log jsonb not null default '[]'::jsonb,
   activity jsonb not null default '[]'::jsonb,
+  endless jsonb not null default '[]'::jsonb,
   vault jsonb not null default '{}'::jsonb,
   updated_at timestamptz not null default now()
 );
+
+alter table team_state
+  add column if not exists endless jsonb not null default '[]'::jsonb;
 
 alter table team_state
   add column if not exists vault jsonb not null default '{}'::jsonb;
@@ -23,6 +27,7 @@ alter table team_state
   alter column score set default 100,
   alter column score_log set default '[]'::jsonb,
   alter column activity set default '[]'::jsonb,
+  alter column endless set default '[]'::jsonb,
   alter column updated_at set default now();
 
 -- Helpful indexes for admin reporting / troubleshooting

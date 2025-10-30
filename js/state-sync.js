@@ -25,7 +25,8 @@
     times: utils.timesKey(user),
     score: `${TEAM}_score`,
     scoreLog: `${TEAM}_score_log`,
-    activity: `${TEAM}_activity`
+    activity: `${TEAM}_activity`,
+    endless: `${TEAM}_endless_scores`
   };
   const TEAM_VAULT_KEY = `${TEAM}_vault`;
   const RESET_VERSION_KEY = `${TEAM}_reset_version`;
@@ -114,6 +115,7 @@
       score: Number(localStorage.getItem(STORAGE_KEYS.score) || 100),
       scoreLog: readJSON(STORAGE_KEYS.scoreLog, []),
       activity: readJSON(STORAGE_KEYS.activity, []),
+      endless: readJSON(STORAGE_KEYS.endless, []),
       vault: latestVault
     };
   }
@@ -126,6 +128,18 @@
     if (Number.isFinite(state.score)) localStorage.setItem(STORAGE_KEYS.score, String(Math.max(0, Math.round(state.score))));
     if (Array.isArray(state.scoreLog)) writeJSON(STORAGE_KEYS.scoreLog, state.scoreLog);
     if (Array.isArray(state.activity)) writeJSON(STORAGE_KEYS.activity, state.activity);
+    if (Array.isArray(state.endless)) {
+      writeJSON(STORAGE_KEYS.endless, state.endless);
+      window.dispatchEvent(new CustomEvent('endless:sync', { detail: { entries: state.endless } }));
+    }
+    const phishPercent = state.progressMeta?.phishing?.percent ?? null;
+    if (!progress.phishing && (phishPercent == null || phishPercent <= 0)) {
+      Object.keys(localStorage).forEach(key => {
+        if (/^phish_done_/.test(key) || /^class_Picture/.test(key) || key.startsWith(`${TEAM}_phishing_`) || key.startsWith(`${TEAM}_vuln_found_`)) {
+          try { localStorage.removeItem(key); } catch (_) {}
+        }
+      });
+    }
     if (state.vault) {
       writeJSON(TEAM_VAULT_KEY, state.vault);
       applyVault(state.vault);
@@ -137,6 +151,7 @@
         setTimeout(() => window.location.reload(), 120);
       }
     }
+    stateSync.lastRemote = state;
   }
 
   const stateSync = {
@@ -176,11 +191,11 @@
     try {
       const payload = captureState();
       stateSync.lastPayload = payload;
-    const res = await fetch(ENDPOINT, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, reason })
-    });
+      const res = await fetch(ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, reason })
+      });
       if (!res.ok) {
         let detail = '';
         try {
@@ -223,11 +238,7 @@
     saveNow('unload');
   });
 
-  saveNow('bootstrap').catch((err) => {
-    console.warn('[state-sync] initial push failed', err);
-  }).finally(() => {
-    pull(true);
-  });
+  pull(true);
 
   setInterval(() => {
     pull(false);
@@ -244,5 +255,35 @@
   window.addEventListener('online', () => {
     pull(false);
     queueSave('online');
+  });
+
+  const ACTIVITY_PING_MS = 60000;
+  let lastActivityPing = 0;
+
+  function recordActivity(detail) {
+    const now = Date.now();
+    if (now - lastActivityPing < ACTIVITY_PING_MS) return;
+    lastActivityPing = now;
+    try {
+      utils.pushActivity({
+        type: 'session',
+        status: 'active',
+        detail: detail || 'User active',
+        at: now
+      });
+      queueSave('activity');
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  ['pointerdown', 'keydown', 'scroll'].forEach(evt => {
+    document.addEventListener(evt, () => recordActivity(evt), { passive: true });
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      recordActivity('Visible');
+    }
   });
 })();

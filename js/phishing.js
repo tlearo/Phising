@@ -143,8 +143,8 @@ updateVaultCallout();
 
   // Tool state
   const IS_DESKTOP = window.matchMedia('(min-width: 900px)').matches;
-  const ZOOM_STEP = 0.2;
-  const DEFAULT_ZOOM = IS_DESKTOP ? 1.12 : 0.95;
+  const ZOOM_STEP = IS_DESKTOP ? 0.12 : 0.1;
+  const DEFAULT_ZOOM = IS_DESKTOP ? 1.05 : 0.95;
 
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
@@ -164,7 +164,7 @@ updateVaultCallout();
     classification: null
   };
 
-  const ZOOM_MIN = 0.6;
+  const ZOOM_MIN = IS_DESKTOP ? 0.95 : 0.85;
   const ZOOM_MAX = 3;
   let overlayEl = null;
   let workspacePlaceholder = null;
@@ -187,7 +187,7 @@ updateVaultCallout();
 
   function applyZoom() {
     if (!stageEl) return;
-    const isZoomed = state.zoom > ZOOM_MIN + 0.15;
+    const isZoomed = state.zoom > 1.02;
     stageEl.style.transform = `scale(${state.zoom})`;
     stageEl.classList.toggle('is-zoomed', isZoomed);
     if (imageContainer) {

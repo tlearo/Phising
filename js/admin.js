@@ -237,6 +237,7 @@
       score: readScore(team),
       scoreLog: readScoreLog(team),
       activity: getJSON(activityKey(team), []),
+      endless: getJSON(`${team}_endless_scores`, []),
       vault: readVault(team)
     };
   }
@@ -418,7 +419,9 @@
       const vault = readVault(team);
       const sessionEvents = activity.filter(entry => entry.type === 'session');
       const lastSession = sessionEvents.length ? sessionEvents[sessionEvents.length - 1] : null;
-      const sessionActive = lastSession?.status === 'login';
+      const lastActiveEvent = [...sessionEvents].reverse().find(entry => entry.status === 'active' || entry.status === 'login');
+      const lastActiveTs = Number(lastActiveEvent?.at) || 0;
+      const sessionActive = lastActiveTs ? (Date.now() - lastActiveTs < 120000) : false;
       const lastEvent = activity.length ? activity[activity.length - 1] : null;
 
       const completed = PUZZLES.reduce((acc, p) => acc + (progress[p] ? 1 : 0), 0);

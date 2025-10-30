@@ -35,7 +35,7 @@
     return (user?.username || 'team').toLowerCase();
   }
 
-  const LEADERBOARD_KEY = `${teamId()}_endless_leaderboard`;
+  const LEADERBOARD_KEY = `${teamId()}_endless_scores`;
 
   function loadLeaderboard() {
     try {
@@ -63,6 +63,7 @@
     board.sort((a, b) => b.score - a.score || b.level - a.level || b.at - a.at);
     saveLeaderboard(board.slice(0, 10));
     renderLeaderboard();
+    window.stateSync?.queueSave?.('endless');
   }
 
   const state = {
@@ -276,6 +277,7 @@
     if (!window.confirm('Clear the endless leaderboard for this team?')) return;
     saveLeaderboard([]);
     renderLeaderboard();
+    window.stateSync?.queueSave?.('endless-reset');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -284,5 +286,6 @@
     refs.startBtn?.addEventListener('click', startRun);
     refs.skipBtn?.addEventListener('click', skipQuestion);
     $('#endlessResetBoard')?.addEventListener('click', resetLeaderboard);
+    window.addEventListener('endless:sync', () => renderLeaderboard());
   });
 })();

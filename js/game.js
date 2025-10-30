@@ -101,8 +101,9 @@
     const meta = typeof window.utils?.readProgressMeta === 'function'
       ? window.utils.readProgressMeta()
       : {};
-    const remoteSrc = window.stateSync?.lastPayload;
-    const remoteMeta = remoteSrc?.progressMeta || {};
+    const remoteState = window.stateSync?.lastRemote;
+    const remoteMeta = remoteState?.progressMeta || {};
+    const remoteProgress = remoteState?.progress || {};
     const done = computeCompleted(p);
 
     // Text
@@ -122,13 +123,14 @@
       const btn = document.querySelector(`[data-puzzle="${k}"]`);
       const entry = meta?.[k];
       const remoteEntry = remoteMeta?.[k];
-      const percentCandidates = [];
-      if (entry && typeof entry.percent === 'number') percentCandidates.push(entry.percent);
-      if (remoteEntry && typeof remoteEntry.percent === 'number') percentCandidates.push(remoteEntry.percent);
-      if (p[k]) percentCandidates.push(100);
-      const percent = percentCandidates.length
-        ? Math.max(0, Math.min(100, Math.round(Math.max(...percentCandidates))))
-        : 0;
+      let percent = 0;
+      if (remoteEntry && typeof remoteEntry.percent === 'number') {
+        percent = Math.max(0, Math.min(100, Math.round(remoteEntry.percent)));
+      } else if (entry && typeof entry.percent === 'number') {
+        percent = Math.max(0, Math.min(100, Math.round(entry.percent)));
+      } else if (remoteProgress[k] || p[k]) {
+        percent = 100;
+      }
 
       if (btn) {
         const fillEl = btn.querySelector('.mission-tracker__fill');

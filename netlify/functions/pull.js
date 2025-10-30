@@ -9,6 +9,7 @@ function normalizeRow(row) {
     score: Number.isFinite(row.score) ? row.score : 100,
     scoreLog: Array.isArray(row.score_log) ? row.score_log : [],
     activity: Array.isArray(row.activity) ? row.activity : [],
+    endless: Array.isArray(row.endless) ? row.endless : [],
     vault: row.vault || {},
     updatedAt: row.updated_at || null
   };
@@ -44,7 +45,7 @@ export default async (req) => {
     client = createClient();
     await client.connect();
     await ensureTeamStateTable(client);
-    const { rows } = await client.query('select team, progress, progress_meta, times, score, score_log, activity, vault, updated_at from team_state order by team asc');
+    const { rows } = await client.query('select team, progress, progress_meta, times, score, score_log, activity, endless, vault, updated_at from team_state order by team asc');
     const teams = rows.length ? rows.map(normalizeRow) : await legacySnapshot(client);
     return Response.json({ ok: true, teams });
   } catch (e) {
