@@ -128,7 +128,8 @@
         percent = Math.max(0, Math.min(100, Math.round(remoteEntry.percent)));
       } else if (entry && typeof entry.percent === 'number') {
         percent = Math.max(0, Math.min(100, Math.round(entry.percent)));
-      } else if (remoteProgress[k] || p[k]) {
+      }
+      if (percent < 100 && (remoteProgress[k] || p[k])) {
         percent = 100;
       }
 
@@ -181,6 +182,13 @@
       const showEndless = !nextPuzzle;
       endlessEl.hidden = !showEndless;
       endlessEl.setAttribute('aria-hidden', showEndless ? 'false' : 'true');
+    }
+
+    const firewallBonusEl = $('#firewallBonusCallout');
+    if (firewallBonusEl) {
+      const showBonus = !nextPuzzle;
+      firewallBonusEl.hidden = !showBonus;
+      firewallBonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
     }
   }
 

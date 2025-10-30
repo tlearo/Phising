@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bonus firewall configuration puzzle for Cyber Escape Rooms teams that finish early." />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+
+  <!-- Tight CSP (local assets only) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self';
+                 frame-ancestors 'none'">
+
+  <title>Cyber Escape Rooms — Firewall Bonus</title>
+
+  <!-- External files only -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/firewall.js" defer></script>
+</head>
+
+<body data-session="team">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Global Header -->
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
+        </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Firewall Configuration Bonus</h1>
+      <p class="mt-1" style="color:var(--muted)">Reorder the firewall policy so trusted business traffic flows while malicious hosts stay blocked. You only get the award once—make it count.</p>
+    </header>
+
+    <section class="intro-banner points-card mt-2" aria-labelledby="firewallScenarioHeading">
+      <details class="points-panel" open>
+        <summary id="firewallScenarioHeading">Scenario briefing</summary>
+        <p>Your SOC flagged a blended attack attempting to slip past the perimeter. You must reprioritise the firewall rules before the next wave hits.</p>
+        <ul>
+          <li>Place the most specific <em>deny</em> controls before broad allows.</li>
+          <li>Ensure required business flows (VPN, DMZ web, partner SFTP) are permitted.</li>
+          <li>Always finish with a catch-all deny to stop anything you missed.</li>
+        </ul>
+      </details>
+      <div class="vault-callout" role="status">
+        <span class="tag">Bonus intel</span>
+        <p>The correct order awards your crew <strong>+5 points</strong> and locks in the Firewall Bonus progress badge.</p>
+      </div>
+    </section>
+
+    <section class="status-hud" aria-label="Team status">
+      <div class="points-box">
+        <p class="points-box__label">Team points</p>
+        <p class="points-box__value" id="firewallPointsTotal">000</p>
+        <p class="points-box__delta" id="firewallPointsDelta" aria-live="polite"></p>
+      </div>
+      <div class="progress-mini">
+        <p class="progress-mini__label">Rule order accuracy</p>
+        <div class="progress-mini__track">
+          <div class="progress-mini__fill" id="firewallProgressFill"></div>
+        </div>
+        <p class="progress-mini__text" id="firewallProgressText">0% complete</p>
+      </div>
+    </section>
+
+    <section class="card firewall-card mt-2" aria-labelledby="firewallPuzzleHeading">
+      <header>
+        <h2 id="firewallPuzzleHeading">Arrange the rules</h2>
+        <p class="muted mt-1" id="firewallHelp">Use the Move buttons to order the firewall rules from top (evaluated first) to bottom (evaluated last). When you are confident, select <strong>Check order</strong>.</p>
+      </header>
+
+      <ol id="firewallRuleList" class="firewall-rule-list" aria-describedby="firewallHelp"></ol>
+
+      <div class="firewall-actions mt-2">
+        <button class="btn" type="button" id="firewallCheck">Check order</button>
+        <button class="btn ghost" type="button" id="firewallReset">Reset</button>
+      </div>
+
+      <p class="feedback mt-2" id="firewallFeedback" aria-live="polite"></p>
+      <div class="hint-callout" id="firewallHint" hidden>
+        <p><strong>Hint:</strong> Specific denies go nearest the top. Stack the trusted allows by business priority and always finish with an explicit deny all.</p>
+      </div>
+    </section>
+
+    <section class="card resources-card mt-2" aria-labelledby="firewallResourcesHeading">
+      <h2 id="firewallResourcesHeading">Firewall quick reference</h2>
+      <ul>
+        <li>Rules run in order—first match wins. You cannot rely on later rules once traffic is allowed.</li>
+        <li>Blocklists for known bad IPs should appear before any allow that could match the same source.</li>
+        <li>Partner tunnels and DMZ applications should remain after security filters but before the final deny.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -163,9 +163,12 @@
           </div>
         </div>
 
-        <div class="mt-2">
+        <div class="mt-2" id="livePreviewBlock">
           <p class="muted">Live plaintext preview:</p>
-          <div class="card sm mt-1" style="overflow:auto">
+          <div class="card sm mt-1 hint-locked" id="livePreviewLocked" role="note">
+            Use the hint (−5 pts) to unlock the live preview.
+          </div>
+          <div class="card sm mt-1" id="livePreviewCard" style="overflow:auto" hidden>
             <code id="livePlaintext">Rotate the wheel to decode...</code>
           </div>
         </div>

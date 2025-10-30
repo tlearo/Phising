@@ -47,6 +47,8 @@
   const vulnStageEl = $('#vulnerabilityCountStage');
   const exampleBanner = $('#exampleBanner');
   const selectAllBtn = $('#selectAllBtn');
+  const vulnReminderEl = $('#vulnerabilityReminders');
+  let resizePending = false;
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
@@ -58,12 +60,12 @@
 
   // ---------- Config ----------
   // How close (in pixels) the highlight must be to the hotspot center to count
-  const HOTSPOT_RADIUS_PX = 28; // tuned for typical email screenshots
+  const HOTSPOT_RADIUS_PX = 48; // wider tolerance so near-miss highlights still count
   const MAX_STROKE_LENGTH = 900; // pixels of travel per stroke (loosened)
-  const MAX_STROKE_SPAN = 340;   // max width/height of a single stroke highlight (loosened)
-  const MAX_STROKE_AREA = 110000; // approx area (px^2) before we consider it too large (loosened)
+  const MAX_STROKE_SPAN = 360;   // max width/height of a single stroke highlight (loosened)
+  const MAX_STROKE_AREA = 140000; // approx area (px^2) before we consider it too large (loosened)
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
-  const REQUIRED_PCT = 0.75;
+  const REQUIRED_PCT = 0.66;
   const AUTO_SAVE_DELAY = 900;
   const COVERAGE_LIMIT = 0.35;
 
@@ -636,8 +638,14 @@ window.PHISHING_INSTRUCTOR_KEY = {
   function fitCanvasToImage() {
     // Set canvases to the rendered size of the image (not natural) so drawing aligns
     const rect = imgEl.getBoundingClientRect();
-    const w = Math.max(100, Math.round(rect.width));
-    const h = Math.max(100, Math.round(rect.height));
+    const baseWidth = imgEl.clientWidth || rect.width || imgEl.naturalWidth || 0;
+    const baseHeight = imgEl.clientHeight || rect.height || imgEl.naturalHeight || 0;
+    const w = Math.max(100, Math.round(baseWidth));
+    const h = Math.max(100, Math.round(baseHeight));
+
+    if (drawCanvas.width === w && drawCanvas.height === h) {
+      return;
+    }
 
     drawCanvas.width  = w;
     drawCanvas.height = h;
@@ -645,8 +653,8 @@ window.PHISHING_INSTRUCTOR_KEY = {
     maskCanvas.height = h;
 
     // Percentage to pixel scale factors (in case we need natural size)
-    state.scaleX = w / imgEl.naturalWidth;
-    state.scaleY = h / imgEl.naturalHeight;
+    state.scaleX = imgEl.naturalWidth ? w / imgEl.naturalWidth : 1;
+    state.scaleY = imgEl.naturalHeight ? h / imgEl.naturalHeight : 1;
 
     if (stageEl) {
       stageEl.style.setProperty('--stage-width', `${w}px`);
@@ -702,9 +710,13 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const required = Math.ceil(total * REQUIRED_PCT);
       const remaining = Math.max(total - found, 0);
       const needed = Math.max(required - found, 0);
+      const remainingLabels = state.hotspots
+        .map((spot, idx) => (!state.found.has(idx) ? (spot.label || `Clue ${idx + 1}`) : null))
+        .filter(Boolean);
       let extra = '';
       if (found === 0) {
-        extra = ' Start by circling the most suspicious clue you can find.';
+        const firstClue = remainingLabels[0] ? remainingLabels[0].replace(/\s+/g, ' ').trim() : 'the most suspicious clue you can find';
+        extra = ` Start by circling ${firstClue}.`;
       } else if (remaining > 0) {
         if (needed > 0) {
           extra = ` Keep hunting - ${needed === 1 ? 'one more critical clue' : `${needed} more critical clues`} will meet the target.`;
@@ -731,10 +743,21 @@ window.PHISHING_INSTRUCTOR_KEY = {
       }
       if (vulnDotsEl) renderVulnDots(total, found, required);
       if (vulnStageEl) vulnStageEl.textContent = message;
+      if (vulnReminderEl) {
+        if (remainingLabels.length) {
+          const preview = remainingLabels.slice(0, 3).map(label => label.replace(/\s+/g, ' ').trim());
+          vulnReminderEl.textContent = `Remaining critical clues: ${preview.join(' • ')}${remainingLabels.length > preview.length ? '…' : ''}`;
+          vulnReminderEl.removeAttribute('hidden');
+        } else {
+          vulnReminderEl.textContent = 'All required clues are marked. Submit when ready.';
+          vulnReminderEl.removeAttribute('hidden');
+        }
+      }
     } else {
       if (vulnCountEl) vulnCountEl.textContent = 'No hotspots defined for this image.';
       if (vulnStageEl) vulnStageEl.textContent = 'No hotspots defined for this image.';
       if (vulnDotsEl) vulnDotsEl.innerHTML = '';
+      if (vulnReminderEl) vulnReminderEl.setAttribute('hidden', 'hidden');
     }
     broadcastProgress();
   }
@@ -873,7 +896,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
     const width = Math.abs(bounds.maxX - bounds.minX);
     const height = Math.abs(bounds.maxY - bounds.minY);
     const area = width * height;
-    return width > 220 || height > 220 || area > 45000;
+    return width > 260 || height > 260 || area > 65000;
   }
 
   function beginDraw(x, y) {
@@ -912,6 +935,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
 
     const prevFound = new Set(state.found);
     recomputeFoundFromMask();
+    updateVulnText();
     const madeProgress = state.found.size > prevFound.size;
 
     if (wasBrush && bounds && !madeProgress && strokeIsBroad(bounds)) {
@@ -1145,6 +1169,7 @@ function classify(isPhish){
   setFeedback(isPhish ? 'Marked as phishing.' : 'Marked as not phishing.', 'success');
   syncClassificationUi();
   window.stateSync?.queueSave?.('phishing-classification');
+  updateVulnText();
 }
 
 
@@ -1190,7 +1215,14 @@ function classify(isPhish){
   imgEl.addEventListener('load', onImageReady);
 
   // Resize observers to keep overlay aligned on responsive changes
-  const ro = new ResizeObserver(() => syncCanvasPositioning());
+  const ro = new ResizeObserver(() => {
+    if (resizePending) return;
+    resizePending = true;
+    requestAnimationFrame(() => {
+      resizePending = false;
+      syncCanvasPositioning();
+    });
+  });
   ro.observe(stageEl);
 
   // ---------- Boot ----------

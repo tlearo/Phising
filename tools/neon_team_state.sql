@@ -38,6 +38,21 @@ create index if not exists team_state_score_idx on team_state (score);
 
 -- The `vault` column also stores misc metadata (e.g., resetVersion timestamps).
 
+-- Seed baseline team records
+insert into team_state (team)
+values
+  ('Trojan Horsin'' Around - Unmasking Cyber Deception with a Smile'),
+  ('The Black Hoodies'),
+  ('Sydney Cipherettes'),
+  ('Understanding and prioritising Platform Engineering in the ABS (PEAS)'),
+  ('Crtl+alt+elite (SATS Team)'),
+  ('Dark Web Aliens'),
+  ('Cross Guild'),
+  ('Hobart Hackers'),
+  ('SPECS'),
+  ('Gate Crashers')
+on conflict (team) do nothing;
+
 -- Optional legacy snapshot tables (only if you still rely on them)
 -- create table progress (...);
 -- create table times (...);

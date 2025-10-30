@@ -36,13 +36,16 @@
   // ---------- Config ----------
   // If you have an existing config (from an older build), you can define:
   // window.ENCRYPTION_CONFIG = { plain: "THE SECRET PHRASE", shift: 7 };
-  const CFG = window.ENCRYPTION_CONFIG || {
-    plain:  "KNOWLEDGE IS POWER",
-    shift:  5  // the wheel needs to be turned to this to reveal the plaintext
+  const DEFAULT_CONFIG = {
+    cipher: 'PSTBQJILJ NX UTBJW',
+    shift: null,
+    plaintextHash: '869cf47b9d9b9523758e57f9b13fbe7f5d777a02ccc9c4d4bef652f715fbeea8'
   };
+
+  const CFG = window.ENCRYPTION_CONFIG || DEFAULT_CONFIG;
   // Optional: provide a hash of the expected plaintext for stricter checking
   // Set EXPECTED_HASH to SHA-256(hex) of the normalized plaintext (normalizePlain()).
-  const EXPECTED_HASH = window.ENCRYPTION_HASH || null;
+  const EXPECTED_HASH = window.ENCRYPTION_HASH || CFG.plaintextHash || null;
 
   // Normalize what users type vs your answer (trim, collapse spaces, upper-case)
   function normalizePlain(s){
@@ -64,6 +67,8 @@
   const exampleCipherEl = $('#encExampleCipher');
   const examplePlainEl  = $('#encExamplePlain');
   const livePlainEl     = $('#livePlaintext');
+  const livePreviewCard = $('#livePreviewCard');
+  const livePreviewLocked = $('#livePreviewLocked');
   const sliderEl   = $('#shiftSlider');
   const shiftDown  = $('#shiftDown');
   const shiftUp    = $('#shiftUp');
@@ -129,11 +134,14 @@
   // ---------- State & rendering ----------
   let currentShift = 0;
   let progressPercent = 0;
-  const CIPHERTEXT = Caesar.encode(CFG.plain, CFG.shift); // what we show
+  const CIPHERTEXT = CFG.cipher || (CFG.plain ? Caesar.encode(CFG.plain, CFG.shift || 0) : '');
 
   const points = window.utils?.points;
   points?.ensure();
   let hintUsed = false;
+  let livePreviewUnlocked = false;
+  let expectedShift = Number.isFinite(Number(CFG.shift)) ? Caesar.normalize(Number(CFG.shift)) : null;
+  let resolvingShift = null;
 
   function updateProgressPercent(amount, opts = {}) {
     const setter = window.utils?.setProgressPercent;
@@ -150,8 +158,30 @@
     setter('encryption', progressPercent, { complete: false });
   }
 
+  async function resolveExpectedShift() {
+    if (expectedShift != null) return expectedShift;
+    if (!EXPECTED_HASH) return null;
+    if (!resolvingShift) {
+      resolvingShift = (async () => {
+        for (let s = 0; s < 26; s += 1) {
+          const candidate = normalizePlain(Caesar.decode(CIPHERTEXT, s));
+          if (!candidate) continue;
+          const hash = await sha256Hex(candidate);
+          if (hash === EXPECTED_HASH) {
+            expectedShift = Caesar.normalize(s);
+            resolvingShift = null;
+            return expectedShift;
+          }
+        }
+        resolvingShift = null;
+        return null;
+      })();
+    }
+    return resolvingShift;
+  }
+
   function setCiphertext() {
-    cipherEl.textContent = CIPHERTEXT;
+    cipherEl.textContent = CIPHERTEXT || '—';
   }
 
   function setShift(n){
@@ -167,8 +197,23 @@
     if (currentShift !== 0) {
       updateProgressPercent(20);
     }
-    const normalizedShift = Caesar.normalize(CFG.shift);
-    if (currentShift === normalizedShift) {
+    checkShiftProgress();
+  }
+
+  function checkShiftProgress() {
+    if (expectedShift != null) {
+      if (currentShift === expectedShift) {
+        updateProgressPercent(80);
+      }
+      return;
+    }
+    if (expectedShift == null) {
+      resolveExpectedShift().then((shift) => {
+        if (shift != null && currentShift === shift) {
+          updateProgressPercent(80);
+        }
+      }).catch(() => {});
+    } else if (currentShift === expectedShift) {
       updateProgressPercent(80);
     }
   }
@@ -181,8 +226,12 @@
     exampleCipherEl.textContent = cipherLetter;
     examplePlainEl.textContent = decoded.charAt(0) || cipherLetter;
     if (livePlainEl) {
-      const liveDecoded = Caesar.decode(CIPHERTEXT, currentShift) || '';
-      livePlainEl.textContent = liveDecoded || 'Rotate the wheel to decode...';
+      if (livePreviewUnlocked) {
+        const liveDecoded = Caesar.decode(CIPHERTEXT, currentShift) || '';
+        livePlainEl.textContent = liveDecoded || 'Rotate the wheel to decode...';
+      } else {
+        livePlainEl.textContent = 'Unlock the live preview via the hint button.';
+      }
     }
   }
 
@@ -201,29 +250,28 @@
     if (!answerEl) return;
     const userAnswer = normalizePlain(answerEl.value);
     const decodedNow = normalizePlain(Caesar.decode(CIPHERTEXT, currentShift));
+    const solvedShift = Caesar.normalize(currentShift);
 
-    // Option A (strict): compare to EXPECTED_HASH if provided
+    let isCorrect = false;
+
     if (EXPECTED_HASH) {
-      const h = await sha256Hex(userAnswer);
-      if (h === EXPECTED_HASH) {
-        success();
-        return;
-      }
+      const hash = await sha256Hex(decodedNow);
+      isCorrect = Boolean(userAnswer) && userAnswer === decodedNow && hash === EXPECTED_HASH;
+    } else if (CFG.plain) {
+      const expectedPlain = normalizePlain(CFG.plain);
+      isCorrect = Boolean(userAnswer) && userAnswer === decodedNow && decodedNow === expectedPlain;
     }
 
-    // Option B (default): require that the current decoded text equals user’s input
-    // AND that decoded text also matches the configured plaintext (robust against random shifts)
-    const expectedPlain = normalizePlain(CFG.plain);
-    if (userAnswer && userAnswer === decodedNow && decodedNow === expectedPlain) {
-      success();
+    if (isCorrect) {
+      success(solvedShift);
     } else {
       fail();
     }
   }
 
-  function success(){
+  function success(solvedShift){
     if (feedbackEl){
-      feedbackEl.textContent = `Correct! Shift ${CFG.shift} reveals the plaintext - record it as your vault digit.`;
+      feedbackEl.textContent = `Correct! Shift ${solvedShift} reveals the plaintext - record it as your vault digit.`;
       feedbackEl.classList.remove('warn');
       feedbackEl.classList.add('ok');
     }
@@ -231,11 +279,12 @@
     markComplete();
     updateProgressPercent(100, { complete: true });
     try {
-      localStorage.setItem('lock_digit_caesar_shift', String(CFG.shift));
+      localStorage.setItem('lock_digit_caesar_shift', String(solvedShift));
     } catch (_) {}
-    updateVaultDigit(String(CFG.shift));
-    window.vault?.unlock('encryption', CFG.shift, {
-      message: `Encryption digit ${CFG.shift} unlocked. Add it to the vault.`
+    updateVaultDigit(String(solvedShift));
+    expectedShift = Caesar.normalize(solvedShift);
+    window.vault?.unlock('encryption', solvedShift, {
+      message: `Encryption digit ${solvedShift} unlocked. Add it to the vault.`
     });
   }
 
@@ -256,6 +305,11 @@
     const start = sliderEl ? Number(sliderEl.value) : 0;
     setShift(isNaN(start) ? 0 : start);
     updateExample();
+    resolveExpectedShift().then((shift) => {
+      if (shift != null && currentShift === shift) {
+        updateProgressPercent(80);
+      }
+    }).catch(() => {});
 
     submitBtn?.addEventListener('click', handleSubmit);
     hintBtn?.addEventListener('click', () => {
@@ -263,12 +317,19 @@
         if (feedbackEl) {
           feedbackEl.textContent = 'Hint already revealed.';
           feedbackEl.classList.remove('warn');
+          feedbackEl.classList.add('ok');
         }
         return;
       }
       hintUsed = true;
       hintBox?.removeAttribute('hidden');
       points?.spend(5, 'Encryption hint');
+      if (livePreviewCard && livePlainEl) {
+        livePreviewUnlocked = true;
+        livePreviewCard.removeAttribute('hidden');
+        livePreviewLocked?.setAttribute('hidden', 'hidden');
+        livePlainEl.textContent = Caesar.decode(CIPHERTEXT, currentShift) || 'Rotate the wheel to decode...';
+      }
       if (feedbackEl) {
         feedbackEl.textContent = 'Hint revealed. Align the alphabets until real words appear.';
         feedbackEl.classList.remove('warn');
