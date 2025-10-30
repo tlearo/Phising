@@ -83,15 +83,16 @@
       </div>
     </header>
 
-    <section class="intro-banner mt-2" aria-labelledby="essentialBriefHeading">
-      <h2 id="essentialBriefHeading">Points briefing</h2>
-      <p>Accuracy beats speed here. Every correct placement cements your score; every mis-match chips away at it. Take a moment to read the descriptions, line up the controls, then lock in the digit.</p>
-      <ul>
-        <li>Progress meter shows how many of the eight controls you have correct—aim for green before submitting.</li>
-        <li>Use <strong>Check</strong> sparingly; each failed review hints at mistakes and can lower points.</li>
-        <li>Need help? The hint button costs points, so time it wisely.</li>
-        <li>Digit four is always the number of Essential Eight strategies—make sure you’ve earned it first!</li>
-      </ul>
+    <section class="intro-banner points-card mt-2" aria-labelledby="essentialPointsHeading">
+      <details class="points-panel" open>
+        <summary id="essentialPointsHeading">Points intel</summary>
+        <p>Momentum matters less than accuracy. Every correct placement locks in your score; each incorrect check costs time and focus.</p>
+        <ul>
+          <li>Watch the progress bar—aim for a full green track before pressing <strong>Check</strong>.</li>
+          <li>Hints cost 5 points and highlight strategy families instead of answers.</li>
+          <li>Digit four is always the count of Essential Eight strategies, but you must still earn it with a perfect board.</li>
+        </ul>
+      </details>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p><strong id="essentialVaultValue">—</strong> Essential Eight strategies — complete the set before claiming the digit.</p>
@@ -188,7 +189,7 @@
               <span class="dot"></span>
               <strong>Only approved executables should run</strong>
             </div>
-            <p class="slot-desc">Prevent unapproved or malicious programs from executing by enforcing allow-lists.</p>
+            <p class="slot-desc">Lock workstations so unknown software cannot launch without being explicitly approved.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -197,7 +198,7 @@
               <span class="dot"></span>
               <strong>Keep apps up to date</strong>
             </div>
-            <p class="slot-desc">Apply vendor patches quickly (e.g., browsers, PDF readers, Office) to reduce exploit windows.</p>
+            <p class="slot-desc">Close the gaps attackers exploit by updating user-facing apps within the vendor’s patch window.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -206,7 +207,7 @@
               <span class="dot"></span>
               <strong>Block risky macros</strong>
             </div>
-            <p class="slot-desc">Disable or restrict macros, especially from the Internet, and sign trusted ones only.</p>
+            <p class="slot-desc">Treat downloaded documents as hostile unless their automation comes from trusted, signed sources.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -215,7 +216,7 @@
               <span class="dot"></span>
               <strong>Harden user-facing apps</strong>
             </div>
-            <p class="slot-desc">Disable unnecessary features (e.g., Flash/Java, ads, dangerous MIME types) to reduce attack surface.</p>
+            <p class="slot-desc">Strip away risky plug-ins and defaults in browsers and document viewers to shrink the attack surface.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -224,7 +225,7 @@
               <span class="dot"></span>
               <strong>Least privilege</strong>
             </div>
-            <p class="slot-desc">Only grant admin rights when needed, use separate admin accounts, and monitor changes.</p>
+            <p class="slot-desc">Use standard accounts day to day; reserve privileged credentials for controlled maintenance with monitoring.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -233,7 +234,7 @@
               <span class="dot"></span>
               <strong>OS patching</strong>
             </div>
-            <p class="slot-desc">Apply security updates promptly across desktops, servers, and mobile devices.</p>
+            <p class="slot-desc">Keep every operating system on the current security baseline across workstations, servers, and mobiles.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -242,7 +243,7 @@
               <span class="dot"></span>
               <strong>Require MFA</strong>
             </div>
-            <p class="slot-desc">Add a second factor for remote access, privileged accounts, and high-value apps.</p>
+            <p class="slot-desc">Require a second factor for high-value logins, especially remote access and privileged roles.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
 
@@ -251,7 +252,7 @@
               <span class="dot"></span>
               <strong>Back up and test restores</strong>
             </div>
-            <p class="slot-desc">Perform regular, tamper-resistant backups and verify you can restore quickly after incidents.</p>
+            <p class="slot-desc">Maintain offline or immutable backups and rehearse restorations so ransomware cannot pin you down.</p>
             <div class="slot-bay" aria-live="polite"></div>
           </li>
         </ul>

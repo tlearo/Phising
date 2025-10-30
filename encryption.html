@@ -84,15 +84,16 @@
       </div>
     </header>
 
-    <section class="intro-banner mt-2" aria-labelledby="encryptionBriefHeading">
-      <h2 id="encryptionBriefHeading">Points intel</h2>
-      <p>Fast, accurate decoding keeps your crew on top. Spamming guesses or ignoring the wheel wastes time and costs score. Align the rings, verify your plaintext, then lock in the digit.</p>
-      <ul>
-        <li>Watch the live output—when the message reads clearly, note the shift for the scoreboard.</li>
-        <li>Submit once; repeated wrong answers signal rushed work and lower points.</li>
-        <li>Need a nudge? The hint button costs points, so use it sparingly.</li>
-        <li>Record the shift number in the vault as soon as you earn confirmation.</li>
-      </ul>
+    <section class="intro-banner points-card mt-2" aria-labelledby="encryptionPointsHeading">
+      <details class="points-panel" open>
+        <summary id="encryptionPointsHeading">Points intel</summary>
+        <p>Precise decrypts keep your score intact. Work the Caesar wheel with intent, verify the plaintext, and log the shift without spamming guesses.</p>
+        <ul>
+          <li>Hints cost 5 points, so save them for when the ciphertext truly stalls.</li>
+          <li>Submit only once the plaintext reads naturally; repeated wrong answers signal rushed work.</li>
+          <li>The shift number becomes your vault digit—write it down as soon as you receive confirmation.</li>
+        </ul>
+      </details>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p>The shift value will appear here after you submit the correct plaintext: <strong id="encVaultValue">—</strong>.</p>

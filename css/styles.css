@@ -424,6 +424,53 @@ form .row {
     color: #fff;
 }
 
+.points-card {
+    padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.points-panel {
+    margin: 0;
+}
+
+.points-panel summary {
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--brand);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.points-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.points-panel summary::after {
+    content: '\25BC';
+    font-size: .7rem;
+    transition: transform .2s ease;
+    margin-left: auto;
+}
+
+.points-panel[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.points-panel > *:not(summary) {
+    margin-top: .85rem;
+}
+
+.points-panel ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--muted);
+    display: grid;
+    gap: .4rem;
+}
+
 .vault-callout {
     margin-top: .75rem;
     padding: .85rem 1rem;

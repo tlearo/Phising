@@ -83,15 +83,16 @@
       </div>
     </header>
 
-    <section class="intro-banner mt-2" aria-labelledby="binaryBriefHeading">
-      <h2 id="binaryBriefHeading">Points reminder</h2>
-      <p>Binary math rewards precision. Correct conversions keep your score intact; typos or guesses lead to rechecks and deductions. Calculate carefully, double-check the highlighted columns, then submit once.</p>
-      <ul>
-        <li>The vault digit is the decimal value of the XOR row (1101 ⊕ 1011 = 6).</li>
-        <li>Status pills update as you confirm each step; don’t move on until they glow green.</li>
-        <li>Use the crack-time calculator or scratch space before entering answers to avoid point hits.</li>
-        <li>Hints are available, but they cost points—save them for when you are truly stuck.</li>
-      </ul>
+    <section class="intro-banner points-card mt-2" aria-labelledby="binaryPointsHeading">
+      <details class="points-panel" open>
+        <summary id="binaryPointsHeading">Points intel</summary>
+        <p>Binary puzzles reward careful arithmetic. Confirm each column before typing and the points stay intact; guesswork leads to rechecks and deductions.</p>
+        <ul>
+          <li>The XOR row’s decimal sum becomes your vault digit—only submit once every pill shows complete.</li>
+          <li>Hints cost 5 points and highlight the rule rather than the answer.</li>
+          <li>Use scratch space or the helper table before entering final decimals to avoid penalty resets.</li>
+        </ul>
+      </details>
       <div class="vault-callout" role="status">
         <span class="tag">Vault digit</span>
         <p>Record the decimal XOR result. When you finish the table, capture <strong id="binaryVaultDigit">—</strong>.</p>
@@ -141,7 +142,6 @@
           <p class="binary-sum" id="binarySumB">Binary B contributions: —</p>
           <p class="binary-sum" id="binarySumXor">XOR contributions: —</p>
         </div>
-        <p class="muted mt-1">Example: 1101 means 1×8 + 1×4 + 0×2 + 1×1 = 13.</p>
 
         <p id="binaryHint" class="muted mt-1">Tip: XOR outputs 1 where the bits differ and 0 where they match. 1 ⊕ 1 = 0, 1 ⊕ 0 = 1, 0 ⊕ 0 = 0.</p>
 
@@ -154,15 +154,15 @@
         <div class="binary-result-grid mt-2">
           <label class="result-field" for="decAInput">
             <span>Binary A in decimal</span>
-            <input id="decAInput" name="decAInput" type="number" inputmode="numeric" autocomplete="off" placeholder="13" aria-label="Decimal value of Binary A" />
+            <input id="decAInput" name="decAInput" type="number" inputmode="numeric" autocomplete="off" placeholder="?" aria-label="Decimal value of Binary A" />
           </label>
           <label class="result-field" for="decBInput">
             <span>Binary B in decimal</span>
-            <input id="decBInput" name="decBInput" type="number" inputmode="numeric" autocomplete="off" placeholder="11" aria-label="Decimal value of Binary B" />
+            <input id="decBInput" name="decBInput" type="number" inputmode="numeric" autocomplete="off" placeholder="?" aria-label="Decimal value of Binary B" />
           </label>
           <label class="result-field" for="xorDec">
             <span>Decimal XOR (vault digit)</span>
-            <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off" placeholder="6" aria-label="Decimal XOR of A and B" />
+            <input id="xorDec" name="xorDec" type="number" inputmode="numeric" autocomplete="off" placeholder="?" aria-label="Decimal XOR of A and B" />
           </label>
         </div>
 
@@ -191,7 +191,6 @@
           <ol>
             <li>Add the green columns in Binary A and Binary B to prove the decimal values.</li>
             <li>Mark only the mismatched columns for XOR—their sum is the vault digit.</li>
-            <li>Example: 1101 ⊕ 1011 = 0110, so the digit you record is <strong>6</strong>.</li>
           </ol>
           <p>Grey columns are safe to ignore. Keep focusing on the highlighted ones.</p>
         </div>

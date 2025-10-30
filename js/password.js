@@ -34,81 +34,20 @@
   let pendingVaultDigit = null;
   let labDigitUnlocked = false;
 
-  const SCENARIOS = [
-    {
-      id: 'pass123',
-      label: 'Shortcut thinker',
-      answer: 'pass123',
-      clues: [
-        'It starts with a common abbreviation for a credential.',
-        'The ending is a tiny counting sequence.',
-        'All lowercase letters until the final numbers.',
-        'You can type it straight across the keyboard.',
-        'It is the example every hacker hopes you will choose.'
-      ],
-      bonusHint: 'Take the four-letter word for a credential and tack on 123.',
-      crackSeconds: 0.8
-    },
-    {
-      id: 'dragon',
-      label: 'Fantasy fan favourite',
-      answer: 'dragon',
-      clues: [
-        'This creature hoards treasure.',
-        'Game of Thrones and D&D players love it.',
-        'It breathes fire.',
-        'Six lowercase letters.',
-        'Think medieval beasts.'
-      ],
-      bonusHint: 'You might see it guarding a castle in a fairy tale.',
-      crackSeconds: 45
-    },
-    {
-      id: 'football',
-      label: 'Sportsball super-fan',
-      answer: 'football',
-      clues: [
-        'Americans yell this on Sundays.',
-        'Eight letters, all lowercase.',
-        'It involves touchdowns.',
-        'Starts with a body part you can kick with.',
-        'Popular in fantasy leagues too.'
-      ],
-      bonusHint: 'Pigskin, helmets, touchdowns.',
-      crackSeconds: 95
-    },
-    {
-      id: 'iloveyou',
-      label: 'Hopeless romantic',
-      answer: 'iloveyou',
-      clues: [
-        'Three words compressed into one.',
-        'Lowercase letters only.',
-        'People type it into texts a lot.',
-        'No spaces, just affection.',
-        'It ends with the word “you”.'
-      ],
-      bonusHint: 'Commonly said on Valentine’s Day.',
-      crackSeconds: 140
-    },
-    {
-      id: 'qwerty123',
-      label: 'Keyboard shortcut',
-      answer: 'qwerty123',
-      clues: [
-        'Starts at the top-left of a keyboard.',
-        'Finishes with a short counting sequence.',
-        'People use it because it is easy to type.',
-        'Mixes letters then numbers.',
-        'Rhymes with “wordy”.'
-      ],
-      bonusHint: 'Look at the first six keys on your keyboard.',
-      crackSeconds: 220
-    }
-  ];
-
-  const SCENARIO_KEY = 'password_scenario_index';
-  let currentScenarioIndex = 0;
+  const BASE_SCENARIO = {
+    id: 'pass123',
+    label: 'Shortcut thinker',
+    answer: 'pass123',
+    clues: [
+      'The opening four letters spell the thing you are trying to protect.',
+      'The ending is the simplest counting sequence you can imagine.',
+      'Everything stays lowercase until the digits arrive.',
+      'You can type it left-to-right in one sweep across the keyboard.',
+      'Attackers assume you will choose this combination first.'
+    ],
+    bonusHint: 'Combine the word for a credential with the first three numbers.',
+    crackSeconds: 0.8
+  };
 
   function pickScenario() {
     if (window.PASSWORD_CONFIG) {
@@ -123,12 +62,7 @@
       };
     }
 
-    let idx = Number(localStorage.getItem(SCENARIO_KEY));
-    if (!Number.isInteger(idx) || idx < 0 || idx >= SCENARIOS.length) {
-      idx = 0;
-    }
-    currentScenarioIndex = idx;
-    return SCENARIOS[idx];
+    return BASE_SCENARIO;
   }
 
   const ACTIVE_SCENARIO = pickScenario();
