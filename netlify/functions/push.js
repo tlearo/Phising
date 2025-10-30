@@ -1,28 +1,4 @@
-import { Client } from 'pg';
-
-const DEFAULT_PROGRESS = {
-  phishing: false,
-  password: false,
-  encryption: false,
-  essential: false,
-  binary: false
-};
-
-async function ensureTeamStateTable(client) {
-  await client.query(`
-    create table if not exists team_state (
-      team text primary key,
-      progress jsonb not null default '{}'::jsonb,
-      progress_meta jsonb not null default '{}'::jsonb,
-      times jsonb not null default '[]'::jsonb,
-      score integer not null default 100,
-      score_log jsonb not null default '[]'::jsonb,
-      activity jsonb not null default '[]'::jsonb,
-      vault jsonb not null default '{}'::jsonb,
-      updated_at timestamptz not null default now()
-    )
-  `);
-}
+import { createClient, ensureTeamStateTable, DEFAULT_PROGRESS, errorResponse } from './_shared/db.js';
 
 function sanitizeRow(row = {}) {
   const progress = { ...DEFAULT_PROGRESS };
@@ -79,10 +55,10 @@ export default async (req) => {
   const body = await req.json().catch(() => ({}));
   const teams = Array.isArray(body.teams) ? body.teams : [];
 
-  const client = new Client({ connectionString: process.env.NEON_DATABASE_URL });
-  await client.connect();
-
+  let client;
   try {
+    client = createClient();
+    await client.connect();
     await ensureTeamStateTable(client);
     for (const raw of teams) {
       const team = String(raw?.team || '').trim().toLowerCase();
@@ -106,8 +82,11 @@ export default async (req) => {
 
     return Response.json({ ok: true, updated: teams.length });
   } catch (e) {
-    return Response.json({ ok: false, error: e.message }, { status: 500 });
+    console.error('[push] failed to sync teams', e);
+    return errorResponse(500, { ok: false, error: e.message || 'Push failed' });
   } finally {
-    await client.end();
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
   }
 };

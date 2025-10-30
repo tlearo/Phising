@@ -290,11 +290,12 @@ h3 {
 }
 
 .cta-btn {
-    font-size: 1.1rem;
-    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    padding: .75rem 1rem;
     width: 100%;
     min-width: 0;
     justify-content: center;
+    white-space: normal;
 }
 
 /* ==== Inputs & Forms ====================================================== */
@@ -631,12 +632,12 @@ form .row {
 .classification-buttons {
     display: grid;
     gap: .75rem;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 640px) {
     .classification-buttons {
-        grid-template-columns: repeat(2, minmax(150px, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -2035,9 +2036,8 @@ input[type="range"]::-moz-range-thumb {
 /* Stage matches the rendered image dimensions so the overlay tracks perfectly */
 .image-stage {
     position: relative;
-    width: 100%;
-    max-width: min(100%, 1420px);
-    min-height: clamp(18rem, 52vw, 36rem);
+    width: min(100%, var(--stage-width, 1420px));
+    height: var(--stage-height, clamp(18rem, 52vw, 36rem));
     background: rgba(6, 11, 18, .95);
     border: 1px solid rgba(88, 166, 255, .25);
     border-radius: 14px;

@@ -1,28 +1,4 @@
-import { Client } from 'pg';
-
-const DEFAULT_PROGRESS = {
-  phishing: false,
-  password: false,
-  encryption: false,
-  essential: false,
-  binary: false
-};
-
-async function ensureTeamStateTable(client) {
-  await client.query(`
-    create table if not exists team_state (
-      team text primary key,
-      progress jsonb not null default '{}'::jsonb,
-      progress_meta jsonb not null default '{}'::jsonb,
-      times jsonb not null default '[]'::jsonb,
-      score integer not null default 100,
-      score_log jsonb not null default '[]'::jsonb,
-      activity jsonb not null default '[]'::jsonb,
-      vault jsonb not null default '{}'::jsonb,
-      updated_at timestamptz not null default now()
-    )
-  `);
-}
+import { createClient, ensureTeamStateTable, DEFAULT_PROGRESS, errorResponse } from './_shared/db.js';
 
 function normalizeRow(row) {
   return {
@@ -63,16 +39,20 @@ async function legacySnapshot(client) {
 
 export default async (req) => {
   if (req.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
-  const client = new Client({ connectionString: process.env.NEON_DATABASE_URL });
-  await client.connect();
+  let client;
   try {
+    client = createClient();
+    await client.connect();
     await ensureTeamStateTable(client);
     const { rows } = await client.query('select team, progress, progress_meta, times, score, score_log, activity, vault, updated_at from team_state order by team asc');
     const teams = rows.length ? rows.map(normalizeRow) : await legacySnapshot(client);
     return Response.json({ ok: true, teams });
   } catch (e) {
-    return Response.json({ ok: false, error: e.message }, { status: 500 });
+    console.error('[pull] failed to fetch team states', e);
+    return errorResponse(500, { ok: false, error: e.message || 'Pull failed' });
   } finally {
-    await client.end();
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
   }
 };

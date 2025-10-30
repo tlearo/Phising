@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+import { createClient } from './_shared/db.js';
 import bcrypt from 'bcryptjs';
 
 const json = (statusCode, body) => ({
@@ -19,9 +19,10 @@ export default async function handler(event) {
   if (!url)   return json(500, { ok:false, error:'NEON_DATABASE_URL not set' });
   if (!plain) return json(500, { ok:false, error:'ADMIN_SEED_PASSWORD not set' });
 
-  const client = new Client({ connectionString: url });
-  await client.connect();
+  let client;
   try {
+    client = createClient();
+    await client.connect();
     await client.query(`
       create table if not exists users (
         username text primary key,
@@ -42,6 +43,8 @@ export default async function handler(event) {
   } catch (e) {
     return json(500, { ok:false, error: e.message });
   } finally {
-    await client.end();
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
   }
 }

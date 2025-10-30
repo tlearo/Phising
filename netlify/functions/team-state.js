@@ -1,12 +1,4 @@
-import { Client } from 'pg';
-
-const DEFAULT_PROGRESS = {
-  phishing: false,
-  password: false,
-  encryption: false,
-  essential: false,
-  binary: false
-};
+import { createClient, ensureTeamStateTable, DEFAULT_PROGRESS, errorResponse } from './_shared/db.js';
 
 function normalizeProgress(raw) {
   const cleaned = { ...DEFAULT_PROGRESS };
@@ -63,28 +55,10 @@ function normalizeActivity(raw) {
   }));
 }
 
-async function ensureTeamStateTable(client) {
-  await client.query(`
-    create table if not exists team_state (
-      team text primary key,
-      progress jsonb not null default '{}'::jsonb,
-      progress_meta jsonb not null default '{}'::jsonb,
-      times jsonb not null default '[]'::jsonb,
-      score integer not null default 100,
-      score_log jsonb not null default '[]'::jsonb,
-      activity jsonb not null default '[]'::jsonb,
-      vault jsonb not null default '{}'::jsonb,
-      updated_at timestamptz not null default now()
-    )
-  `);
-}
-
-function respond(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' }
-  });
-}
+const respond = (status, body) => new Response(JSON.stringify(body), {
+  status,
+  headers: { 'content-type': 'application/json' }
+});
 
 function sanitizePayload(body = {}) {
   const progress = normalizeProgress(body.progress);
@@ -122,9 +96,10 @@ function normalizeState(row) {
 }
 
 export default async (req) => {
-  const client = new Client({ connectionString: process.env.NEON_DATABASE_URL });
-  await client.connect();
+  let client;
   try {
+    client = createClient();
+    await client.connect();
     await ensureTeamStateTable(client);
     if (req.method === 'GET') {
       const url = new URL(req.url);
@@ -169,8 +144,11 @@ export default async (req) => {
 
     return respond(405, { ok: false, error: 'Method Not Allowed' });
   } catch (e) {
-    return respond(500, { ok: false, error: e.message });
+    console.error('[team-state] request failed', e);
+    return respond(500, { ok: false, error: e.message || 'Team state failure' });
   } finally {
-    await client.end();
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
   }
 };

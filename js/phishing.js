@@ -57,13 +57,13 @@
   // ---------- Config ----------
   // How close (in pixels) the highlight must be to the hotspot center to count
   const HOTSPOT_RADIUS_PX = 28; // tuned for typical email screenshots
-  const MAX_STROKE_LENGTH = 640; // pixels of travel per stroke
-  const MAX_STROKE_SPAN = 260;   // max width/height of a single stroke highlight
-  const MAX_STROKE_AREA = 52000; // approx area (px^2) before we consider it too large
+  const MAX_STROKE_LENGTH = 900; // pixels of travel per stroke (loosened)
+  const MAX_STROKE_SPAN = 340;   // max width/height of a single stroke highlight (loosened)
+  const MAX_STROKE_AREA = 110000; // approx area (px^2) before we consider it too large (loosened)
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
   const REQUIRED_PCT = 0.75;
   const AUTO_SAVE_DELAY = 900;
-  const COVERAGE_LIMIT = 0.22;
+  const COVERAGE_LIMIT = 0.35;
 
 // ---------- Config ----------
 const IMAGES = ['Picture1.png','Picture2.png','Picture3.png','Picture4.png'];
@@ -638,6 +638,11 @@ window.PHISHING_INSTRUCTOR_KEY = {
     state.scaleX = w / imgEl.naturalWidth;
     state.scaleY = h / imgEl.naturalHeight;
 
+    if (stageEl) {
+      stageEl.style.setProperty('--stage-width', `${w}px`);
+      stageEl.style.setProperty('--stage-height', `${h}px`);
+    }
+
     // Reset visible overlay (we keep mask separately)
     resetStrokeState();
     ctx.clearRect(0, 0, w, h);
@@ -835,7 +840,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
     const width = Math.abs(bounds.maxX - bounds.minX);
     const height = Math.abs(bounds.maxY - bounds.minY);
     const area = width * height;
-    return width > 150 || height > 150 || area > 18000;
+    return width > 220 || height > 220 || area > 45000;
   }
 
   function beginDraw(x, y) {
