@@ -41,7 +41,6 @@
   const scoreKey = (team) => `${team}_score`;
   const scoreLogKey = (team) => `${team}_score_log`;
   const activityKey = (team) => `${team}_activity`;
-  const vaultKey = (team) => `${team}_vault`;
   const activityFilter = { team: 'all', type: 'all' };
   let activityFiltersReady = false;
   const syncDiagnosticsEl = qs('#syncDiagnostics');
@@ -206,7 +205,6 @@
   }
 
   function writeVault(team, value) {
-    setJSON(vaultKey(team), value || {});
   }
 
   function logTeamActivity(team, entry) {
@@ -746,12 +744,6 @@
     });
   }
 
-  function renderLockDigits() {
-    const lockEl = qs('#lockHow');
-    if (!lockEl) return;
-    lockEl.textContent = 'Vault digits hidden in admin view. Switch to a team session to see their progress.';
-  }
-
   function renderStats(rows) {
     const statsEl = qs('#averageTimeStats');
     const statTotalTeams = qs('#statTotalTeams');
@@ -769,7 +761,6 @@
     if (statTotalTeams) statTotalTeams.textContent = String(totalTeams);
     if (statTotalCompleted) statTotalCompleted.textContent = String(totalCompleted);
     if (statAvgTime) statAvgTime.textContent = fmtSecs(overallAvg);
-    renderLockDigits();
   }
 
   function renderPodium(rows) {
@@ -1274,7 +1265,6 @@
         noteSync('Reset', err.message, 'warn');
       }
       announce('All team progress reset.');
-      renderLockDigits();
       refresh();
     });
 
@@ -1481,7 +1471,6 @@
   function refreshAll() {
     const rows = loadTeamData();
     teamRows = rows;
-    renderLockDigits();
     renderTeamCards(rows);
     renderStats(rows);
     drawCharts(rows);

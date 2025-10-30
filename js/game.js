@@ -173,6 +173,13 @@
         startBtn.textContent = 'Open the vault';
       }
     }
+
+    const endlessEl = $('#endlessCallout');
+    if (endlessEl) {
+      const showEndless = !nextPuzzle;
+      endlessEl.hidden = !showEndless;
+      endlessEl.setAttribute('aria-hidden', showEndless ? 'false' : 'true');
+    }
   }
 
   // -------------------- Lock helpers --------------------------------------
@@ -283,6 +290,10 @@
       chest?.classList.add('open'); // your CSS animates this
       openBtn?.setAttribute('aria-label', 'Vault open');
       announce('Vault unlocked');
+      unlockBtn?.setAttribute('disabled', 'true');
+      setTimeout(() => {
+        window.location.href = 'celebration.html';
+      }, 1200);
     } else {
       setFeedback('Incorrect code. Keep playing to confirm your digits.');
     }

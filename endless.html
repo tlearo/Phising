@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Endless cyber challenge for Cyber Escape Rooms teams." />
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+  <title>Cyber Escape Rooms — Endless Challenge</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
+  <script src="js/session.js" defer></script>
+  <script src="js/endless.js" defer></script>
+</head>
+<body data-session="team" class="endless-body">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to mission hub">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+      <div class="header-actions">
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="game.html">Mission Hub</a>
+          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
+        </nav>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container-xl endless-main" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Endless Challenge</h1>
+      <p class="mt-1" style="color:var(--muted)">Keep the crew sharp with an endless stream of quickfire cyber prompts. Correct answers push the difficulty higher—can your team top the leaderboard?</p>
+    </header>
+
+    <section class="intro-banner points-card mt-2" aria-labelledby="endlessPointsHeading">
+      <details class="points-panel" open>
+        <summary id="endlessPointsHeading">Points intel</summary>
+        <p>This mode has its own score. Runs never affect your main mission total, but top streaks are saved per team so everyone can see who leads.</p>
+        <ul>
+          <li>Each correct answer adds one point and extends your streak.</li>
+          <li>Every five answers, the question pool shifts to a harder tier.</li>
+          <li>Three strikes end the run—bank your score by adding your name to the leaderboard.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="card endless-status mt-2" aria-label="Run status">
+      <div class="endless-metrics">
+        <div>
+          <span class="metric-label">Score</span>
+          <span class="metric-value" id="endlessScore">0</span>
+        </div>
+        <div>
+          <span class="metric-label">Level</span>
+          <span class="metric-value" id="endlessLevel">1</span>
+        </div>
+        <div>
+          <span class="metric-label">Strikes</span>
+          <span class="metric-value" id="endlessStrikes">0/3</span>
+        </div>
+        <div>
+          <span class="metric-label">Time</span>
+          <span class="metric-value" id="endlessTimer">—</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card endless-arena mt-2" aria-labelledby="challengeHeading">
+      <h2 id="challengeHeading">Quickfire Question</h2>
+      <p class="muted" id="endlessPrompt">Press start to begin.</p>
+      <div id="endlessOptions" class="endless-options" role="group" aria-label="Answer choices"></div>
+      <div class="endless-controls">
+        <button class="btn" id="endlessStartBtn" type="button">Start run</button>
+        <button class="btn ghost" id="endlessSkipBtn" type="button" disabled>Skip (−1 strike)</button>
+      </div>
+      <p class="feedback mt-2" id="endlessFeedback" aria-live="polite"></p>
+    </section>
+
+    <section class="card endless-leaderboard mt-2" aria-labelledby="leaderboardHeading">
+      <div class="leaderboard-head">
+        <h2 id="leaderboardHeading">Team leaderboard</h2>
+        <button class="btn ghost sm" id="endlessResetBoard" type="button">Clear board</button>
+      </div>
+      <ol id="endlessLeaderboard" class="leaderboard-list"></ol>
+    </section>
+  </main>
+</body>
+</html>

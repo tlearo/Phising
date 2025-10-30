@@ -25,7 +25,6 @@
   <script src="js/utils.js" defer></script>
   <script src="js/state-sync.js" defer></script>
   <script src="js/session.js" defer></script>
-  <script src="js/vault.js" defer></script>
   <script src="js/Chart.min.js" defer></script>
   <script src="js/admin.js" defer></script>
 </head>
@@ -55,17 +54,6 @@
           <a class="nav-link" href="game.html" data-visible="team">Mission Hub</a>
           <a class="nav-link" href="admin.html">Admin</a>
         </nav>
-        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team" hidden aria-hidden="true">
-          <span class="vault-status__label">Vault</span>
-          <ol class="vault-status__digits">
-            <li data-vault-key="phishing">•</li>
-            <li data-vault-key="encryption">•</li>
-            <li data-vault-key="password">•</li>
-            <li data-vault-key="essential">•</li>
-            <li data-vault-key="binary">•</li>
-          </ol>
-          <span class="vault-status__count">0/5</span>
-        </div>
         <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
       </div>
     </div>
@@ -108,7 +96,7 @@
             <li>Overall puzzles completed: <strong id="statTotalCompleted">—</strong></li>
             <li>Average completion time: <strong id="statAvgTime">—</strong></li>
           </ul>
-          <p id="lockHow" class="muted mt-1"></p>
+          <p class="muted mt-1">Use this panel to track overall progress and average performance. Vault digits stay hidden so teams must earn them firsthand.</p>
         </section>
 
       </aside>

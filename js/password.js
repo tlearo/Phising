@@ -401,7 +401,6 @@
     localStorage.setItem('lock_digit_pw_clues', String(shown)); // backwards compatibility
     localStorage.removeItem('lock_digit_pw_minutes');
     localStorage.setItem('password_crack_time_display', crackTimeDisplay);
-    localStorage.setItem(SCENARIO_KEY, String((currentScenarioIndex + 1) % SCENARIOS.length));
     const message = `Success! You cracked it in ${Strength.formatCrackTime(solveSeconds)}. Jump to Step 3 and enter the solved password to capture the vault digit. Time to think like a hacker and log the code.`;
     setFeedback(message, true);
     updateProgressPercent(100, { complete: true });

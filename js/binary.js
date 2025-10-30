@@ -152,7 +152,7 @@
       }
     });
     if (!contributions.length) return 'All zeros so far.';
-    return `${contributions.join(' + ')} = ${total}`;
+    return `Add ${contributions.join(' + ')}`;
   }
 
   function updateSums() {
@@ -160,13 +160,13 @@
     const bBits = BINARY_B.padStart(BIT_LENGTH, '0');
     const xorBits = XOR_BIN.padStart(BIT_LENGTH, '0');
     if (sumLabels.a) {
-      sumLabels.a.textContent = `Binary A contributions: ${describeBits(aBits)} (decimal ${DEC_A})`;
+      sumLabels.a.textContent = `Binary A contributions: ${describeBits(aBits)}`;
     }
     if (sumLabels.b) {
-      sumLabels.b.textContent = `Binary B contributions: ${describeBits(bBits)} (decimal ${DEC_B})`;
+      sumLabels.b.textContent = `Binary B contributions: ${describeBits(bBits)}`;
     }
     if (sumLabels.xor) {
-      sumLabels.xor.textContent = `XOR contributions: ${describeBits(xorBits)} (decimal ${XOR_DEC})`;
+      sumLabels.xor.textContent = `XOR contributions: ${describeBits(xorBits)}`;
     }
   }
 
@@ -175,16 +175,16 @@
     const aVal = Number(inputs.decA?.value || NaN);
     const bVal = Number(inputs.decB?.value || NaN);
     if (!Number.isInteger(aVal) || aVal !== DEC_A) {
-      setStatus('a', false, `Binary A converts to ${DEC_A}.`);
+      setStatus('a', false, 'Binary A decimal does not match the highlighted columns.');
       ok = false;
     } else {
-      setStatus('a', true, `Binary A = ${DEC_A}.`);
+      setStatus('a', true, 'Binary A confirmed.');
     }
     if (!Number.isInteger(bVal) || bVal !== DEC_B) {
-      setStatus('b', false, `Binary B converts to ${DEC_B}.`);
+      setStatus('b', false, 'Binary B decimal does not match the highlighted columns.');
       ok = false;
     } else {
-      setStatus('b', true, `Binary B = ${DEC_B}.`);
+      setStatus('b', true, 'Binary B confirmed.');
     }
     progress.decimals = ok;
     return ok;
@@ -204,7 +204,7 @@
       return false;
     }
     if (decInput !== XOR_DEC) {
-      setStatus('xor', false, `XOR decimal should be ${XOR_DEC}. Recheck the mismatched columns.`);
+      setStatus('xor', false, 'XOR decimal should equal the sum of the mismatched columns. Recheck your table.');
       progress.xor = false;
       return false;
     }
@@ -239,7 +239,7 @@
     updateProgressState();
 
     if (decimalsOk && xorOk) {
-      setFeedback(`Success! Binary A = ${DEC_A}, Binary B = ${DEC_B}, XOR = ${XOR_DEC}. Vault digit captured: ${VAULT_DIGIT}.`, true);
+      setFeedback(`Success! All conversions check out. Vault digit captured: ${VAULT_DIGIT}.`, true);
       chestHint?.removeAttribute('hidden');
       markBinaryComplete();
       if (!alreadyComplete) {

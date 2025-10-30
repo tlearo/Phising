@@ -1244,6 +1244,16 @@ body.phish-overlay-open {
     flex-wrap: wrap;
 }
 
+.endless-callout {
+    margin-top: 1.5rem;
+    background: rgba(9, 255, 136, .08);
+    border: 1px solid rgba(9, 255, 136, .25);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: grid;
+    gap: .75rem;
+}
+
 .journey-map__title {
     font-size: .9rem;
     letter-spacing: .08em;
@@ -1857,6 +1867,13 @@ body.phish-overlay-open {
     align-items: center;
     gap: .5rem;
     margin-top: .25rem;
+    flex-wrap: wrap;
+}
+
+.lock-actions {
+    display: flex;
+    justify-content: center;
+    gap: .75rem;
     flex-wrap: wrap;
 }
 
@@ -4144,4 +4161,111 @@ h1.glow { font-size: clamp(1.9rem, 4.5vw, 3.2rem); }
 @keyframes podium-rise {
   from { transform: translateY(45px) scaleY(.8); opacity: 0; }
   to   { transform: translateY(0) scaleY(1); opacity: 1; }
+}
+
+/* Celebration screen */
+.celebration {
+    background: radial-gradient(circle at top, rgba(9, 255, 136, .15), rgba(12, 20, 32, 1));
+    min-height: 100vh;
+}
+
+.celebration-main {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1.5rem, 5vw, 3rem);
+}
+
+.celebration-card {
+    max-width: 520px;
+    width: 100%;
+    background: rgba(6, 12, 20, .85);
+    border: 1px solid rgba(88, 166, 255, .25);
+    border-radius: 18px;
+    padding: clamp(1.75rem, 5vw, 2.5rem);
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, .45);
+}
+
+.celebration-card .glow {
+    margin-bottom: 1rem;
+}
+
+.celebration-lead {
+    font-size: 1.1rem;
+    color: var(--muted);
+}
+
+.celebration-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.75rem;
+}
+
+/* Endless challenge */
+.endless-main {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.endless-status .endless-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.metric-label {
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    font-size: .75rem;
+    color: var(--muted);
+}
+
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.endless-arena {
+    display: grid;
+    gap: 1rem;
+}
+
+.endless-options {
+    display: grid;
+    gap: .75rem;
+}
+
+.endless-options .btn {
+    justify-content: flex-start;
+}
+
+.endless-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+.endless-leaderboard .leaderboard-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.leaderboard-list {
+    list-style: decimal inside;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: .35rem;
+    color: var(--muted);
+}
+
+.leaderboard-list li strong {
+    color: #fff;
 }
