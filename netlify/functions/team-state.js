@@ -121,7 +121,13 @@ export default async (req) => {
     }
 
     if (req.method === 'PUT') {
-      const body = await req.json().catch(() => ({}));
+      const body = await req.json().catch((err) => {
+        console.error('[team-state] invalid JSON body', err);
+        return null;
+      });
+      if (!body || typeof body !== 'object') {
+        return respond(400, { ok: false, error: 'Invalid JSON payload' });
+      }
       const team = String(body.team || '').trim().toLowerCase();
       if (!team) return respond(400, { ok: false, error: 'Missing team' });
       const sanitized = sanitizePayload(body);

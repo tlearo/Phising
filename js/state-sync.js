@@ -174,12 +174,18 @@
     stateSync.busy = true;
     try {
       const payload = captureState();
-      const res = await fetch(ENDPOINT, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, reason })
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(ENDPOINT, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, reason })
+    });
+      if (!res.ok) {
+        let detail = '';
+        try {
+          detail = await res.text();
+        } catch (_) {}
+        throw new Error(`HTTP ${res.status}${detail ? ` — ${detail}` : ''}`);
+      }
       stateSync.lastPush = Date.now();
     } catch (err) {
       console.warn('[state-sync] push failed', err);
