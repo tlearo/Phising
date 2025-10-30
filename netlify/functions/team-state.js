@@ -114,8 +114,17 @@ export default async (req) => {
       const defaults = sanitizePayload({});
       await client.query(
         `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8, now())`,
-        [teamKey, defaults.progress, defaults.progress_meta, defaults.times, defaults.score, defaults.score_log, defaults.activity, defaults.vault]
+         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb, now())`,
+        [
+          teamKey,
+          JSON.stringify(defaults.progress),
+          JSON.stringify(defaults.progress_meta),
+          JSON.stringify(defaults.times),
+          defaults.score,
+          JSON.stringify(defaults.score_log),
+          JSON.stringify(defaults.activity),
+          JSON.stringify(defaults.vault)
+        ]
       );
       return respond(200, { ok: true, state: normalizeState({ team: teamKey, ...defaults }) });
     }
@@ -131,9 +140,19 @@ export default async (req) => {
       const team = String(body.team || '').trim().toLowerCase();
       if (!team) return respond(400, { ok: false, error: 'Missing team' });
       const sanitized = sanitizePayload(body);
+      const values = [
+        team,
+        JSON.stringify(sanitized.progress),
+        JSON.stringify(sanitized.progress_meta),
+        JSON.stringify(sanitized.times),
+        sanitized.score,
+        JSON.stringify(sanitized.score_log),
+        JSON.stringify(sanitized.activity),
+        JSON.stringify(sanitized.vault)
+      ];
       await client.query(
         `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, vault, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8, now())
+         values ($1,$2::jsonb,$3::jsonb,$4::jsonb,$5,$6::jsonb,$7::jsonb,$8::jsonb, now())
          on conflict (team) do update set
            progress = excluded.progress,
            progress_meta = excluded.progress_meta,
@@ -143,7 +162,7 @@ export default async (req) => {
            activity = excluded.activity,
            vault = excluded.vault,
            updated_at = now()`,
-        [team, sanitized.progress, sanitized.progress_meta, sanitized.times, sanitized.score, sanitized.score_log, sanitized.activity, sanitized.vault]
+        values
       );
       return respond(200, { ok: true });
     }

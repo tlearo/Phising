@@ -45,6 +45,7 @@
   const autosaveStatusEl = $('#autosaveStatus');
   const vulnStageEl = $('#vulnerabilityCountStage');
   const exampleBanner = $('#exampleBanner');
+  const selectAllBtn = $('#selectAllBtn');
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
