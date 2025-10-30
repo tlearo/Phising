@@ -32,6 +32,7 @@
   const markPhishBtn = $('#markPhish');
   const markLegitBtn = $('#markLegit');
   const classificationTipEl = $('#classificationTip');
+  const classificationStatusEl = $('#classificationStatus');
   const classificationBlock = $('#classificationBlock');
   const clearBtn     = $('#clearBtn');
   const hintBtn      = $('#phishHintBtn');
@@ -141,9 +142,9 @@ updateVaultCallout();
 
 
   // Tool state
-  const BASE_ZOOM = window.matchMedia('(min-width: 900px)').matches ? 1 : 0.9;
+  const IS_DESKTOP = window.matchMedia('(min-width: 900px)').matches;
   const ZOOM_STEP = 0.2;
-  const DEFAULT_ZOOM = Math.max(0.7, BASE_ZOOM - (ZOOM_STEP * 2));
+  const DEFAULT_ZOOM = IS_DESKTOP ? 1.12 : 0.95;
 
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
@@ -275,6 +276,13 @@ updateVaultCallout();
   function updateSlideUi() {
     const current = currentName();
     const total = Math.max(slideshow.total, 1);
+    const complete = isImageComplete(current);
+    if (stageEl) {
+      stageEl.classList.toggle('is-complete', !!complete);
+    }
+    if (imageContainer) {
+      imageContainer.classList.toggle('is-complete', !!complete);
+    }
     if (slideStatus) {
       if (!slideshow.total) {
         slideStatus.textContent = 'No examples available.';
@@ -478,6 +486,7 @@ updateVaultCallout();
       }
     }
     updateVulnText();
+    updateSlideUi();
   }
 
   function storageKey() {
@@ -695,7 +704,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const needed = Math.max(required - found, 0);
       let extra = '';
       if (found === 0) {
-        extra = ' Start highlighting the most suspicious clue you can find.';
+        extra = ' Start by circling the most suspicious clue you can find.';
       } else if (remaining > 0) {
         if (needed > 0) {
           extra = ` Keep hunting - ${needed === 1 ? 'one more critical clue' : `${needed} more critical clues`} will meet the target.`;
@@ -710,9 +719,14 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const slideSummary = totalSlides ? ` Examples cleared: ${doneSlides}/${totalSlides}.` : '';
       const message = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
       if (vulnCountEl) {
-        const neededMsg = needed > 0
-          ? `${Math.max(needed, 0)} more to meet the target.`
-          : found ? 'Target met — mark extras if you spot them.' : 'Start highlighting the most suspicious clue you can find.';
+        let neededMsg;
+        if (found === 0) {
+          neededMsg = `${required} needed to unlock this example. Start with the clearest red flag.`;
+        } else if (needed > 0) {
+          neededMsg = `${Math.max(needed, 0)} more to meet the target.`;
+        } else {
+          neededMsg = 'Target met — mark extras if you spot them.';
+        }
         vulnCountEl.textContent = `Found ${found}/${total}. ${neededMsg}`;
       }
       if (vulnDotsEl) renderVulnDots(total, found, required);
@@ -752,14 +766,32 @@ window.PHISHING_INSTRUCTOR_KEY = {
       markLegitBtn.setAttribute('aria-pressed', isLegit ? 'true' : 'false');
       markLegitBtn.classList.toggle('is-selected', isLegit);
     }
-    if (isPhish) classificationBlock?.classList.remove('is-nudged');
     if (classificationTipEl) {
       if (isPhish) {
         classificationTipEl.setAttribute('hidden', 'hidden');
-      } else if (!classificationTipEl.hasAttribute('hidden')) {
+      } else if (isLegit) {
+        classificationTipEl.textContent = 'Looks Legit selected — highlights stay locked until you switch back.';
+        classificationTipEl.removeAttribute('hidden');
+      } else {
         classificationTipEl.textContent = 'Select "This is Phishing" to unlock highlighting.';
+        classificationTipEl.removeAttribute('hidden');
       }
     }
+    if (classificationStatusEl) {
+      if (isPhish) {
+        classificationStatusEl.textContent = 'Marked as phishing.';
+        classificationStatusEl.classList.add('is-phish');
+        classificationStatusEl.classList.remove('is-legit');
+      } else if (isLegit) {
+        classificationStatusEl.textContent = 'Marked as legitimate — highlighting locked.';
+        classificationStatusEl.classList.add('is-legit');
+        classificationStatusEl.classList.remove('is-phish');
+      } else {
+        classificationStatusEl.textContent = 'Choose a verdict to continue highlighting.';
+        classificationStatusEl.classList.remove('is-phish', 'is-legit');
+      }
+    }
+    if (isPhish) classificationBlock?.classList.remove('is-nudged');
   }
 
   function setFeedback(msg, tone='info') {

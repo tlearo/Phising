@@ -101,6 +101,8 @@
     const meta = typeof window.utils?.readProgressMeta === 'function'
       ? window.utils.readProgressMeta()
       : {};
+    const remoteSrc = window.stateSync?.lastPayload;
+    const remoteMeta = remoteSrc?.progressMeta || {};
     const done = computeCompleted(p);
 
     // Text
@@ -119,9 +121,14 @@
     PUZZLES.forEach(k => {
       const btn = document.querySelector(`[data-puzzle="${k}"]`);
       const entry = meta?.[k];
-      const percent = typeof entry?.percent === 'number'
-        ? Math.max(0, Math.min(100, Math.round(entry.percent)))
-        : (p[k] ? 100 : 0);
+      const remoteEntry = remoteMeta?.[k];
+      const percentCandidates = [];
+      if (entry && typeof entry.percent === 'number') percentCandidates.push(entry.percent);
+      if (remoteEntry && typeof remoteEntry.percent === 'number') percentCandidates.push(remoteEntry.percent);
+      if (p[k]) percentCandidates.push(100);
+      const percent = percentCandidates.length
+        ? Math.max(0, Math.min(100, Math.round(Math.max(...percentCandidates))))
+        : 0;
 
       if (btn) {
         const fillEl = btn.querySelector('.mission-tracker__fill');

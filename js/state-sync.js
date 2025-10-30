@@ -46,6 +46,7 @@
       /^phish_done_/,
       /^class_/,
       new RegExp(`^${TEAM}_phishing_`),
+      new RegExp(`^${TEAM}_vuln_found_`),
       new RegExp(`^${TEAM}_progress$`),
       new RegExp(`^${TEAM}_progress_meta$`)
     ];
@@ -174,6 +175,7 @@
     stateSync.busy = true;
     try {
       const payload = captureState();
+      stateSync.lastPayload = payload;
     const res = await fetch(ENDPOINT, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -221,7 +223,12 @@
     saveNow('unload');
   });
 
-  pull(true);
+  saveNow('bootstrap').catch((err) => {
+    console.warn('[state-sync] initial push failed', err);
+  }).finally(() => {
+    pull(true);
+  });
+
   setInterval(() => {
     pull(false);
   }, AUTO_PULL_MS);

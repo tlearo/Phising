@@ -643,6 +643,8 @@ form .row {
 
 .classification-buttons .btn {
     width: 100%;
+    position: relative;
+    border-width: 2px;
 }
 
 .classification-buttons .btn[aria-pressed="true"] {
@@ -671,6 +673,17 @@ form .row {
     border-color: rgba(88, 166, 255, .8);
 }
 
+.classification-buttons .btn.is-selected::after {
+    content: 'Selected';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: .75rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .75);
+}
+
 #markPhish {
     background: rgba(104, 20, 55, .9);
     border-color: rgba(255, 166, 187, .45);
@@ -686,6 +699,16 @@ form .row {
     color: #fff;
 }
 
+#markPhish.is-selected {
+    background: linear-gradient(135deg, rgba(200, 40, 100, 1), rgba(120, 16, 70, 1));
+    color: #fff;
+    border-color: rgba(255, 214, 238, .85);
+}
+
+#markPhish.is-selected::after {
+    color: rgba(255, 255, 255, .85);
+}
+
 #markLegit {
     background: rgba(88, 166, 255, .85);
     color: #0b0f14;
@@ -699,6 +722,31 @@ form .row {
     background: linear-gradient(135deg, rgba(120, 200, 255, 1), rgba(70, 150, 255, 1));
     border-color: rgba(120, 200, 255, .9);
     color: #05101f;
+}
+
+#markLegit.is-selected {
+    background: linear-gradient(135deg, rgba(120, 200, 255, 1), rgba(40, 110, 220, 1));
+    color: #041223;
+    border-color: rgba(164, 220, 255, .9);
+}
+
+#markLegit.is-selected::after {
+    color: rgba(6, 24, 44, .8);
+}
+
+.classification-status {
+    font-size: .82rem;
+    margin-top: .35rem;
+    transition: color .2s ease;
+    color: var(--muted);
+}
+
+.classification-status.is-phish {
+    color: #34d399;
+}
+
+.classification-status.is-legit {
+    color: #60a5fa;
 }
 
 .cta-title {
@@ -1887,6 +1935,7 @@ input[type="range"]::-moz-range-thumb {
     padding: clamp(.45rem, 1.6vw, 1rem);
     background: radial-gradient(circle at top, rgba(88,166,255,.12), transparent 75%);
     border-radius: 16px;
+    border: 1px solid transparent;
     overflow: hidden;
     width: 100%;
 }
@@ -2047,6 +2096,25 @@ input[type="range"]::-moz-range-thumb {
     transition: transform .18s ease;
 }
 
+.image-stage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+    transition: background .2s ease, box-shadow .2s ease;
+}
+
+.image-stage.is-complete::after {
+    background: linear-gradient(135deg, rgba(9, 255, 136, .08), rgba(9, 255, 136, .02));
+    box-shadow: inset 0 0 0 3px rgba(9, 255, 136, .35);
+}
+
+.image-container.is-complete {
+    border: 1px solid rgba(9, 255, 136, .25);
+    box-shadow: 0 0 0 2px rgba(9, 255, 136, .12);
+}
+
 .image-stage.is-zoomed {
     overflow: visible;
 }
@@ -2087,6 +2155,11 @@ input[type="range"]::-moz-range-thumb {
     letter-spacing: .03em;
     pointer-events: none;
     z-index: 15;
+}
+
+.image-stage.is-complete .example-banner {
+    background: rgba(9, 255, 136, .85);
+    color: #031b11;
 }
 
 .autosave-status {
@@ -2532,6 +2605,10 @@ input[type="range"]::-moz-range-thumb {
 .thumb-nav a.is-complete::before {
     background: var(--accent);
     border-color: var(--accent);
+}
+
+.thumb-nav a.is-complete {
+    color: var(--accent);
 }
 
 .slideshow-controls {
