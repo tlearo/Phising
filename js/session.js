@@ -111,10 +111,25 @@
     });
   }
 
+  function readAlias() {
+    try {
+      const raw = localStorage.getItem('player_alias') || '';
+      if (typeof window.utils?.sanitizeText === 'function') {
+        return window.utils.sanitizeText(raw, { maxLength: 40, allowPunctuation: false });
+      }
+      return raw;
+    } catch {
+      return '';
+    }
+  }
+
   function populateName(user) {
-    if (!user?.username) return;
+    const alias = readAlias();
+    const base = user?.username || '';
+    const display = (alias || base).toUpperCase();
+    if (!display) return;
     document.querySelectorAll('[data-user-name]').forEach(el => {
-      el.textContent = user.username.toUpperCase();
+      el.textContent = display;
     });
   }
 
@@ -138,6 +153,9 @@
     window.addEventListener('storage', (event) => {
       if (event.key === 'user') {
         toggleVisibility(readUser());
+      }
+      if (event.key === 'player_alias') {
+        populateName(readUser());
       }
     });
   });

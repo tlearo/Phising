@@ -121,6 +121,15 @@
           </div>
         </section>
 
+        <section class="player-alias card mt-2" aria-label="Player name entry">
+          <div>
+            <label class="player-alias__label" for="playerAliasInput">Player name (optional)</label>
+            <input id="playerAliasInput" type="text" maxlength="40" placeholder="Enter your name" data-sanitize="text" autocomplete="off" />
+          </div>
+          <p class="player-alias__hint muted">Displayed separately from the team login. Leave blank if you prefer to stay anonymous.</p>
+          <p class="player-alias__display">Showing as: <strong id="playerAliasDisplay">—</strong></p>
+        </section>
+
         <div id="scoreLog" class="score-log" hidden></div>
 
         <div class="mission-tracker mt-2">

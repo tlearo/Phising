@@ -59,12 +59,48 @@
 
   // -------------------- Team display --------------------------------------
 
+  function sanitizeAlias(value) {
+    if (typeof window.utils?.sanitizeText === 'function') {
+      return window.utils.sanitizeText(value, { maxLength: 40, allowPunctuation: false });
+    }
+    return String(value || '')
+      .replace(/[`"<>\u0000-\u001F\u007F]/g, '')
+      .replace(/--/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 40);
+  }
+
+  function readAlias() {
+    try { return localStorage.getItem('player_alias') || ''; } catch { return ''; }
+  }
+
+  function writeAlias(value) {
+    const cleaned = sanitizeAlias(value);
+    try { localStorage.setItem('player_alias', cleaned); } catch (_) {}
+    return cleaned;
+  }
+
+  let aliasInput = null;
+  let aliasDisplay = null;
+
+  function updateAliasUI(alias) {
+    if (aliasInput && aliasInput.value !== alias) {
+      aliasInput.value = alias;
+    }
+    if (aliasDisplay) {
+      aliasDisplay.textContent = alias || '—';
+    }
+  }
+
   function renderTeamName(){
     const user = readUser();
+    const alias = sanitizeAlias(readAlias());
     const el = $('#teamName');
     if (!el) return;
-    const name = user?.username ? user.username.toUpperCase() : 'TEAM';
-    el.textContent = name;
+    const baseName = user?.username || 'TEAM';
+    const name = alias || baseName;
+    el.textContent = name.toUpperCase();
   }
 
   // -------------------- Progress rendering --------------------------------
@@ -397,6 +433,12 @@
       return;
     }
 
+    aliasInput = $('#playerAliasInput');
+    aliasDisplay = $('#playerAliasDisplay');
+    const storedAlias = sanitizeAlias(readAlias());
+    writeAlias(storedAlias);
+    updateAliasUI(storedAlias);
+
     ensureLogout();
     window.vault?.refresh();
     renderTeamName();
@@ -422,6 +464,20 @@
 
     autoAdvanceWire();
     initScoreboard();
+
+    if (aliasInput) {
+      const syncAlias = (value) => {
+        const sanitized = writeAlias(value);
+        updateAliasUI(sanitized);
+        renderTeamName();
+      };
+      aliasInput.addEventListener('input', (ev) => {
+        syncAlias(ev.target.value);
+      });
+      aliasInput.addEventListener('blur', (ev) => {
+        syncAlias(ev.target.value);
+      });
+    }
 
     unlockBtn?.addEventListener('click', tryUnlock);
 

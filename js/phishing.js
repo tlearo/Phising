@@ -60,12 +60,12 @@
 
   // ---------- Config ----------
   // How close (in pixels) the highlight must be to the hotspot center to count
-  const HOTSPOT_RADIUS_PX = 48; // wider tolerance so near-miss highlights still count
-  const MAX_STROKE_LENGTH = 900; // pixels of travel per stroke (loosened)
-  const MAX_STROKE_SPAN = 360;   // max width/height of a single stroke highlight (loosened)
-  const MAX_STROKE_AREA = 140000; // approx area (px^2) before we consider it too large (loosened)
+  const HOTSPOT_RADIUS_PX = 60; // wider tolerance so near-miss highlights still count
+  const MAX_STROKE_LENGTH = 1100; // pixels of travel per stroke (loosened)
+  const MAX_STROKE_SPAN = 420;   // max width/height of a single stroke highlight (loosened)
+  const MAX_STROKE_AREA = 190000; // approx area (px^2) before we consider it too large (loosened)
   // Required proportion of hotspots on an image to count as "complete" for this puzzle
-  const REQUIRED_PCT = 0.66;
+  const REQUIRED_PCT = 0.5;
   const AUTO_SAVE_DELAY = 900;
   const COVERAGE_LIMIT = 0.35;
 
@@ -675,6 +675,11 @@ window.PHISHING_INSTRUCTOR_KEY = {
     }));
     state.found.clear();
     state.classification = localStorage.getItem(`class_${state.imgName}`) || null;
+    if (!state.classification) {
+      state.classification = 'phish';
+      try { localStorage.setItem(`class_${state.imgName}`, 'phish'); } catch (_) {}
+      window.stateSync?.queueSave?.('phishing-classification');
+    }
     clearTimeout(autoSaveTimer);
     updateAutosaveStatus('Autosave ready.');
     updateVulnText();
@@ -896,7 +901,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
     const width = Math.abs(bounds.maxX - bounds.minX);
     const height = Math.abs(bounds.maxY - bounds.minY);
     const area = width * height;
-    return width > 260 || height > 260 || area > 65000;
+    return width > 320 || height > 320 || area > 90000;
   }
 
   function beginDraw(x, y) {
@@ -1104,12 +1109,14 @@ window.PHISHING_INSTRUCTOR_KEY = {
   // ---------- Submit ----------
   function submitHighlights() {
     recomputeFoundFromMask();
+    updateVulnText();
     const name = currentName();
     const total = state.hotspots.length;
     const found = state.found.size;
     const required = Math.ceil(total * REQUIRED_PCT);
 
-    const userClass = localStorage.getItem(`class_${name}`); // phish|legit|null
+    const storedClass = localStorage.getItem(`class_${name}`);
+    const userClass = storedClass || state.classification;
     const truth = !!IS_PHISHING[name];
 
     // Require a classification

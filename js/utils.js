@@ -230,6 +230,61 @@
     if (prev == null) el.addEventListener('blur', () => el.removeAttribute('tabindex'), { once: true });
   }
 
+  function sanitizeText(value, opts = {}) {
+    let str = String(value ?? '');
+    str = str.replace(/[\u0000-\u001F\u007F]/g, '');
+    str = str.replace(/--/g, ' ');
+    str = str.replace(/\/\*/g, ' ').replace(/\*\//g, ' ');
+    str = str.replace(/;/g, ' ');
+    str = str.replace(/[<>`]/g, '');
+    const allowQuotes = opts.allowQuotes === true;
+    if (!allowQuotes) {
+      str = str.replace(/'/g, '’').replace(/"/g, '”');
+    }
+    if (opts.allowPunctuation === false) {
+      str = str.replace(/[^A-Za-z0-9 _’”.-]/g, '');
+    }
+    str = str.replace(/\s+/g, ' ').trim();
+    const max = Number(opts.maxLength || opts.max) || 0;
+    if (max && str.length > max) {
+      str = str.slice(0, max);
+    }
+    return str;
+  }
+
+  function sanitizeInputElement(el, opts = {}) {
+    const sanitized = sanitizeText(el.value, opts);
+    if (sanitized === el.value) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = sanitized;
+    if (document.activeElement === el && typeof start === 'number' && typeof end === 'number') {
+      const pos = Math.min(sanitized.length, start);
+      try { el.setSelectionRange(pos, pos); } catch (_) {}
+    }
+  }
+
+  document.addEventListener('input', (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+    const type = target.type ? target.type.toLowerCase() : 'text';
+    if (type !== 'text' && type !== 'search') return;
+    const mode = target.dataset.sanitize || 'text';
+    if (mode === 'off') return;
+    const opts = {};
+    if (mode === 'loose') {
+      opts.allowPunctuation = true;
+      if (target.dataset.sanitizeAllowQuotes === 'true') opts.allowQuotes = true;
+    } else if (mode === 'text') {
+      opts.allowPunctuation = target.dataset.allowPunctuation === 'true';
+      if (target.dataset.sanitizeAllowQuotes === 'true') opts.allowQuotes = true;
+    }
+    if (target.dataset.sanitizeMax) {
+      opts.maxLength = Number(target.dataset.sanitizeMax);
+    }
+    sanitizeInputElement(target, opts);
+  }, { passive: true });
+
   // ---------- Points / Scoreboard -----------------------------------------
   const SCORE_BASE = 100;
   const SCORE_LOG_LIMIT = 40;
@@ -547,7 +602,7 @@
     getJSON, setJSON, removeJSON,
     getUser, saveUser, progressKey, progressMetaKey, timesKey, readProgress, setProgressFlag,
     readProgressMeta, setProgressPercent, getProgressPercent, pushTime,
-    fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus,
+    fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus, sanitizeText,
     points: pointsApi,
     backOrHome,
     initStatusHud,

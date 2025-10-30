@@ -53,6 +53,27 @@ values
   ('Gate Crashers')
 on conflict (team) do nothing;
 
+-- Mark test team as fully complete for demonstrations
+update team_state
+set
+  progress = jsonb_build_object(
+    'phishing', true,
+    'password', true,
+    'encryption', true,
+    'essential', true,
+    'binary', true
+  ),
+  progress_meta = jsonb_build_object(
+    'phishing',   jsonb_build_object('percent', 100, 'updatedAt', (extract(epoch from now()) * 1000)::bigint),
+    'password',   jsonb_build_object('percent', 100, 'updatedAt', (extract(epoch from now()) * 1000)::bigint),
+    'encryption', jsonb_build_object('percent', 100, 'updatedAt', (extract(epoch from now()) * 1000)::bigint),
+    'essential',  jsonb_build_object('percent', 100, 'updatedAt', (extract(epoch from now()) * 1000)::bigint),
+    'binary',     jsonb_build_object('percent', 100, 'updatedAt', (extract(epoch from now()) * 1000)::bigint)
+  ),
+  score = greatest(score, 125),
+  updated_at = now()
+where team = 'team5';
+
 -- Optional legacy snapshot tables (only if you still rely on them)
 -- create table progress (...);
 -- create table times (...);
