@@ -181,6 +181,7 @@
             <div class="flex mt-2" style="gap:.5rem; flex-wrap:wrap;">
               <button class="btn warn" id="clearBtn" type="button" data-tooltip="Clear current highlights">Clear</button>
               <button class="btn ghost" id="phishHintBtn" type="button">Hint (−5 pts)</button>
+              <button class="btn ghost" id="phishRevealBtn" type="button" hidden>Reveal hotspots (−15 pts)</button>
             </div>
             <p id="phishHintText" class="hint-callout" hidden>
               Scan the sender address, call-to-action URL, and urgency cues first—phishers often betray themselves there.
@@ -332,7 +333,8 @@
     ],
     "Picture4.png": [
       { "xPct": 0.18, "yPct": 0.18, "label": "Sender domain (sharep0int.com with zero) — look-alike" },
-      { "xPct": 0.48, "yPct": 0.44, "label": "Document title / file area (targets financial / high-stress content)" }
+      { "xPct": 0.48, "yPct": 0.44, "label": "Document title / file area (targets financial / high-stress content)" },
+      { "xPct": 0.52, "yPct": 0.34, "label": 'Header branding — "Minisoft" logo mismatch' }
     ]
   }
   </script>

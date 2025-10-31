@@ -116,6 +116,9 @@
     try { p = JSON.parse(localStorage.getItem(pKey) || '{}'); } catch { p = {}; }
     p.password = true;
     localStorage.setItem(pKey, JSON.stringify(p));
+    try {
+      window.utils?.setProgressFlag?.('password', true, u);
+    } catch (_) {}
 
     // time logging
     const secs = Math.round((Date.now() - startTimeMs) / 1000);

@@ -30,6 +30,9 @@
     try{ p = JSON.parse(localStorage.getItem(key)||'{}'); }catch{ p = {}; }
     p.essential = true;
     localStorage.setItem(key, JSON.stringify(p));
+    if (window.utils?.setProgressFlag) {
+      window.utils.setProgressFlag('essential', true, user);
+    }
   }
 
   // ---------- Core elements ----------

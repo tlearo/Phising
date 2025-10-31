@@ -281,6 +281,9 @@
     try {
       localStorage.setItem('lock_digit_caesar_shift', String(solvedShift));
     } catch (_) {}
+    try {
+      window.utils?.setProgressFlag?.('encryption', true);
+    } catch (_) {}
     updateVaultDigit(String(solvedShift));
     expectedShift = Caesar.normalize(solvedShift);
     window.vault?.unlock('encryption', solvedShift, {

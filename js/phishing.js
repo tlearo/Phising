@@ -477,6 +477,9 @@ updateVaultCallout();
         localStorage.setItem(key, JSON.stringify(p));
         setFeedback(`Full gallery cleared! Digit ${PHISHING_DIGIT} locked in.`, 'success');
         announce('Phishing puzzle complete');
+        try {
+          window.utils?.setProgressFlag?.('phishing', true, u);
+        } catch (_) {}
       try {
         localStorage.setItem('lock_digit_phishing_total', String(PHISHING_DIGIT));
       } catch (_) {}

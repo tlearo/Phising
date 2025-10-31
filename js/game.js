@@ -196,6 +196,11 @@
       const showBonus = !nextPuzzle;
       bonusEl.hidden = !showBonus;
       bonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
+      const aliasCard = $('#playerAliasCard');
+      if (aliasCard) {
+        aliasCard.hidden = !showBonus;
+        aliasCard.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
+      }
     }
   }
 

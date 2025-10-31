@@ -2286,6 +2286,27 @@ input[type="range"]::-moz-range-thumb {
     overflow: auto;
 }
 
+.phish-guides {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+    z-index: 24;
+}
+
+.phish-guides[hidden] {
+    display: none;
+}
+
+.phish-guide {
+    position: absolute;
+    border: 3px dashed rgba(239, 68, 68, .9);
+    border-radius: 999px;
+    background: rgba(239, 68, 68, .12);
+    box-shadow: 0 0 18px rgba(239, 68, 68, .35);
+    transform: translate(-50%, -50%);
+}
+
 /* These sizes are set dynamically in JS, but defaults help first paint */
 #phishingImage {
     display: block;
