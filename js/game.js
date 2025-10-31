@@ -120,14 +120,25 @@
     const remoteProgress = remoteState?.progress || {};
     const done = computeCompleted(p);
 
-    // Text
     const status = $('#progressStatus');
     if (status) status.textContent = `${done}/${PUZZLES.length} puzzles completed`;
 
     const overallPercent = Math.round((done / PUZZLES.length) * 100);
     const globalFill = $('#missionProgressFill');
     if (globalFill) globalFill.style.width = `${overallPercent}%`;
-    window.utils?.setProgressPercent?.('mission', overallPercent, { complete: done === PUZZLES.length });
+
+    const missionMetaEntry = meta?.mission;
+    const currentMissionPercent = missionMetaEntry && typeof missionMetaEntry.percent === 'number'
+      ? Math.round(missionMetaEntry.percent)
+      : null;
+    const needsMissionUpdate = currentMissionPercent == null || currentMissionPercent !== overallPercent;
+    if (needsMissionUpdate || (done === PUZZLES.length && currentMissionPercent !== 100)) {
+      try {
+        window.utils?.setProgressPercent?.('mission', overallPercent, { complete: done === PUZZLES.length });
+      } catch (_) {
+        /* ignore meta sync errors */
+      }
+    }
 
     document.querySelectorAll('.mission-tracker__item').forEach(item => {
       item.classList.remove('is-next');
@@ -137,23 +148,37 @@
       const btn = document.querySelector(`[data-puzzle="${k}"]`);
       const entry = meta?.[k];
       const remoteEntry = remoteMeta?.[k];
-      let percent = 0;
-      if (remoteEntry && typeof remoteEntry.percent === 'number') {
-        percent = Math.max(0, Math.min(100, Math.round(remoteEntry.percent)));
-      } else if (entry && typeof entry.percent === 'number') {
-        percent = Math.max(0, Math.min(100, Math.round(entry.percent)));
-      }
-      if (percent < 100 && (remoteProgress[k] || p[k])) {
+
+      const readPercent = (source) => {
+        if (!source || typeof source.percent !== 'number') return null;
+        return Math.max(0, Math.min(100, Math.round(source.percent)));
+      };
+
+      let percent = readPercent(remoteEntry);
+      if (percent == null) percent = readPercent(entry);
+
+      const isComplete = Boolean(p?.[k]) || Boolean(remoteProgress?.[k]);
+      if (isComplete && (percent == null || percent < 100)) {
         percent = 100;
       }
+      if (percent == null) percent = 0;
 
       if (btn) {
         const fillEl = btn.querySelector('.mission-tracker__fill');
         const progressLabel = btn.querySelector('.mission-tracker__progress');
-        if (fillEl) fillEl.style.width = `${percent}%`;
-        if (progressLabel) progressLabel.textContent = percent >= 100 ? 'Complete' : `${percent}%`;
-        btn.classList.toggle('is-complete', percent >= 100);
-        btn.setAttribute('aria-label', `${PUZZLE_LABELS[k]} — ${percent}% complete${percent >= 100 ? ', solved' : ''}`);
+        if (fillEl) {
+          fillEl.style.width = `${percent}%`;
+          fillEl.dataset.percent = String(percent);
+        }
+        const complete = percent >= 100 && isComplete;
+        if (progressLabel) {
+          progressLabel.textContent = complete ? 'Complete' : `${percent}%`;
+        }
+        btn.classList.toggle('is-complete', complete);
+        btn.dataset.progressPercent = String(percent);
+        btn.dataset.progressComplete = complete ? 'true' : 'false';
+        const ariaPercent = complete ? 'complete' : `${percent}% complete`;
+        btn.setAttribute('aria-label', `${PUZZLE_LABELS[k]} — ${ariaPercent}`);
       }
     });
 
@@ -196,10 +221,12 @@
       const showBonus = !nextPuzzle;
       bonusEl.hidden = !showBonus;
       bonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
+      bonusEl.dataset.active = showBonus ? 'true' : 'false';
       const aliasCard = $('#playerAliasCard');
       if (aliasCard) {
         aliasCard.hidden = !showBonus;
         aliasCard.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
+        aliasCard.dataset.active = showBonus ? 'true' : 'false';
       }
     }
   }
@@ -419,6 +446,18 @@
     window.vault?.refresh();
     renderTeamName();
     renderProgress();
+    const refreshFromSync = () => {
+      renderProgress();
+      window.vault?.refresh();
+    };
+    window.addEventListener('state-sync:ready', refreshFromSync);
+    window.addEventListener('state-sync:applied', refreshFromSync);
+    window.addEventListener('pageshow', refreshFromSync);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        refreshFromSync();
+      }
+    });
     window.utils?.initStatusHud('mission', {
       score: '#scoreTotal',
       delta: '#missionPointsDelta',

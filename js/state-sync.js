@@ -152,6 +152,11 @@
       }
     }
     stateSync.lastRemote = state;
+    try {
+      window.dispatchEvent(new CustomEvent('state-sync:applied', { detail: { team: TEAM, state } }));
+    } catch (_) {
+      /* ignore event errors */
+    }
   }
 
   const stateSync = {
