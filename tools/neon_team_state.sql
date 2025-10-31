@@ -50,7 +50,8 @@ values
   ('Cross Guild'),
   ('Hobart Hackers'),
   ('SPECS'),
-  ('Gate Crashers')
+  ('Gate Crashers'),
+  ('Rootkit Rebels')
 on conflict (team) do nothing;
 
 -- Mark test team as fully complete for demonstrations

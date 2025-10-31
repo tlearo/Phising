@@ -37,6 +37,16 @@
 
   const LEADERBOARD_KEY = `${teamId()}_endless_scores`;
 
+  function vaultAccessGranted() {
+    try {
+      if (localStorage.getItem('vault_opened') === '1') return true;
+    } catch {
+      /* ignore */
+    }
+    const remoteOpened = window.stateSync?.lastRemote?.vault?.opened;
+    return remoteOpened === true;
+  }
+
   function loadLeaderboard() {
     try {
       const data = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -291,7 +301,17 @@
     const puzzles = ['phishing', 'password', 'encryption', 'essential', 'binary'];
     const allComplete = puzzles.every(key => !!progress?.[key]);
 
-    if (allComplete) {
+    const vaultUnlocked = vaultAccessGranted();
+    const requirements = [];
+    if (!allComplete) requirements.push('finish every core challenge');
+    if (!vaultUnlocked) requirements.push('unlock the vault');
+
+    if (!requirements.length) {
+      if (refs.startBtn) {
+        refs.startBtn.removeAttribute('disabled');
+        refs.startBtn.removeAttribute('aria-disabled');
+        refs.startBtn.textContent = 'Start run';
+      }
       const existingAlias = utils.getPlayerAlias ? utils.getPlayerAlias() : '';
       if (aliasCard) {
         aliasCard.hidden = false;
@@ -326,10 +346,12 @@
       }
       if (refs.startBtn) {
         refs.startBtn.setAttribute('disabled', 'true');
-        refs.startBtn.textContent = 'Unlock after vault completion';
+        refs.startBtn.setAttribute('aria-disabled', 'true');
+        refs.startBtn.textContent = 'Locked';
       }
       if (refs.prompt) {
-        refs.prompt.textContent = 'Finish every core challenge and unlock the vault to access the Endless Challenge.';
+        const requirementMsg = requirements.join(' and ');
+        refs.prompt.textContent = `Access denied — ${requirementMsg} to enter the Endless Challenge.`;
       }
     }
 

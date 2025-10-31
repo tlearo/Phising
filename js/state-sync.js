@@ -38,7 +38,8 @@
       'lock_digit_pw_minutes',
       'lock_digit_pw_clues',
       'lock_digit_essential',
-      'lock_digit_binary'
+      'lock_digit_binary',
+      'vault_opened'
     ];
     globalKeys.forEach(key => {
       try { localStorage.removeItem(key); } catch (_) {}
@@ -87,6 +88,13 @@
     Object.entries(digits).forEach(([key, value]) => {
       if (value != null) meta[key] = value;
     });
+    try {
+      if (localStorage.getItem('vault_opened') === '1') {
+        meta.opened = true;
+      }
+    } catch (_) {
+      /* ignore */
+    }
     return meta;
   }
 
@@ -100,6 +108,9 @@
     if (vault.password) localStorage.setItem('lock_digit_pw_minutes', String(vault.password));
     if (vault.essential) localStorage.setItem('lock_digit_essential', String(vault.essential));
     if (vault.binary) localStorage.setItem('lock_digit_binary', String(vault.binary));
+    if (vault.opened) {
+      try { localStorage.setItem('vault_opened', '1'); } catch (_) { /* ignore */ }
+    }
   }
 
   function captureState() {

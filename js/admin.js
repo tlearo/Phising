@@ -12,7 +12,7 @@
 
   // ---------- Helpers ------------------------------------------------------
 
-  const TEAMS = ['team1', 'trojan_horsin', 'blackhoodies', 'cipherettes', 'peas', 'sats', 'darkwebaliens', 'crossguild', 'hobarthackers', 'specs', 'gatecrashers'];
+  const TEAMS = ['team1', 'trojan_horsin', 'blackhoodies', 'cipherettes', 'peas', 'sats', 'darkwebaliens', 'crossguild', 'hobarthackers', 'specs', 'gatecrashers', 'rootkitrebels'];
 
   const PUZZLES = ['phishing', 'password', 'encryption', 'essential', 'binary'];
   const PUZZLE_LABELS = {

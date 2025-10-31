@@ -15,7 +15,11 @@
   // Option B (preferred): keep only the SHA-256 hash of the 4-digit code here.
   // Replace this string with the hash of your real code:
   // echo -n 1234 | shasum -a 256
-  const CORRECT_CODE_HASH = window.VAULT_CODE_HASH || "REPLACE_WITH_SHA256_OF_CODE";
+  const DEFAULT_VAULT_HASH = '64864c595119d6e2fd8ea57ce6231f5a7fb00310f969d02b309c76208d3ec283';
+  const CORRECT_CODE_HASH = window.VAULT_CODE_HASH || DEFAULT_VAULT_HASH;
+  if (!window.VAULT_CODE_HASH) {
+    window.VAULT_CODE_HASH = DEFAULT_VAULT_HASH;
+  }
 
   // -------------------- DOM helpers ---------------------------------------
 
@@ -118,6 +122,11 @@
     const remoteState = window.stateSync?.lastRemote;
     const remoteMeta = remoteState?.progressMeta || {};
     const remoteProgress = remoteState?.progress || {};
+    const remoteVault = remoteState?.vault || {};
+    const vaultOpenedLocal = (() => {
+      try { return localStorage.getItem('vault_opened') === '1'; } catch { return false; }
+    })();
+    const vaultOpened = vaultOpenedLocal || remoteVault?.opened === true;
     const done = computeCompleted(p);
 
     const status = $('#progressStatus');
@@ -218,7 +227,7 @@
 
     const bonusEl = $('#bonusCallout');
     if (bonusEl) {
-      const showBonus = !nextPuzzle;
+      const showBonus = !nextPuzzle && vaultOpened;
       bonusEl.hidden = !showBonus;
       bonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
       bonusEl.dataset.active = showBonus ? 'true' : 'false';
@@ -340,6 +349,13 @@
       openBtn?.setAttribute('aria-label', 'Vault open');
       announce('Vault unlocked');
       unlockBtn?.setAttribute('disabled', 'true');
+      try {
+        localStorage.setItem('vault_opened', '1');
+      } catch (_) {
+        /* ignore storage issues */
+      }
+      window.stateSync?.queueSave?.('vault-opened');
+      renderProgress();
       setTimeout(() => {
         window.location.href = 'celebration.html';
       }, 1200);
