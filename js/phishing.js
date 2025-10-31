@@ -844,14 +844,15 @@ window.PHISHING_INSTRUCTOR_KEY = {
       if (vulnDotsEl) renderVulnDots(total, isPhishExample ? found : 0, required);
       if (vulnStageEl) vulnStageEl.textContent = message;
       if (vulnReminderEl) {
-        if (isPhishExample && remainingLabels.length) {
-          const preview = remainingLabels.slice(0, 3).map(label => label.replace(/\s+/g, ' ').trim());
-          vulnReminderEl.textContent = `Remaining critical clues: ${preview.join(' • ')}${remainingLabels.length > preview.length ? '…' : ''}`;
+        if (isPhishExample) {
+          if (needed > 0) {
+            vulnReminderEl.textContent = 'Scan for additional red flags or tap a hint if you get stuck.';
+          } else {
+            vulnReminderEl.textContent = 'All required clues are marked. Submit when ready.';
+          }
           vulnReminderEl.removeAttribute('hidden');
         } else {
-          vulnReminderEl.textContent = isPhishExample
-            ? 'All required clues are marked. Submit when ready.'
-            : 'Everything looks genuine. Lock in "Looks Legit" when you are confident.';
+          vulnReminderEl.textContent = 'Everything looks genuine so far. Confirm "Looks Legit" when you are confident.';
           vulnReminderEl.removeAttribute('hidden');
         }
       }
