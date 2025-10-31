@@ -466,6 +466,7 @@
       renderProgress();
       window.vault?.refresh();
     };
+    window.addEventListener('progress:change', refreshFromSync);
     window.addEventListener('state-sync:ready', refreshFromSync);
     window.addEventListener('state-sync:applied', refreshFromSync);
     window.addEventListener('pageshow', refreshFromSync);

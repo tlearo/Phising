@@ -15,12 +15,23 @@
 
   // Demo accounts (fallback if server is offline / not configured yet)
   const DEMO_USERS = {
-    admin: { password: 'admin123', role: 'admin' },
-    team1: { password: 'pass1', role: 'team' },
-    team2: { password: 'pass2', role: 'team' },
-    team3: { password: 'pass3', role: 'team' },
-    team4: { password: 'pass4', role: 'team' },
-    team5: { password: 'pass5', role: 'team' }
+    admin: { password: 'r8z-Je0_H9fcbJDm', role: 'admin' },
+    team1: { password: 'fsz1XVheyP_00xWh', role: 'team' },
+    team2: { password: '15oYWcU2d9mooynH', role: 'team' },
+    team3: { password: 'lGU6W0NkikzDr2Dp', role: 'team' },
+    team4: { password: 'hVD3hVew2bbDtFHs', role: 'team' },
+    team5: { password: 'I7Ev1VSZRFICIatx', role: 'team' },
+    trojan_horsin: { password: 'Cslvq90kRfLLdzg7', role: 'team' },
+    blackhoodies: { password: '2UbFZ1oYWkAEBJUl', role: 'team' },
+    cipherettes: { password: 'CmLdyP85YmPQd3JF', role: 'team' },
+    peas: { password: 'V55EVxp_2cR2Q99L', role: 'team' },
+    sats: { password: '8sCBNg0o1xUs2Tp0', role: 'team' },
+    darkwebaliens: { password: 'QkrjPdhm6UHKwgI0', role: 'team' },
+    crossguild: { password: 'ss_Qs8SWXdetYZjV', role: 'team' },
+    hobarthackers: { password: 'n04dnUOAT-SGIgVQ', role: 'team' },
+    specs: { password: 'YBKCrtgvuAP-U6', role: 'team' },
+    gatecrashers: { password: 'kLfkvAvU1AerPi4H', role: 'team' },
+    rootkitrebels: { password: 'RkReb3ls!92', role: 'team' }
   };
 
   // ---------- DOM helpers --------------------------------------------------

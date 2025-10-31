@@ -530,7 +530,7 @@ updateVaultCallout();
 
   function markCompleteIfReady() {
     const required = Math.ceil(state.hotspots.length * REQUIRED_PCT);
-    const highlightReady = state.found.size >= required;
+    const highlightReady = !IS_PHISHING[state.imgName] || state.found.size >= required;
     const totalSlides = IMAGES.length || 1;
     const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
     const allSlidesDone = doneSlides === totalSlides;
@@ -749,9 +749,12 @@ window.PHISHING_INSTRUCTOR_KEY = {
     state.imgName = currentName();
     const truth = !!IS_PHISHING[state.imgName];
     const hotspotSource = HOTSPOTS[state.imgName] || [];
-    state.hotspots = truth ? hotspotSource.map(h => ({
-      xPct: Number(h.xPct), yPct: Number(h.yPct), label: h.label || 'Indicator'
-    })) : [];
+    state.hotspots = hotspotSource.map(h => ({
+      xPct: Number(h.xPct),
+      yPct: Number(h.yPct),
+      label: h.label || 'Indicator'
+    }));
+    state.isPhishExample = truth;
     state.found.clear();
     let storedClassification = null;
     try { storedClassification = localStorage.getItem(`class_${state.imgName}`); } catch (_) {}
@@ -793,26 +796,19 @@ window.PHISHING_INSTRUCTOR_KEY = {
     if (!vulnCountEl && !vulnStageEl) return;
     const current = state.imgName;
     const isPhishExample = !!IS_PHISHING[current];
-    if (!isPhishExample) {
-      if (vulnCountEl) vulnCountEl.textContent = 'Legitimate example — focus on the classification verdict.';
-      if (vulnStageEl) vulnStageEl.textContent = 'Confirm the behaviours look genuine, then choose "Looks Legit" to proceed.';
-      if (vulnDotsEl) vulnDotsEl.innerHTML = '';
-      if (vulnReminderEl) vulnReminderEl.setAttribute('hidden', 'hidden');
-      broadcastProgress();
-      renderGuides();
-      return;
-    }
     const total = state.hotspots.length || 0;
     const found = state.found.size;
+    const required = Math.ceil(total * REQUIRED_PCT);
+    const effectiveFound = isPhishExample ? found : total;
+    const remaining = Math.max(total - effectiveFound, 0);
+    const needed = Math.max(required - effectiveFound, 0);
+    const remainingLabels = state.hotspots
+      .map((spot, idx) => (!state.found.has(idx) ? (spot.label || `Clue ${idx + 1}`) : null))
+      .filter(Boolean);
+
     if (total) {
-      const required = Math.ceil(total * REQUIRED_PCT);
-      const remaining = Math.max(total - found, 0);
-      const needed = Math.max(required - found, 0);
-      const remainingLabels = state.hotspots
-        .map((spot, idx) => (!state.found.has(idx) ? (spot.label || `Clue ${idx + 1}`) : null))
-        .filter(Boolean);
       let extra = '';
-      if (found === 0) {
+      if (effectiveFound === 0) {
         const firstClue = remainingLabels[0] ? remainingLabels[0].replace(/\s+/g, ' ').trim() : 'the most suspicious clue you can find';
         extra = ` Start by circling ${firstClue}.`;
       } else if (remaining > 0) {
@@ -827,27 +823,35 @@ window.PHISHING_INSTRUCTOR_KEY = {
       const totalSlides = IMAGES.length || 0;
       const doneSlides = IMAGES.reduce((count, name) => count + (localStorage.getItem(`phish_done_${name}`) === '1' ? 1 : 0), 0);
       const slideSummary = totalSlides ? ` Examples cleared: ${doneSlides}/${totalSlides}.` : '';
-      const message = `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`;
+      const message = isPhishExample
+        ? `You marked ${found} out of ${total} vulnerabilities.${extra}${slideSummary}`
+        : `Review the legitimacy cues (${total} available) and confirm your verdict.${slideSummary}`;
       if (vulnCountEl) {
-        let neededMsg;
-        if (found === 0) {
-          neededMsg = `${required} needed to unlock this example. Start with the clearest red flag.`;
-        } else if (needed > 0) {
-          neededMsg = `${Math.max(needed, 0)} more to meet the target.`;
+        if (isPhishExample) {
+          let neededMsg;
+          if (found === 0) {
+            neededMsg = `${required} needed to unlock this example. Start with the clearest red flag.`;
+          } else if (needed > 0) {
+            neededMsg = `${Math.max(needed, 0)} more to meet the target.`;
+          } else {
+            neededMsg = 'Target met — mark extras if you spot them.';
+          }
+          vulnCountEl.textContent = `Found ${found}/${total}. ${neededMsg}`;
         } else {
-          neededMsg = 'Target met — mark extras if you spot them.';
+          vulnCountEl.textContent = `Legitimacy scan ready — there are ${total} cues to verify before confirming.`;
         }
-        vulnCountEl.textContent = `Found ${found}/${total}. ${neededMsg}`;
       }
-      if (vulnDotsEl) renderVulnDots(total, found, required);
+      if (vulnDotsEl) renderVulnDots(total, isPhishExample ? found : 0, required);
       if (vulnStageEl) vulnStageEl.textContent = message;
       if (vulnReminderEl) {
-        if (remainingLabels.length) {
+        if (isPhishExample && remainingLabels.length) {
           const preview = remainingLabels.slice(0, 3).map(label => label.replace(/\s+/g, ' ').trim());
           vulnReminderEl.textContent = `Remaining critical clues: ${preview.join(' • ')}${remainingLabels.length > preview.length ? '…' : ''}`;
           vulnReminderEl.removeAttribute('hidden');
         } else {
-          vulnReminderEl.textContent = 'All required clues are marked. Submit when ready.';
+          vulnReminderEl.textContent = isPhishExample
+            ? 'All required clues are marked. Submit when ready.'
+            : 'Everything looks genuine. Lock in "Looks Legit" when you are confident.';
           vulnReminderEl.removeAttribute('hidden');
         }
       }
