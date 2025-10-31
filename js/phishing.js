@@ -64,7 +64,7 @@
 
   // ---------- Config ----------
   // How close (in pixels) the highlight must be to the hotspot center to count
-  const HOTSPOT_RADIUS_PX = 60; // wider tolerance so near-miss highlights still count
+  const HOTSPOT_RADIUS_PX = 70; // generous default for detection tolerance
   const MAX_STROKE_LENGTH = 1100; // pixels of travel per stroke (loosened)
   const MAX_STROKE_SPAN = 420;   // max width/height of a single stroke highlight (loosened)
   const MAX_STROKE_AREA = 190000; // approx area (px^2) before we consider it too large (loosened)
@@ -178,8 +178,8 @@ updateVaultCallout();
     state.hotspots.forEach(hs => {
       const guide = document.createElement('div');
       guide.className = 'phish-guide';
-      const radiusPx = HOTSPOT_RADIUS_PX * (stageWidth / canvasWidth);
-      const diameter = Math.max(48, radiusPx * 2);
+      const radiusPx = hotspotRadiusPx(hs, { scaleToStage: true });
+      const diameter = Math.max(60, radiusPx * 2);
       guide.style.width = `${diameter}px`;
       guide.style.height = `${diameter}px`;
       guide.style.left = `${hs.xPct * stageWidth}px`;
@@ -752,6 +752,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
     state.hotspots = hotspotSource.map(h => ({
       xPct: Number(h.xPct),
       yPct: Number(h.yPct),
+      radius: Number.isFinite(h.radius) ? Number(h.radius) : null,
       label: h.label || 'Indicator'
     }));
     state.isPhishExample = truth;
@@ -780,6 +781,17 @@ window.PHISHING_INSTRUCTOR_KEY = {
       x: Math.round(h.xPct * w),
       y: Math.round(h.yPct * hgt)
     };
+  }
+
+  function hotspotRadiusPx(h, { scaleToStage = false } = {}) {
+    const baseWidth = scaleToStage
+      ? (stageEl?.clientWidth || drawCanvas.width || 640)
+      : (drawCanvas.width || 0);
+    const effectiveWidth = baseWidth || drawCanvas.width || 640;
+    if (Number.isFinite(h.radius) && h.radius > 0) {
+      return Math.max(HOTSPOT_RADIUS_PX * 0.6, Math.round(h.radius * effectiveWidth));
+    }
+    return Math.max(HOTSPOT_RADIUS_PX, Math.round(effectiveWidth * 0.12));
   }
 
   function broadcastProgress() {
@@ -1020,6 +1032,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       state.maskSnapshot = null;
     }
     drawStroke(x, y, true);
+    registerHotspotHit(x, y);
   }
 
   function finishStroke() {
@@ -1069,6 +1082,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       state.strokeBounds.maxY = Math.max(state.strokeBounds.maxY, y);
     }
     drawStroke(x, y, false);
+    registerHotspotHit(x, y);
     state.lastX = x;
     state.lastY = y;
     if (exceedsStrokeLimits()) {
@@ -1127,6 +1141,26 @@ window.PHISHING_INSTRUCTOR_KEY = {
     maskCtx.stroke();
   }
 
+  function registerHotspotHit(x, y) {
+    if (state.tool === 'eraser') return;
+    if (!state.isPhishExample) return;
+    let gained = false;
+    state.hotspots.forEach((hs, idx) => {
+      if (state.found.has(idx)) return;
+      const { x: hx, y: hy } = pctToPx(hs);
+      const radius = hotspotRadiusPx(hs) * 1.1;
+      const dx = hx - x;
+      const dy = hy - y;
+      if ((dx * dx + dy * dy) <= radius * radius) {
+        state.found.add(idx);
+        gained = true;
+      }
+    });
+    if (gained) {
+      updateVulnText();
+    }
+  }
+
   // Events
   drawCanvas.addEventListener('mousedown', (e) => { const p = getPos(e); beginDraw(p.x, p.y); });
   drawCanvas.addEventListener('mousemove', (e) => { const p = getPos(e); moveDraw(p.x, p.y); });
@@ -1155,8 +1189,10 @@ window.PHISHING_INSTRUCTOR_KEY = {
     const imgData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
 
     for (let i = 0; i < total; i++) {
-      const { x, y } = pctToPx(state.hotspots[i]);
-      if (anyInkNear(imgData, x, y, HOTSPOT_RADIUS_PX, maskCanvas.width, maskCanvas.height)) {
+      const hs = state.hotspots[i];
+      const { x, y } = pctToPx(hs);
+      const radius = hotspotRadiusPx(hs);
+      if (anyInkNear(imgData, x, y, radius, maskCanvas.width, maskCanvas.height)) {
         state.found.add(i);
       }
     }
