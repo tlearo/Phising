@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bonus secure Wi-Fi setup lab for Cyber Escape Rooms teams that unlock the vault.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self'">
+
+  <title>Cyber Escape Rooms — Secure Wi‑Fi Setup</title>
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
+  <script src="js/session.js" defer></script>
+</head>
+<body data-session="team">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="game.html">Mission Hub</a>
+        </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Secure Wi‑Fi Setup</h1>
+      <p class="mt-1" style="color:var(--muted)">Design a wireless configuration that keeps guest devices contained and corporate endpoints hardened.</p>
+    </header>
+
+    <section class="card mt-2" aria-labelledby="wifiGoalsHeading">
+      <h2 id="wifiGoalsHeading">Configuration Goals</h2>
+      <ul>
+        <li>Upgrade from WPA2-PSK to WPA3-Enterprise without disrupting existing trusted clients.</li>
+        <li>Segment guest traffic so it never touches internal networks or sensitive assets.</li>
+        <li>Enable monitoring hooks that flag rogue APs and anomalous client behaviour.</li>
+      </ul>
+    </section>
+
+    <section class="card mt-2" aria-labelledby="wifiArtifactsHeading">
+      <h2 id="wifiArtifactsHeading">Artifacts Provided</h2>
+      <p class="muted">You receive controller screenshots, floor plans, and a list of IoT devices that cannot join 5GHz bands. Build a configuration plan that balances user experience with security.</p>
+      <p>Document your final settings and remediation recommendations for review to bank points for this bonus mission.</p>
+    </section>
+  </main>
+</body>
+</html>

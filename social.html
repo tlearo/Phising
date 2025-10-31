@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bonus social engineering scenario for Cyber Escape Rooms teams that unlock the vault.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self'">
+
+  <title>Cyber Escape Rooms — Social Engineering Scenario</title>
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
+  <script src="js/session.js" defer></script>
+</head>
+<body data-session="team">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="game.html">Mission Hub</a>
+        </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Social Engineering Scenario</h1>
+      <p class="mt-1" style="color:var(--muted)">Decode the persuader’s playbook and craft a response that protects your organisation without escalating the situation.</p>
+    </header>
+
+    <section class="card mt-2" aria-labelledby="socialBriefHeading">
+      <h2 id="socialBriefHeading">Scenario Playback</h2>
+      <p>You will receive a transcript between a supposed supplier representative and one of your finance analysts. The attacker layers urgency plus authority to convince staff to reset multifactor authentication.</p>
+      <ul>
+        <li>List every social engineering lever you spot (authority, scarcity, familiarity, etc.).</li>
+        <li>Draft a short, policy-aligned response that ends the conversation safely.</li>
+        <li>Recommend a follow-up control (awareness, process, or technical) that would stop the next attempt earlier.</li>
+      </ul>
+    </section>
+
+    <section class="card mt-2" aria-labelledby="socialDeliverablesHeading">
+      <h2 id="socialDeliverablesHeading">Deliverables</h2>
+      <p>Capture findings in the team report and flag them for your facilitator to validate. Bonus credit is awarded for bringing two mitigations—one people-focused and one technical.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -26,7 +26,8 @@
     score: `${TEAM}_score`,
     scoreLog: `${TEAM}_score_log`,
     activity: `${TEAM}_activity`,
-    endless: `${TEAM}_endless_scores`
+    endless: `${TEAM}_endless_scores`,
+    bonus: `${TEAM}_bonus`
   };
   const TEAM_VAULT_KEY = `${TEAM}_vault`;
   const RESET_VERSION_KEY = `${TEAM}_reset_version`;
@@ -127,6 +128,7 @@
       scoreLog: readJSON(STORAGE_KEYS.scoreLog, []),
       activity: readJSON(STORAGE_KEYS.activity, []),
       endless: readJSON(STORAGE_KEYS.endless, []),
+      bonus: readJSON(STORAGE_KEYS.bonus, {}),
       vault: latestVault
     };
   }
@@ -142,6 +144,9 @@
     if (Array.isArray(state.endless)) {
       writeJSON(STORAGE_KEYS.endless, state.endless);
       window.dispatchEvent(new CustomEvent('endless:sync', { detail: { entries: state.endless } }));
+    }
+    if (state.bonus && typeof state.bonus === 'object') {
+      writeJSON(STORAGE_KEYS.bonus, state.bonus);
     }
     const phishPercent = state.progressMeta?.phishing?.percent ?? null;
     if (!progress.phishing && (phishPercent == null || phishPercent <= 0)) {

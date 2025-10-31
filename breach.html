@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bonus data breach investigation lab for Cyber Escape Rooms teams that unlock the vault.">
+  <link rel="icon" href="assets/favicon.png" type="image/png" />
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline';
+                 script-src 'self';
+                 connect-src 'self';
+                 object-src 'none';
+                 base-uri 'self'">
+
+  <title>Cyber Escape Rooms — Data Breach Investigation</title>
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/accessibility.js" defer></script>
+  <script src="js/utils.js" defer></script>
+  <script src="js/state-sync.js" defer></script>
+  <script src="js/session.js" defer></script>
+</head>
+<body data-session="team">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header site-header--bar" aria-label="Global">
+    <div class="site-header__inner">
+      <div class="header-left">
+        <button class="nav-btn ghost nav-btn--back" type="button" data-back="game.html" data-tooltip="Back to previous page">
+          <span aria-hidden="true">←</span>
+          <span>Back</span>
+        </button>
+        <a class="brand" href="game.html">
+          <img src="assets/logo.png" alt="" class="logo" />
+          <span class="brand-copy">
+            <span class="brand-name">Cyber Escape Rooms</span>
+            <span class="brand-tagline">Team-based security missions</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="header-actions">
+        <nav class="main-nav" aria-label="Primary">
+          <a class="nav-link" href="game.html">Mission Hub</a>
+        </nav>
+        <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
+          <span class="vault-status__label">Vault</span>
+          <ol class="vault-status__digits">
+            <li data-vault-key="phishing">•</li>
+            <li data-vault-key="encryption">•</li>
+            <li data-vault-key="password">•</li>
+            <li data-vault-key="essential">•</li>
+            <li data-vault-key="binary">•</li>
+          </ol>
+          <span class="vault-status__count">0/5</span>
+        </div>
+        <button class="nav-btn alert nav-btn--logout" type="button" data-action="logout">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" id="main" role="main" tabindex="-1">
+    <header class="game-header">
+      <h1 class="glow">Data Breach Investigation</h1>
+      <p class="mt-1" style="color:var(--muted)">Triangulate suspicious login activity, track lateral movement, and pin down the compromised account.</p>
+    </header>
+
+    <section class="card mt-2" aria-labelledby="breachBriefHeading">
+      <h2 id="breachBriefHeading">Investigation Brief</h2>
+      <p>The SOC escalated an alert after unusual access patterns hit your HR system. You have a compressed log bundle with authentication, VPN, and file access events. Your job is to reconstruct the incident timeline.</p>
+      <ul>
+        <li>Identify which account was used as the initial access vector.</li>
+        <li>Note the timestamp and origin IP of the first malicious login.</li>
+        <li>Flag the exfiltration step—service + resource touched.</li>
+      </ul>
+      <p class="muted">Record your findings in the team notebook. Only submit answers when the crew agrees on the full story—points are deducted for guesses.</p>
+    </section>
+
+    <section class="card mt-2" aria-labelledby="breachArtifactsHeading">
+      <h2 id="breachArtifactsHeading">Artifacts Provided</h2>
+      <ol class="muted">
+        <li><code>vpn.csv</code> — live VPN session metadata (IP, user, duration, MFA method).</li>
+        <li><code>audit.json</code> — application audit entries (actor, action, object, status).</li>
+        <li><code>auth.log</code> — condensed identity provider events (success/failure, device fingerprint).</li>
+      </ol>
+      <p>Work through the artifacts as a team, capture the anomalies you spot, and share back with the facilitator to score this bonus round.</p>
+    </section>
+  </main>
+</body>
+</html>

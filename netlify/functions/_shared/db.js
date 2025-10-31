@@ -64,8 +64,14 @@ export async function ensureTeamStateTable(client) {
       score integer not null default 100,
       score_log jsonb not null default '[]'::jsonb,
       activity jsonb not null default '[]'::jsonb,
+      endless jsonb not null default '[]'::jsonb,
+      bonus jsonb not null default '{}'::jsonb,
       vault jsonb not null default '{}'::jsonb,
       updated_at timestamptz not null default now()
     )
   `);
+
+  await client.query(`alter table team_state add column if not exists endless jsonb not null default '[]'::jsonb`);
+  await client.query(`alter table team_state add column if not exists bonus jsonb not null default '{}'::jsonb`);
+  await client.query(`alter table team_state add column if not exists vault jsonb not null default '{}'::jsonb`);
 }

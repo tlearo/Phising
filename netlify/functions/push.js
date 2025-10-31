@@ -55,8 +55,9 @@ function sanitizeRow(row = {}) {
       }))
     : [];
 
+  const bonus = row.bonus && typeof row.bonus === 'object' ? row.bonus : {};
   const vault = row.vault && typeof row.vault === 'object' ? row.vault : {};
-  return { progress, progressMeta, times, score, scoreLog, activity, endless, vault };
+  return { progress, progressMeta, times, score, scoreLog, activity, endless, bonus, vault };
 }
 
 export default async (req) => {
@@ -74,8 +75,8 @@ export default async (req) => {
       if (!team) continue;
       const sanitized = sanitizeRow(raw);
       await client.query(
-        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, endless, vault, updated_at)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9, now())
+        `insert into team_state (team, progress, progress_meta, times, score, score_log, activity, endless, bonus, vault, updated_at)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, now())
          on conflict (team) do update set
            progress = excluded.progress,
            progress_meta = excluded.progress_meta,
@@ -84,9 +85,10 @@ export default async (req) => {
            score_log = excluded.score_log,
            activity = excluded.activity,
            endless = excluded.endless,
+           bonus = excluded.bonus,
            vault = excluded.vault,
            updated_at = now()`,
-        [team, sanitized.progress, sanitized.progressMeta, sanitized.times, sanitized.score, sanitized.scoreLog, sanitized.activity, sanitized.endless, sanitized.vault]
+        [team, sanitized.progress, sanitized.progressMeta, sanitized.times, sanitized.score, sanitized.scoreLog, sanitized.activity, sanitized.endless, sanitized.bonus, sanitized.vault]
       );
     }
 
