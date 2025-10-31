@@ -1308,6 +1308,16 @@ body.phish-overlay-open {
     font-size: .95rem;
 }
 
+.bonus-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+.bonus-actions .btn {
+    min-width: 180px;
+}
+
 .journey-map__title {
     font-size: .9rem;
     letter-spacing: .08em;

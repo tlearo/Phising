@@ -52,6 +52,9 @@
 
   if (!imgEl || !drawCanvas) return; // not on this page
 
+  imageContainer?.classList.remove('is-zoomed');
+  stageEl?.classList.remove('is-zoomed');
+
   const ctx = drawCanvas.getContext('2d', { willReadFrequently: true });
 
   // A hidden mask canvas we use for scoring (1-bit-ish)
@@ -145,8 +148,8 @@ updateVaultCallout();
 
   // Tool state
   const IS_DESKTOP = window.matchMedia('(min-width: 900px)').matches;
-  const ZOOM_STEP = IS_DESKTOP ? 0.12 : 0.1;
-  const DEFAULT_ZOOM = IS_DESKTOP ? 1.05 : 0.95;
+  const ZOOM_STEP = 0.25;
+  const DEFAULT_ZOOM = 1;
 
   const state = {
     tool: 'brush', // 'brush' | 'eraser'
@@ -166,8 +169,8 @@ updateVaultCallout();
     classification: null
   };
 
-  const ZOOM_MIN = IS_DESKTOP ? 0.95 : 0.85;
-  const ZOOM_MAX = 3;
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 2.5;
   let overlayEl = null;
   let workspacePlaceholder = null;
   let workspaceParent = null;
@@ -192,9 +195,6 @@ updateVaultCallout();
     const isZoomed = state.zoom > 1.02;
     stageEl.style.transform = `scale(${state.zoom})`;
     stageEl.classList.toggle('is-zoomed', isZoomed);
-    if (imageContainer) {
-      imageContainer.classList.toggle('is-zoomed', isZoomed);
-    }
     updateZoomControls();
   }
 
@@ -636,34 +636,40 @@ window.PHISHING_INSTRUCTOR_KEY = {
   }
 
   function fitCanvasToImage() {
-    // Set canvases to the rendered size of the image (not natural) so drawing aligns
     const rect = imgEl.getBoundingClientRect();
-    const baseWidth = imgEl.clientWidth || rect.width || imgEl.naturalWidth || 0;
-    const baseHeight = imgEl.clientHeight || rect.height || imgEl.naturalHeight || 0;
-    const w = Math.max(100, Math.round(baseWidth));
-    const h = Math.max(100, Math.round(baseHeight));
+    const naturalW = imgEl.naturalWidth || 0;
+    const naturalH = imgEl.naturalHeight || 0;
+    const aspectFromNatural = naturalW > 0 ? naturalH / naturalW : null;
+    const aspectFromRect = rect.width > 0 ? rect.height / rect.width : null;
+    const aspect = aspectFromNatural || aspectFromRect || 0.75;
 
-    if (drawCanvas.width === w && drawCanvas.height === h) {
+    const containerWidth = imageContainer?.clientWidth || rect.width || 0;
+    const fallbackWidth = naturalW || 640;
+    const MIN_STAGE_WIDTH = 320;
+    const MAX_STAGE_WIDTH = 960;
+    const baseWidth = containerWidth > 0 ? containerWidth : fallbackWidth;
+    const clampedWidth = Math.max(MIN_STAGE_WIDTH, Math.min(MAX_STAGE_WIDTH, Math.round(baseWidth)));
+    const targetW = clampedWidth;
+    const targetH = Math.max(220, Math.round(targetW * aspect));
+
+    if (drawCanvas.width === targetW && drawCanvas.height === targetH) {
       return;
     }
 
-    drawCanvas.width  = w;
-    drawCanvas.height = h;
-    maskCanvas.width  = w;
-    maskCanvas.height = h;
+    drawCanvas.width  = targetW;
+    drawCanvas.height = targetH;
+    maskCanvas.width  = targetW;
+    maskCanvas.height = targetH;
 
-    // Percentage to pixel scale factors (in case we need natural size)
-    state.scaleX = imgEl.naturalWidth ? w / imgEl.naturalWidth : 1;
-    state.scaleY = imgEl.naturalHeight ? h / imgEl.naturalHeight : 1;
+    state.scaleX = naturalW > 0 ? targetW / naturalW : 1;
+    state.scaleY = naturalH > 0 ? targetH / naturalH : 1;
 
     if (stageEl) {
-      stageEl.style.setProperty('--stage-width', `${w}px`);
-      stageEl.style.setProperty('--stage-height', `${h}px`);
+      stageEl.style.setProperty('--stage-width', `${targetW}px`);
+      stageEl.style.setProperty('--stage-height', `${targetH}px`);
     }
 
-    // Reset visible overlay (we keep mask separately)
-    resetStrokeState();
-    ctx.clearRect(0, 0, w, h);
+    redrawFromMask();
     applyZoom();
   }
 
@@ -1188,7 +1194,6 @@ function classify(isPhish){
     // Not needed if canvas is positioned absolute inside stage at 0,0 — which it is
     // We just ensure sizing is correct:
     fitCanvasToImage();
-    redrawFromMask(); // keep whatever we had painted
   }
 
   function drawDataUrlToCanvas(dataUrl, canvas, context) {
@@ -1210,6 +1215,8 @@ function classify(isPhish){
     imgEl.removeAttribute('data-loading');
     loadHotspotsForImage();
     fitCanvasToImage();
+    state.zoom = DEFAULT_ZOOM;
+    applyZoom();
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
     ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     state.found.clear();

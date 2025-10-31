@@ -2,3 +2,6 @@
 .netlify
 .env
 .env.local
+# Sensitive seed scripts (store credentials outside git)
+tools/*_seed.sql
+tools/users_seed.sql

@@ -213,18 +213,11 @@
       }
     }
 
-    const endlessEl = $('#endlessCallout');
-    if (endlessEl) {
-      const showEndless = !nextPuzzle;
-      endlessEl.hidden = !showEndless;
-      endlessEl.setAttribute('aria-hidden', showEndless ? 'false' : 'true');
-    }
-
-    const firewallBonusEl = $('#firewallBonusCallout');
-    if (firewallBonusEl) {
+    const bonusEl = $('#bonusCallout');
+    if (bonusEl) {
       const showBonus = !nextPuzzle;
-      firewallBonusEl.hidden = !showBonus;
-      firewallBonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
+      bonusEl.hidden = !showBonus;
+      bonusEl.setAttribute('aria-hidden', showBonus ? 'false' : 'true');
     }
   }
 

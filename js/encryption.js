@@ -323,7 +323,7 @@
       }
       hintUsed = true;
       hintBox?.removeAttribute('hidden');
-      points?.spend(5, 'Encryption hint');
+      points?.spend(15, 'Encryption preview hint');
       if (livePreviewCard && livePlainEl) {
         livePreviewUnlocked = true;
         livePreviewCard.removeAttribute('hidden');
@@ -331,7 +331,7 @@
         livePlainEl.textContent = Caesar.decode(CIPHERTEXT, currentShift) || 'Rotate the wheel to decode...';
       }
       if (feedbackEl) {
-        feedbackEl.textContent = 'Hint revealed. Align the alphabets until real words appear.';
+        feedbackEl.textContent = 'Hint unlocked (−15 pts). Align the alphabets until real words appear.';
         feedbackEl.classList.remove('warn');
         feedbackEl.classList.add('ok');
       }

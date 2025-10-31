@@ -52,7 +52,6 @@
       <div class="header-actions">
         <nav class="main-nav" aria-label="Primary">
           <a class="nav-link" href="game.html">Mission Hub</a>
-          <a class="nav-link" href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
         </nav>
         <div class="vault-status" id="vaultStatus" role="status" aria-live="polite" data-visible="team">
           <span class="vault-status__label">Vault</span>
@@ -187,16 +186,13 @@
           </ul>
         </div>
 
-        <section class="endless-callout" id="endlessCallout" aria-hidden="true" hidden>
-          <h2>Bonus: Endless Challenge</h2>
-          <p class="muted">Already cracked the vault? Keep the crew sharp with an optional quickfire quiz. Scores live on a separate leaderboard so everyone can compete for bragging rights.</p>
-          <a class="btn ghost" href="endless.html">Launch Endless Challenge</a>
-        </section>
-
-        <section class="bonus-callout" id="firewallBonusCallout" aria-hidden="true" hidden>
-          <h2>Bonus: Firewall Configuration Puzzle</h2>
-          <p class="muted">If the vault is open and you still have time, fine-tune the perimeter rules to block attackers without disrupting the business.</p>
-          <a class="btn ghost" href="firewall.html">Launch Firewall Bonus</a>
+        <section class="endless-callout" id="bonusCallout" aria-hidden="true" hidden>
+          <h2>Bonus Missions Ready</h2>
+          <p class="muted">Vault cracked! Keep the crew sharp with the Endless Challenge or jump into the Firewall Configuration Puzzle for a strategic bonus round.</p>
+          <div class="bonus-actions">
+            <a class="btn ghost" href="endless.html">Launch Endless Challenge</a>
+            <a class="btn ghost" href="firewall.html">Launch Firewall Puzzle</a>
+          </div>
         </section>
 
         <footer class="mission-card__footer">
@@ -262,7 +258,6 @@
         <span aria-hidden="true">•</span>
         <a href="game.html" aria-current="page">Mission Hub</a>
         <span aria-hidden="true">•</span>
-        <a href="admin.html" data-role="admin-link" data-visible="admin" hidden aria-hidden="true">Admin</a>
       </nav>
       <p class="footer-note">Unlock the vault by cracking five cyber puzzles as a team.</p>
       <p class="footer-copy"><small>&copy; 2025 Cyber Escape Rooms</small></p>
