@@ -14,8 +14,7 @@
                  script-src 'self';
                  connect-src 'self';
                  object-src 'none';
-                 base-uri 'self';
-                 frame-ancestors 'none'">
+                 base-uri 'self'">
 
   <title>Cyber Escape Rooms — Game</title>
 
@@ -120,15 +119,6 @@
           </div>
         </section>
 
-        <section class="player-alias card mt-2" aria-label="Player name entry">
-          <div>
-            <label class="player-alias__label" for="playerAliasInput">Player name (optional)</label>
-            <input id="playerAliasInput" type="text" maxlength="40" placeholder="Enter your name" data-sanitize="text" autocomplete="off" />
-          </div>
-          <p class="player-alias__hint muted">Displayed separately from the team login. Leave blank if you prefer to stay anonymous.</p>
-          <p class="player-alias__display">Showing as: <strong id="playerAliasDisplay">—</strong></p>
-        </section>
-
         <div id="scoreLog" class="score-log" hidden></div>
 
         <div class="mission-tracker mt-2">
@@ -166,11 +156,11 @@
             <li>
               <a class="mission-tracker__item" href="essential.html" data-puzzle="essential">
                 <div class="mission-tracker__header">
-                  <span class="mission-tracker__name">🛡 Essential Eight</span>
+                  <span class="mission-tracker__name">🛡 ASD Essentials</span>
                   <span class="mission-tracker__progress">0%</span>
                 </div>
                 <div class="mission-tracker__bar"><span class="mission-tracker__fill"></span></div>
-                <p class="mission-tracker__hint">Match the defensive controls for digit four.</p>
+                <p class="mission-tracker__hint">Match the ASD Essential Eight controls for digit four.</p>
               </a>
             </li>
             <li>
@@ -188,7 +178,11 @@
 
         <section class="endless-callout" id="bonusCallout" aria-hidden="true" hidden>
           <h2>Bonus Missions Ready</h2>
-          <p class="muted">Vault cracked! Keep the crew sharp with the Endless Challenge or jump into the Firewall Configuration Puzzle for a strategic bonus round.</p>
+          <p class="muted">Vault cracked? Keep the crew sharp with an optional quickfire quiz. Scores live on a separate leaderboard so everyone can compete for bragging rights.</p>
+          <div class="bonus-subcopy">
+            <h3>Bonus: Firewall Configuration Puzzle</h3>
+            <p class="muted">If the vault is open and you still have time, fine-tune the perimeter rules to block attackers without disrupting the business.</p>
+          </div>
           <div class="bonus-actions">
             <a class="btn ghost" href="endless.html">Launch Endless Challenge</a>
             <a class="btn ghost" href="firewall.html">Launch Firewall Puzzle</a>
@@ -236,7 +230,7 @@
               <li><strong>Phishing Spotter</strong> — number of phishing emails in the set.</li>
               <li><strong>Encryption</strong> — the Caesar wheel shift that reveals the plaintext.</li>
               <li><strong>Password Puzzle</strong> — the rounded minutes to crack the winning password.</li>
-              <li><strong>Essential Eight</strong> — there are 8 essential mitigation strategies.</li>
+              <li><strong>ASD Essentials</strong> — there are 8 ASD Essential Eight mitigation strategies.</li>
               <li><strong>Binary Lab</strong> — the ones digit of your binary multiplication result.</li>
             </ol>
           </details>

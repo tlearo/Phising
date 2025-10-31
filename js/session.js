@@ -112,12 +112,11 @@
   }
 
   function readAlias() {
+    if (typeof window.utils?.getPlayerAlias === 'function') {
+      return window.utils.getPlayerAlias();
+    }
     try {
-      const raw = localStorage.getItem('player_alias') || '';
-      if (typeof window.utils?.sanitizeText === 'function') {
-        return window.utils.sanitizeText(raw, { maxLength: 40, allowPunctuation: false });
-      }
-      return raw;
+      return localStorage.getItem('player_alias') || '';
     } catch {
       return '';
     }

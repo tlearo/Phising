@@ -14,8 +14,7 @@
                  script-src 'self';
                  connect-src 'self';
                  object-src 'none';
-                 base-uri 'self';
-                 frame-ancestors 'none'">
+                 base-uri 'self'">
 
   <title>Cyber Escape Rooms — Phishing Spotter</title>
 
@@ -338,18 +337,5 @@
   }
   </script>
 
-  <!-- Fallback: set image from query string (?img=Picture2.png). -->
-  <script>
-    (function () {
-      try {
-        const params = new URLSearchParams(location.search);
-        const imgName = params.get('img');
-        if (imgName) {
-          const el = document.getElementById('phishingImage');
-          if (el) el.src = 'assets/' + imgName;
-        }
-      } catch (_) {}
-    })();
-  </script>
 </body>
 </html>

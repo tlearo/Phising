@@ -12,7 +12,7 @@
 
   // ---------- Helpers ------------------------------------------------------
 
-  const TEAMS = ['team1', 'team2', 'team3', 'team4', 'team5'];
+  const TEAMS = ['team1', 'trojan_horsin', 'blackhoodies', 'cipherettes', 'peas', 'sats', 'darkwebaliens', 'crossguild', 'hobarthackers', 'specs', 'gatecrashers'];
 
   const PUZZLES = ['phishing', 'password', 'encryption', 'essential', 'binary'];
   const PUZZLE_LABELS = {
@@ -40,6 +40,7 @@
 
   const scoreKey = (team) => `${team}_score`;
   const scoreLogKey = (team) => `${team}_score_log`;
+  const vaultKey = (team) => `${team}_vault`;
   const activityKey = (team) => `${team}_activity`;
   const activityFilter = { team: 'all', type: 'all' };
   let activityFiltersReady = false;
@@ -205,6 +206,7 @@
   }
 
   function writeVault(team, value) {
+    setJSON(vaultKey(team), value || {});
   }
 
   function logTeamActivity(team, entry) {

@@ -58,6 +58,15 @@
       </details>
     </section>
 
+    <section class="player-alias card mt-2" id="endlessAliasCard" aria-hidden="true" hidden>
+      <div>
+        <label class="player-alias__label" for="endlessAliasInput">Player name (optional)</label>
+        <input id="endlessAliasInput" type="text" maxlength="40" placeholder="Enter your name" data-sanitize="text" autocomplete="off" />
+      </div>
+      <p class="player-alias__hint muted">Displayed separately from the team login. Leave blank if you prefer to stay anonymous.</p>
+      <p class="player-alias__display">Showing as: <strong id="endlessAliasDisplay">—</strong></p>
+    </section>
+
     <section class="card endless-status mt-2" aria-label="Run status">
       <div class="endless-metrics">
         <div>

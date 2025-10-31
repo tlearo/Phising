@@ -285,6 +285,21 @@
     sanitizeInputElement(target, opts);
   }, { passive: true });
 
+  function getPlayerAlias() {
+    try {
+      const raw = localStorage.getItem('player_alias') || '';
+      return sanitizeText(raw, { maxLength: 40, allowPunctuation: false });
+    } catch {
+      return '';
+    }
+  }
+
+  function setPlayerAlias(value) {
+    const cleaned = sanitizeText(value, { maxLength: 40, allowPunctuation: false });
+    try { localStorage.setItem('player_alias', cleaned); } catch (_) {}
+    return cleaned;
+  }
+
   // ---------- Points / Scoreboard -----------------------------------------
   const SCORE_BASE = 100;
   const SCORE_LOG_LIMIT = 40;
@@ -603,6 +618,8 @@
     getUser, saveUser, progressKey, progressMetaKey, timesKey, readProgress, setProgressFlag,
     readProgressMeta, setProgressPercent, getProgressPercent, pushTime,
     fmtSecs, debounce, throttle, fetchJSON, sha256Hex, getQueryParam, announce, safeFocus, sanitizeText,
+    getPlayerAlias,
+    setPlayerAlias,
     points: pointsApi,
     backOrHome,
     initStatusHud,

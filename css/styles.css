@@ -907,7 +907,7 @@ body.phish-overlay-open {
 .canvas-carousel #nextImg { right: 1rem; }
 
 .carousel-arrow:hover:not(:disabled) {
-    transform: translateY(-2px);
+    transform: translateY(-50%) scale(1.05);
     box-shadow: 0 12px 24px rgba(88, 166, 255, .25);
 }
 
@@ -1316,6 +1316,11 @@ body.phish-overlay-open {
 
 .bonus-actions .btn {
     min-width: 180px;
+}
+
+.bonus-subcopy {
+    display: grid;
+    gap: .4rem;
 }
 
 .journey-map__title {
@@ -2973,7 +2978,7 @@ input[type="range"]::-moz-range-thumb {
     }
 }
 
-/* ==== Essential Eight – improved ===================================== */
+/* ==== ASD Essentials – improved ===================================== */
 .ess-layout {
     position: relative;
     display: grid;

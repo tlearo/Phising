@@ -59,28 +59,6 @@
 
   // -------------------- Team display --------------------------------------
 
-  function sanitizeAlias(value) {
-    if (typeof window.utils?.sanitizeText === 'function') {
-      return window.utils.sanitizeText(value, { maxLength: 40, allowPunctuation: false });
-    }
-    return String(value || '')
-      .replace(/[`"<>\u0000-\u001F\u007F]/g, '')
-      .replace(/--/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 40);
-  }
-
-  function readAlias() {
-    try { return localStorage.getItem('player_alias') || ''; } catch { return ''; }
-  }
-
-  function writeAlias(value) {
-    const cleaned = sanitizeAlias(value);
-    try { localStorage.setItem('player_alias', cleaned); } catch (_) {}
-    return cleaned;
-  }
-
   let aliasInput = null;
   let aliasDisplay = null;
 
@@ -95,7 +73,7 @@
 
   function renderTeamName(){
     const user = readUser();
-    const alias = sanitizeAlias(readAlias());
+    const alias = window.utils?.getPlayerAlias?.() || '';
     const el = $('#teamName');
     if (!el) return;
     const baseName = user?.username || 'TEAM';
@@ -110,14 +88,14 @@
     phishing: 'Phishing Spotter',
     password: 'Password Puzzle',
     encryption: 'Encryption',
-    essential: 'Essential Eight',
+    essential: 'ASD Essentials',
     binary: 'Binary Lab'
   };
   const PUZZLE_HINTS = {
     phishing: 'Spot phishing clues and earn the first digit.',
     password: 'Crack the weak password to reveal digit two.',
     encryption: 'Dial in the Caesar shift to learn digit three.',
-    essential: 'Match the defensive controls for digit four.',
+    essential: 'Match the ASD Essential Eight controls for digit four.',
     binary: 'Finish the binary math to capture the final digit.'
   };
   const PUZZLE_PATHS = {
@@ -428,8 +406,8 @@
 
     aliasInput = $('#playerAliasInput');
     aliasDisplay = $('#playerAliasDisplay');
-    const storedAlias = sanitizeAlias(readAlias());
-    writeAlias(storedAlias);
+    const storedAlias = window.utils?.getPlayerAlias?.() || '';
+    window.utils?.setPlayerAlias?.(storedAlias);
     updateAliasUI(storedAlias);
 
     ensureLogout();
@@ -448,11 +426,16 @@
       if (ev.key === pKey || ev.key === metaKey) {
         renderProgress();
       }
+      if (ev.key === 'player_alias') {
+        const refreshedAlias = window.utils?.getPlayerAlias?.() || '';
+        updateAliasUI(refreshedAlias);
+        renderTeamName();
+      }
     });
     const how = document.getElementById('lockHow');
     if (how){
       const [a,b,c,d,e] = computeLockDigits().map(v => v || '?');
-      how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) essential controls = ${d} • (5) binary product ones digit = ${e}`;
+      how.textContent = `Hint: digits → (1) phishing count = ${a} • (2) shift = ${b} • (3) minutes to crack ≈ ${c} • (4) ASD Essential Eight controls = ${d} • (5) binary product ones digit = ${e}`;
     }
 
     autoAdvanceWire();
@@ -460,7 +443,7 @@
 
     if (aliasInput) {
       const syncAlias = (value) => {
-        const sanitized = writeAlias(value);
+        const sanitized = window.utils?.setPlayerAlias?.(value) ?? '';
         updateAliasUI(sanitized);
         renderTeamName();
       };

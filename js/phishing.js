@@ -676,16 +676,20 @@ window.PHISHING_INSTRUCTOR_KEY = {
   function loadHotspotsForImage() {
     resetStrokeState();
     state.imgName = currentName();
-    state.hotspots = (HOTSPOTS[state.imgName] || []).map(h => ({
+    const truth = !!IS_PHISHING[state.imgName];
+    const hotspotSource = HOTSPOTS[state.imgName] || [];
+    state.hotspots = truth ? hotspotSource.map(h => ({
       xPct: Number(h.xPct), yPct: Number(h.yPct), label: h.label || 'Indicator'
-    }));
+    })) : [];
     state.found.clear();
-    state.classification = localStorage.getItem(`class_${state.imgName}`) || null;
-    if (!state.classification) {
-      state.classification = 'phish';
-      try { localStorage.setItem(`class_${state.imgName}`, 'phish'); } catch (_) {}
+    let storedClassification = null;
+    try { storedClassification = localStorage.getItem(`class_${state.imgName}`); } catch (_) {}
+    if (!storedClassification) {
+      storedClassification = truth ? 'phish' : 'legit';
+      try { localStorage.setItem(`class_${state.imgName}`, storedClassification); } catch (_) {}
       window.stateSync?.queueSave?.('phishing-classification');
     }
+    state.classification = storedClassification;
     clearTimeout(autoSaveTimer);
     updateAutosaveStatus('Autosave ready.');
     updateVulnText();
@@ -715,6 +719,16 @@ window.PHISHING_INSTRUCTOR_KEY = {
 
   function updateVulnText() {
     if (!vulnCountEl && !vulnStageEl) return;
+    const current = state.imgName;
+    const isPhishExample = !!IS_PHISHING[current];
+    if (!isPhishExample) {
+      if (vulnCountEl) vulnCountEl.textContent = 'Legitimate example — focus on the classification verdict.';
+      if (vulnStageEl) vulnStageEl.textContent = 'Confirm the behaviours look genuine, then choose "Looks Legit" to proceed.';
+      if (vulnDotsEl) vulnDotsEl.innerHTML = '';
+      if (vulnReminderEl) vulnReminderEl.setAttribute('hidden', 'hidden');
+      broadcastProgress();
+      return;
+    }
     const total = state.hotspots.length || 0;
     const found = state.found.size;
     if (total) {

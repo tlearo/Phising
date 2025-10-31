@@ -1,4 +1,4 @@
-/* dragdrop.js — Essential Eight drag & drop
+/* dragdrop.js — ASD Essentials drag & drop
    - Works with essential.html structure
    - Accessible mouse + keyboard drag/drop
    - Shuffle / Reset / Check controls
@@ -255,14 +255,14 @@
     if (correct === total){
       setFeedback('Perfect! Digit 8 unlocked for the vault.', true);
       setEssentialDone();
-      announce('All correct. Essential Eight complete.');
+      announce('All correct. ASD Essentials complete.');
       updateVaultValue('8');
       try {
         localStorage.setItem('lock_digit_essential', '8');
       } catch (_) {}
       if (!alreadyComplete) {
         window.vault?.unlock('essential', 8, {
-          message: 'Essential Eight digit 8 unlocked. Vault is one step closer.'
+        message: 'ASD Essentials digit 8 unlocked. Vault is one step closer.'
         });
       }
     } else if (correct >= Math.ceil(total*0.75)) {
@@ -297,7 +297,7 @@
       }
       hintUsed = true;
       hintBox?.removeAttribute('hidden');
-      points?.spend(5, 'Essential Eight hint');
+    points?.spend(5, 'ASD Essentials hint');
       setFeedback('Hint revealed: relate each description to prevent / limit / detect / recover categories.', true);
     });
 

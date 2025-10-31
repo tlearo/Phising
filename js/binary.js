@@ -221,7 +221,7 @@
       return false;
     }
     if (decInput !== XOR_DEC) {
-      setStatus('xor', false, 'Your XOR decimal does not match the bits you entered. Recheck your total.');
+      setStatus('xor', false, 'Your XOR decimal should match the bits and stay within a single digit (0-9). Recheck your total.');
       progress.xor = false;
       return false;
     }

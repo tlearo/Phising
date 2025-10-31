@@ -5,7 +5,7 @@
     { key: 'phishing', label: 'Phishing', storage: ['lock_digit_phishing_total'], href: 'phishing.html' },
     { key: 'encryption', label: 'Encryption', storage: ['lock_digit_caesar_shift'], href: 'encryption.html' },
     { key: 'password', label: 'Password', storage: ['lock_digit_pw_minutes', 'lock_digit_pw_clues'], href: 'password.html' },
-    { key: 'essential', label: 'Essential Eight', storage: ['lock_digit_essential'], href: 'essential.html' },
+    { key: 'essential', label: 'ASD Essentials', storage: ['lock_digit_essential'], href: 'essential.html' },
     { key: 'binary', label: 'Binary', storage: ['lock_digit_binary'], href: 'binary.html' }
   ];
 

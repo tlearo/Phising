@@ -283,6 +283,56 @@
   document.addEventListener('DOMContentLoaded', () => {
     resetRunState();
     renderLeaderboard();
+
+    const aliasCard = $('#endlessAliasCard');
+    const aliasInput = $('#endlessAliasInput');
+    const aliasDisplay = $('#endlessAliasDisplay');
+    const progress = typeof utils.readProgress === 'function' ? utils.readProgress() : {};
+    const puzzles = ['phishing', 'password', 'encryption', 'essential', 'binary'];
+    const allComplete = puzzles.every(key => !!progress?.[key]);
+
+    if (allComplete) {
+      const existingAlias = utils.getPlayerAlias ? utils.getPlayerAlias() : '';
+      if (aliasCard) {
+        aliasCard.hidden = false;
+        aliasCard.setAttribute('aria-hidden', 'false');
+      }
+      if (aliasDisplay) aliasDisplay.textContent = existingAlias || '—';
+      if (aliasInput) {
+        aliasInput.value = existingAlias;
+        aliasInput.addEventListener('input', (ev) => {
+          const cleaned = utils.setPlayerAlias ? utils.setPlayerAlias(ev.target.value) : ev.target.value;
+          if (aliasDisplay) aliasDisplay.textContent = cleaned || '—';
+        });
+        aliasInput.addEventListener('blur', (ev) => {
+          const cleaned = utils.setPlayerAlias ? utils.setPlayerAlias(ev.target.value) : ev.target.value;
+          if (aliasDisplay) aliasDisplay.textContent = cleaned || '—';
+          aliasInput.value = cleaned;
+        });
+      }
+      window.addEventListener('storage', (event) => {
+        if (event.key === 'player_alias' && aliasDisplay) {
+          const updated = utils.getPlayerAlias ? utils.getPlayerAlias() : '';
+          aliasDisplay.textContent = updated || '—';
+          if (aliasInput && document.activeElement !== aliasInput) {
+            aliasInput.value = updated;
+          }
+        }
+      });
+    } else {
+      if (aliasCard) {
+        aliasCard.hidden = true;
+        aliasCard.setAttribute('aria-hidden', 'true');
+      }
+      if (refs.startBtn) {
+        refs.startBtn.setAttribute('disabled', 'true');
+        refs.startBtn.textContent = 'Unlock after vault completion';
+      }
+      if (refs.prompt) {
+        refs.prompt.textContent = 'Finish every core challenge and unlock the vault to access the Endless Challenge.';
+      }
+    }
+
     refs.startBtn?.addEventListener('click', startRun);
     refs.skipBtn?.addEventListener('click', skipQuestion);
     $('#endlessResetBoard')?.addEventListener('click', resetLeaderboard);
