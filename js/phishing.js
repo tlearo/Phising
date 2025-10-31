@@ -36,6 +36,7 @@
   const classificationBlock = $('#classificationBlock');
   const clearBtn     = $('#clearBtn');
   const hintBtn      = $('#phishHintBtn');
+  const revealBtn    = $('#phishRevealBtn');
   const hintText     = $('#phishHintText');
   const vaultDisplay = $('#phishVaultValue');
   const workspaceEl  = $('#phishWorkspace');
@@ -145,6 +146,67 @@ updateVaultCallout();
   announce('Hint revealed.');
 });
 
+  const currentUser = readUser();
+  const currentUsername = (currentUser?.username || '').toLowerCase();
+  const guidesEnabled = currentUsername === 'team1';
+
+  function ensureGuidesLayer() {
+    if (!stageEl) return null;
+    if (!guidesLayer.parentElement) {
+      stageEl.appendChild(guidesLayer);
+    }
+    return guidesLayer;
+  }
+
+  function renderGuides() {
+    ensureGuidesLayer();
+    if (!stageEl || !drawCanvas) return;
+    if (!state.guidesVisible || !IS_PHISHING[state.imgName]) {
+      guidesLayer.setAttribute('hidden', 'hidden');
+      guidesLayer.innerHTML = '';
+      return;
+    }
+
+    const stageWidth = stageEl.clientWidth || drawCanvas.width || 1;
+    const stageHeight = stageEl.clientHeight || drawCanvas.height || 1;
+    const canvasWidth = drawCanvas.width || stageWidth;
+    const canvasHeight = drawCanvas.height || stageHeight;
+
+    guidesLayer.innerHTML = '';
+    guidesLayer.removeAttribute('hidden');
+
+    state.hotspots.forEach(hs => {
+      const guide = document.createElement('div');
+      guide.className = 'phish-guide';
+      const radiusPx = HOTSPOT_RADIUS_PX * (stageWidth / canvasWidth);
+      const diameter = Math.max(48, radiusPx * 2);
+      guide.style.width = `${diameter}px`;
+      guide.style.height = `${diameter}px`;
+      guide.style.left = `${hs.xPct * stageWidth}px`;
+      guide.style.top = `${hs.yPct * stageHeight}px`;
+      guidesLayer.appendChild(guide);
+    });
+  }
+
+  if (guidesEnabled && revealBtn) {
+    revealBtn.hidden = false;
+    revealBtn.addEventListener('click', () => {
+      if (!state.guidesUnlocked) {
+        points?.spend?.(15, 'Phishing hotspot reveal');
+        state.guidesUnlocked = true;
+        state.guidesVisible = true;
+        setFeedback('Hotspots revealed. 15 points deducted.', 'warn');
+      } else {
+        state.guidesVisible = !state.guidesVisible;
+        setFeedback(state.guidesVisible ? 'Hotspots revealed.' : 'Hotspots hidden.', 'warn');
+      }
+      renderGuides();
+      revealBtn.textContent = state.guidesVisible ? 'Hide hotspots' : 'Reveal hotspots (−15 pts)';
+    });
+  } else if (revealBtn) {
+    revealBtn.remove();
+  }
+
 
   // Tool state
   const IS_DESKTOP = window.matchMedia('(min-width: 900px)').matches;
@@ -166,7 +228,9 @@ updateVaultCallout();
     found: new Set(), // indexes of hotspots found
     imgName: DEFAULT_IMAGE,
     zoom: DEFAULT_ZOOM,
-    classification: null
+    classification: null,
+    guidesVisible: false,
+    guidesUnlocked: false
   };
 
   const ZOOM_MIN = 1;
@@ -176,6 +240,9 @@ updateVaultCallout();
   let workspaceParent = null;
   let autoSaveTimer = null;
   let classificationNudgeTimer = null;
+  const guidesLayer = document.createElement('div');
+  guidesLayer.className = 'phish-guides';
+  guidesLayer.setAttribute('hidden', 'hidden');
 
   function updateZoomControls() {
     const atMin = state.zoom <= ZOOM_MIN + 0.001;
@@ -196,6 +263,7 @@ updateVaultCallout();
     stageEl.style.transform = `scale(${state.zoom})`;
     stageEl.classList.toggle('is-zoomed', isZoomed);
     updateZoomControls();
+    renderGuides();
   }
 
   function setZoom(value) {
@@ -697,6 +765,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
     updateAutosaveStatus('Autosave ready.');
     updateVulnText();
     syncClassificationUi();
+    renderGuides();
   }
 
   // Convert pct hotspot to canvas pixel coords
@@ -730,6 +799,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       if (vulnDotsEl) vulnDotsEl.innerHTML = '';
       if (vulnReminderEl) vulnReminderEl.setAttribute('hidden', 'hidden');
       broadcastProgress();
+      renderGuides();
       return;
     }
     const total = state.hotspots.length || 0;
@@ -788,6 +858,7 @@ window.PHISHING_INSTRUCTOR_KEY = {
       if (vulnReminderEl) vulnReminderEl.setAttribute('hidden', 'hidden');
     }
     broadcastProgress();
+    renderGuides();
   }
 
   function renderVulnDots(total, found, required) {
